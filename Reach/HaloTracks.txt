@@ -1,0 +1,1394 @@
+-- /* GLOBAL VARIABLES */
+
+alias	bestLapSeconds					= global.number[0]
+alias	bestLapMilliseconds				= global.number[1]
+alias	bestLapNumber					= global.number[2]
+alias	frames							= global.number[3]
+alias	framesOverflow					= global.number[4]
+alias	host							= global.number[5]
+alias	localCurrentLapSeconds			= global.number[6]
+alias	localCurrentLapMilliseconds		= global.number[7]
+
+alias	dashStatus						= global.number[8]
+-- dashStatus = 0 -- Show Dash page 1
+-- dashStatus = 1 -- Show Dash page 2
+-- dashStatus = 2 -- Show Dash page 3
+-- dashStatus = 3 -- Unused
+-- dashStatus = 4 -- Show Post Race Dash
+
+alias	raceStatus						= global.number[9]
+-- raceStatus = 0 -- Game is starting, we haven't spawned yet
+-- raceStatus = 1 -- Gridding has started
+-- raceStatus = 2 -- Race has started
+-- raceStatus = 3 -- Race time period has ended
+-- raceStatus = 4 -- Race has ended
+
+declare	bestLapSeconds					with network priority high
+declare	bestLapMilliseconds				with network priority high
+declare	bestLapNumber					with network priority high
+declare	frames							with network priority high	= 0
+declare	framesOverflow					with network priority high	= 1
+declare	host							with network priority local	= 0
+declare	localCurrentLapSeconds			with network priority local	= 0
+declare	localCurrentLapMilliseconds		with network priority local	= 0
+declare	dashStatus						with network priority local	= 0
+declare	raceStatus						with network priority high	= 0
+
+
+alias	bestLapPlayer					= global.player[0]
+alias	client							= global.player[1]
+declare bestLapPlayer					with network priority high
+declare client							with network priority local
+
+
+alias	finalCheckpoint					= global.object[0]
+alias	firstCheckpoint					= global.object[1]
+alias	storage							= global.object[2]
+
+-- /* GLOBAL VARIABLES */
+
+
+
+-- /* SCRIPT OPTIONS */
+
+alias	numberOfLaps					= script_option[0]
+alias	maxFuel							= script_option[1]
+alias	refuelRate						= script_option[2]
+alias	pitStops						= script_option[3]
+alias	vehicleRespawnTime				= script_option[4]
+
+-- /* SCRIPT OPTIONS */
+
+
+
+-- /* PLAYER VARIABLES */
+
+alias	currentCheckpoint				= player.number[0]
+alias	localLapFrames					= player.number[1]
+alias	position						= player.number[2]
+alias	currentFuelLevel				= player.number[3]
+alias	vehicleSpeedKPH					= player.number[4]
+alias	currentLapMilliseconds			= player.number[5]
+alias	onVehicle						= player.number[6]
+alias	pittedThisLap					= player.number[7]
+
+declare	player.currentCheckpoint		with network priority high	= 0
+declare	player.localLapFrames			with network priority local = 0
+declare	player.position					with network priority high	= 1
+declare	player.currentFuelLevel			with network priority high	= -30000
+declare	player.vehicleSpeedKPH			with network priority local
+declare	player.currentLapMilliseconds	with network priority local
+declare	player.onVehicle				with network priority local	= 1
+declare	player.pittedThisLap			with network priority local
+
+
+alias	vehicleRespawnTimer				= player.timer[0]
+alias	lapsAhead						= player.timer[1]
+alias	lapsBehind						= player.timer[2]
+declare	player.vehicleRespawnTimer		= vehicleRespawnTime
+
+
+alias	vehicle							= player.object[0]
+alias	timing							= player.object[1]
+
+alias	playerAhead						= player.player[0]
+alias	playerBehind					= player.player[1]
+
+
+alias	bestLapSeconds					= player.script_stat[0]
+alias	bestLapMilliseconds				= player.script_stat[1]
+alias	bestLapNumber					= player.script_stat[2]
+alias	currentLapSeconds				= player.script_stat[3]
+
+-- /* PLAYER VARIABLES */
+
+
+
+-- /* OBJECT VARIABLES */
+
+
+	-- /* Player Timing Object */
+	alias	lapFrames						= object.number[0]
+	alias	sectorTimeFrames				= object.number[1]
+	alias	bestSector1TimeFrames			= object.number[2]
+	alias	bestSector2TimeFrames			= object.number[3]
+	alias	bestSector3TimeFrames			= object.number[4]
+	alias	bestSector4TimeFrames			= object.number[5]
+	alias	bestSector5TimeFrames			= object.number[6]
+	alias	bestSector6TimeFrames			= object.number[7]
+	-- /* Player Timing Object */
+
+
+	-- /* Vehicle Object */
+	alias	startingFuelSpeed				= object.number[0]
+	alias	lapStartingFuel					= object.number[1]
+	alias	fuelUsedLastLap					= object.number[2]
+	alias	refuelAmount					= object.number[3]
+	-- /* Vehicle Object */
+
+
+	-- /* Checkpoint Object */
+	alias	order							= object.number[0]
+	-- /* Checkpoint Object */
+
+
+	-- /* Global Storage Object */
+	alias	maxFuelLevel					= object.number[0]
+	-- /* Global Storage Object */
+
+
+-- /* OBJECT VARIABLES */
+
+
+
+-- /* HUD WIDGETS */
+
+alias	topMiddleWidget					= script_widget[0]
+alias	bottomMiddleWidget				= script_widget[1]
+alias	topLeftWidget					= script_widget[2]
+alias	bottomLeftWidget				= script_widget[3]
+
+-- /* HUD WIDGETS */
+
+
+
+
+
+-- # Functions #
+
+
+alias framesIn = allocate temporary number
+alias secondsOut = allocate temporary number
+alias millisecondsOut = allocate temporary number
+function timeFromFrames()
+	secondsOut = framesIn
+	secondsOut /= 60
+
+	alias t = allocate temporary number
+	t = secondsOut
+	t *= 60
+
+	millisecondsOut = framesIn
+	millisecondsOut -= t
+	millisecondsOut *= 1000
+	millisecondsOut /= 60
+end
+
+
+-- # Functions #
+
+
+
+
+-- # Initialize #
+
+on init: do
+
+
+	-- # Initialize Checkpoints #
+	for each object with label "race_flag" do
+		alias checkpoint = allocate temporary object
+		checkpoint = current_object
+		checkpoint.order = checkpoint.spawn_sequence
+		checkpoint.team = team[1]
+		checkpoint.set_waypoint_icon(none)
+		checkpoint.set_waypoint_priority(low)
+		checkpoint.set_invincibility(1)
+		checkpoint.set_spawn_location_permissions(no_one)
+
+		if finalCheckpoint == no_object or checkpoint.order > finalCheckpoint.order then
+			finalCheckpoint = checkpoint
+		end
+
+		if firstCheckpoint == no_object or checkpoint.order < firstCheckpoint.order then
+			firstCheckpoint = checkpoint
+		end
+
+	end
+	-- # Initialize Checkpoints #
+
+
+	-- # Figure out Checkpoint Sectors #
+	do
+
+		alias sector1 = allocate temporary object
+		sector1 = no_object
+		for each object with label "race_flag" do
+			if sector1 == no_object or sector1.order > current_object.order then
+				sector1 = current_object
+			end
+		end
+
+		alias sector2 = allocate temporary object
+		sector2 = no_object
+		if sector1 != no_object then
+			for each object with label "race_flag" do
+				if current_object.order > sector1.order then
+					if sector2 == no_object or sector2.order > current_object.order then
+						sector2 = current_object
+					end
+				end
+			end
+		end
+
+		alias sector3 = allocate temporary object
+		sector3 = no_object
+		if sector2 != no_object then
+			for each object with label "race_flag" do
+				if current_object.order > sector2.order then
+					if sector3 == no_object or sector3.order > current_object.order then
+						sector3 = current_object
+					end
+				end
+			end
+		end
+
+		alias sector4 = allocate temporary object
+		sector4 = no_object
+		if sector3 != no_object then
+			for each object with label "race_flag" do
+				if current_object.order > sector3.order then
+					if sector4 == no_object or sector4.order > current_object.order then
+						sector4 = current_object
+					end
+				end
+			end
+		end
+
+		alias sector5 = allocate temporary object
+		sector5 = no_object
+		if sector4 != no_object then
+			for each object with label "race_flag" do
+				if current_object.order > sector4.order then
+					if sector5 == no_object or sector5.order > current_object.order then
+						sector5 = current_object
+					end
+				end
+			end
+		end
+
+		alias sector6 = allocate temporary object
+		sector6 = no_object
+		if sector5 != no_object then
+			for each object with label "race_flag" do
+				if current_object.order > sector5.order then
+					if sector6 == no_object or sector6.order > current_object.order then
+						sector6 = current_object
+					end
+				end
+			end
+		end
+
+
+		for each object with label "race_flag" do
+			current_object.number[1] = 7
+			--current_object.set_waypoint_text("%n", 7)
+
+			if current_object.order == sector1.order then
+				current_object.number[1] = 1
+				--current_object.set_waypoint_text("%n", 1)
+			end
+			if current_object.order == sector2.order then
+				current_object.number[1] = 2
+				--current_object.set_waypoint_text("%n", 2)
+			end
+			if current_object.order == sector3.order then
+				current_object.number[1] = 3
+				--current_object.set_waypoint_text("%n", 3)
+			end
+			if current_object.order == sector4.order then
+				current_object.number[1] = 4
+				--current_object.set_waypoint_text("%n", 4)
+			end
+			if current_object.order == sector5.order then
+				current_object.number[1] = 5
+				--current_object.set_waypoint_text("%n", 5)
+			end
+			if current_object.order == sector6.order then
+				current_object.number[1] = 6
+				--current_object.set_waypoint_text("%n", 6)
+			end
+
+		end
+
+	end
+	-- # Figure out Checkpoint Sectors #
+
+
+	--	# Hide Invisible Race Objects #
+	for each object with label "race_hide" do
+		current_object.set_hidden(true)
+	end
+	--	# Hide Invisible Race Objects #
+
+
+	-- # Create Object for storage #
+	storage = finalCheckpoint.place_at_me(hill_marker, none,none,0,0,0,none)
+	-- # Create Object for storage #
+
+
+	raceStatus = 1
+	host = 1
+end
+
+-- # Initialize #
+
+
+
+
+-- # Basic Game Logic #
+
+
+	-- # If someone has met the number of laps, end the round #
+	if numberOfLaps != 0 then
+		for each player do
+			if not current_player.score < numberOfLaps then
+				raceStatus = 3
+				game.end_round()
+			end
+		end
+	end
+	-- # If someone has met the number of laps, end the round #
+
+
+	-- # If the round time limit has been exceeded, end the round #
+	if game.round_time_limit > 0 and game.round_timer.is_zero() then
+		raceStatus = 3
+		game.end_round()
+	end
+	-- # If the round time limit has been exceeded, end the round #
+
+
+	-- # Set up a 5 second timer #
+	alias debounce5 = allocate temporary number
+	debounce5 = 1
+
+	if raceStatus >= 2 then
+		alias tempNumber = allocate temporary number
+		tempNumber = frames
+		tempNumber /= 300
+		tempNumber *= 300
+		debounce5 = frames
+		debounce5 -= tempNumber	
+	end
+	-- # Set up a 5 second timer #
+
+
+	for each player do
+
+
+		-- # Create Objects for storage #
+		if current_player.timing == no_object then
+			current_player.timing = current_player.biped.place_at_me(hill_marker, none,none,0,0,0,none)
+		end
+		-- # Create Objects for storage #
+
+
+		-- # Get Player Timing Object #
+		alias timing = allocate temporary object
+		timing = current_player.timing
+		-- # Get Player Timing Object #
+
+
+		-- # Set Current Lap time #
+		current_player.currentLapSeconds = timing.lapFrames
+		current_player.currentLapSeconds /= 60
+		alias t = allocate temporary number
+		t = current_player.currentLapSeconds
+		t *= 60
+		current_player.currentLapMilliseconds = timing.lapFrames
+		current_player.currentLapMilliseconds -= t
+		current_player.currentLapMilliseconds *= 1000
+		current_player.currentLapMilliseconds /= 60
+		-- # Set Current Lap time #
+
+
+		-- # Set Player current racing position #
+		alias racer = allocate temporary player
+		racer = current_player
+		alias position = allocate temporary number
+		position = 1
+
+
+		-- # Find out how many players are ahead #
+		for each player do
+			alias racerTiming = allocate temporary object
+			racerTiming = current_player.object[1]
+
+
+			if current_player.score > racer.score then
+				position += 1
+			end
+
+			if current_player.score == racer.score then
+
+				if current_player.currentCheckpoint > racer.currentCheckpoint then
+					position += 1
+				end
+
+				if current_player.currentCheckpoint == racer.currentCheckpoint then
+					if racerTiming.sectorTimeFrames > timing.sectorTimeFrames then
+						position += 1
+					end
+				end
+
+			end
+
+		end
+		-- # Find out how many players are ahead #
+
+		current_player.position = position
+		-- # Set Player current racing position #
+
+
+		-- # Calculate Gaps #
+		for each player do
+			alias racer = allocate temporary player
+			racer = current_player
+			alias timing = allocate temporary object
+			timing = current_player.object[1]
+			alias biped = allocate temporary object
+			biped = current_player.biped
+			alias tempPlayer = allocate temporary player
+			biped.number[0] = 0
+			biped.number[1] = 0
+			biped.number[2] = 0
+			biped.number[3] = 0
+
+			-- # Find Player Ahead #
+			tempPlayer = no_player
+			alias positionAhead = allocate temporary number
+			positionAhead = current_player.position
+			positionAhead -= 1
+			for each player do
+				if current_player.position == positionAhead then
+					racer.playerAhead = current_player
+					tempPlayer = current_player
+				end
+			end
+
+			if tempPlayer != no_player then
+				alias aheadTiming = allocate temporary object
+				aheadTiming = tempPlayer.object[1]
+
+				-- # If you are on the same lap as the player ahead of you #
+				if tempPlayer.score == current_player.score then
+					framesIn = aheadtiming.lapFrames
+					framesIn -= timing.lapFrames
+					timeFromFrames()
+					biped.number[0] = secondsOut
+					biped.number[1] = millisecondsOut
+				end
+				-- # If you are on the same lap as the player ahead of you #
+			end
+			-- # Find Player Ahead #
+
+
+			-- # Find Player Behind #
+			tempPlayer = no_player
+			alias positionBehind = allocate temporary number
+			positionBehind = current_player.position
+			positionBehind += 1
+			for each player do
+				if current_player.position == positionBehind then
+					racer.playerBehind = current_player
+					tempPlayer = current_player
+				end
+			end
+
+			if tempPlayer != no_player then
+				alias behindTiming = allocate temporary object
+				behindTiming = tempPlayer.object[1]
+
+				-- # If you are on the same lap as the player behind you #
+				if tempPlayer.score == current_player.score then
+					framesIn = behindtiming.lapFrames
+					framesIn -= timing.lapFrames
+					timeFromFrames()
+					biped.number[2] = secondsOut
+					biped.number[3] = millisecondsOut
+				end
+				-- # If you are on the same lap as the player behind you #
+			end
+			-- # Find Player Behind #
+
+		end
+		-- # Calculate Gaps #
+
+	end
+
+
+	-- # Increment the frame counter #
+	if raceStatus >= 2 then
+		frames += 1
+		if frames >= 30000 then
+			frames -= 30000
+			framesOverflow += 1
+		end
+	end
+	-- # Increment the frame counter #
+
+
+	-- # Increment the player frame counters #
+	if raceStatus >= 2 then
+		for each player do
+			alias timing = allocate temporary object
+			timing = current_player.object[1]
+
+			timing.lapFrames += 1 -- lapFrames
+			timing.sectorTimeFrames += 1 -- sectorFrames
+		end
+	end
+	-- # Increment the player frame counters #
+
+-- # Basic Game Logic #
+
+
+
+
+-- # Handle Vehicles #
+
+for each player do
+
+
+	-- # Get players current Vehicle #
+	alias vehicle = allocate temporary object
+	vehicle = no_object
+	vehicle = current_player.get_vehicle()
+	-- # Get players current Vehicle #
+
+
+	-- # Remove the Players Vehicle if they die or quit #
+	if current_player.killer_type_is(guardians | suicide | kill | betrayal | quit) then
+		if current_player.vehicle != no_object then
+			vehicle = current_player.vehicle
+			if vehicle.player[0] == current_player or vehicle.player[0] == no_player then
+				current_player.vehicle.delete()
+				current_player.vehicle = no_object
+				vehicle = no_object
+			end
+		end
+	end
+	-- # Remove the Players Vehicle if they die or quit #
+
+
+	-- # Check if Player is on vehicle #
+	current_player.onVehicle = 0
+	if vehicle != no_object then
+		current_player.onVehicle = 1
+	end
+	-- # Check if Player is on vehicle #
+
+
+
+	-- # Handle the Player not being on a Vehicle #
+	if current_player.onVehicle == 0 then
+
+		-- # Vehicle Respawn Timer has hit 0 #
+		if current_player.vehicleRespawnTimer.is_zero() then
+			if current_player.vehicle != no_object then
+				vehicle = current_player.vehicle
+				if vehicle.player[0] == current_player or vehicle.player[0] == no_player then
+					current_player.vehicle.delete()
+					current_player.vehicle = no_object
+					vehicle = no_object
+				end
+			end
+			current_player.vehicleRespawnTimer.reset()
+		end
+		-- # Vehicle Respawn Timer has hit 0 #
+
+
+		-- # If the Player doesn't have a vehicle, Put them in one #
+		if current_player.vehicle == no_object then
+			vehicle = current_player.biped.place_at_me(mongoose, "require_fuel", none, 0, 0, 0, none)
+			vehicle.player[0] = current_player
+			current_player.vehicle = vehicle
+			current_player.force_into_vehicle(current_player.vehicle)
+			current_player.onVehicle = 1
+		end
+		-- # If the Player doesn't have a vehicle, Put them in one #
+
+
+		-- # If the Player still doesn't have a vehicle, start the Vehicle respawn timer #
+		current_player.vehicleRespawnTimer.set_rate(-100%)
+		-- # If the Player still doesn't have a vehicle, start the Vehicle respawn timer #
+
+
+		-- # Handle Abandoned Vehicles #
+		for each object with label "require_fuel" do
+			if current_object.player[0] == no_player then
+
+				-- # If the abandoned vehicle is near the Player, pair them #
+				if current_player.vehicle == no_object then
+					alias distance = allocate temporary number
+					distance = 0
+					distance = current_object.get_distance_to(current_player.biped)
+
+					if distance <= 100 then
+						current_object.player[0] = current_player
+						current_player.vehicle = current_object
+					end
+				end
+				-- # If the abandoned vehicle is near the Player, pair them #
+
+
+				-- # Delete all unclaimed abandonded Vehicles #
+				if current_object.player[0] == no_player then
+					current_object.delete()
+				end
+				-- # Delete all unclaimed abandonded Vehicles #
+
+			end
+		end
+		-- # Handle Abandoned Vehicles #
+
+	end
+	-- # Handle the Player not being on a Vehicle #
+
+
+	-- # Handle the Player being on a Vehicle #
+	if current_player.onVehicle == 1 then
+
+		-- # Reset Vehicle Respawn Timer #
+		current_player.vehicleRespawnTimer.reset()
+		-- # Reset Vehicle Respawn Timer #
+
+
+		-- # Player is on a new Vehicle #
+		if current_player.vehicle != vehicle then
+			current_player.vehicle = vehicle
+			alias oldPlayer = allocate temporary player
+			oldPlayer = vehicle.player[0]
+			oldPlayer.vehicle = no_object
+			vehicle.player[0] = current_player
+		end
+		-- # Player is on a new Vehicle #
+
+
+		-- # Ensure Player is only associated with one Vehicle #
+		for each object with label "require_fuel" do
+			if current_object != vehicle and current_object.player[0] == current_player then
+				current_object.player[0] = no_player
+			end
+		end
+		-- # Ensure Player is only associated with one Vehicle #
+
+
+		-- # Update Vehicle Speed #
+		current_player.vehicleSpeedKPH = current_player.biped.get_speed()
+		current_player.vehicleSpeedKPH *= 109 -- Convert from Feet Per Second to KMH
+		current_player.vehicleSpeedKPH /= 100 -- Convert from Feet Per Second to KMH
+		-- # Update Vehicle Speed #
+
+
+	end
+	-- # Handle the Player being on a Vehicle #
+
+
+end
+
+-- # Handle Vehicles #
+
+
+
+
+-- # Handle UI #
+for each player do
+
+
+	-- # Initialize UI #
+	if numberOfLaps != 0 then
+		current_player.set_objective_text("Hit checkpoints to complete laps.\r\n%n laps to win.", numberOfLaps)
+	end
+	if numberOfLaps == 0 then
+		current_player.set_objective_text("Hit checkpoints to complete laps.")
+	end
+	-- # Initialize UI #
+
+
+	-- # Don't display UI if race hasn't started or the Player is not on a mongoose #
+	if raceStatus < 2 or current_player.onVehicle == 0 then
+		topMiddleWidget.set_visibility(current_player, false)
+		bottomMiddleWidget.set_visibility(current_player, false)
+		topLeftWidget.set_visibility(current_player, false)
+		bottomLeftWidget.set_visibility(current_player, false)
+	end
+	-- # Don't display UI if race hasn't started or the Player is not on a mongoose #
+
+
+	-- # Don't display UI if race has started and the Player is on a mongoose #
+	if raceStatus >= 2 and current_player.onVehicle == 1 then
+
+
+		-- # Get Player Timing Object #
+		alias timing = allocate temporary object
+		timing = hud_player.object[1]
+		-- # Get Player Timing Object #
+
+
+		-- # Get Player Biped Object #
+		alias biped = allocate temporary object
+		biped = hud_player.biped
+		-- # Get Player Biped Object #
+
+
+		-- # Get Player Vehicle #
+		alias vehicle = allocate temporary object
+		vehicle = hud_player.vehicle
+		-- # Get Player Vehicle #
+
+
+		-- # Rotate Dash Status #
+		if debounce5 == 0 then
+			if dashStatus != 4 then
+				if dashStatus != 3 then
+					dashStatus += 1
+				end
+
+				if dashStatus == 3 then
+					dashStatus = 0
+				end
+			end
+		end
+		-- # Rotate Dash Status #
+
+
+		topMiddleWidget.set_visibility(current_player, true)
+		bottomMiddleWidget.set_visibility(current_player, true)
+		topLeftWidget.set_visibility(current_player, true)
+		bottomLeftWidget.set_visibility(current_player, true)
+
+		if bestLapSeconds == 0 and bestLapMilliseconds == 0 then
+			topLeftWidget.set_visibility(current_player, false)
+		end
+
+		if current_player.bestLapSeconds == 0 and current_player.bestLapMilliseconds == 0 then
+			bottomLeftWidget.set_visibility(current_player, false)
+		end
+
+
+		-- # Update Fuel UI #
+		bottomMiddleWidget.set_meter_params(number, hud_player.currentFuelLevel, storage.maxFuelLevel)
+		-- # Update Fuel UI #
+
+
+
+		topMiddleWidget.set_text("%n KPH\n   P %n", hud_player.vehicleSpeedKPH, hud_player.position)
+
+		bottomMiddleWidget.set_text("%n.%n", hud_player.currentLapSeconds, hud_player.currentLapMilliseconds)
+		if hud_player.currentLapMilliseconds < 100 then
+			bottomMiddleWidget.set_text("%n.0%n", hud_player.currentLapSeconds, hud_player.currentLapMilliseconds)
+		end
+
+
+		if dashStatus < 2 then
+			topLeftWidget.set_text("Fastest Lap: %n.%n", bestLapSeconds, bestLapMilliseconds)
+			if bestLapMilliseconds < 100 then
+				topLeftWidget.set_text("Fastest Lap: %n.0%n", bestLapSeconds, bestLapMilliseconds)
+			end
+			bottomLeftWidget.set_text("Personal Best: %n.%n", hud_player.bestLapSeconds,hud_player.bestLapMilliseconds)
+			if hud_player.bestLapMilliseconds < 100 then
+				bottomLeftWidget.set_text("Personal Best: %n.0%n", hud_player.bestLapSeconds,hud_player.bestLapMilliseconds)
+			end
+		end
+		if dashStatus == 2 then
+			alias playerAhead = allocate temporary player
+			playerAhead = current_player.playerAhead
+
+			if playerAhead != no_player then
+				current_player.lapsAhead = playerAhead.score
+				current_player.lapsAhead -= current_player.score
+
+				if playerAhead != no_player and current_player.score == playerAhead.score and biped.number[0] != 0 and biped.number[1] != 0 then
+					topLeftWidget.set_text("Gap Ahead: %n.%n", biped.number[0], biped.number[1])
+				end
+
+				if playerAhead != no_player and current_player.lapsAhead > 1 then
+					--topLeftWidget.set_text("Gap Ahead: %n Lap(s)", hud_player.lapsAhead)
+				end
+			end
+
+			alias playerBehind = allocate temporary player
+			playerBehind = current_player.playerBehind
+
+			if playerBehind != no_player then
+				current_player.lapsBehind = current_player.score
+				current_player.lapsBehind -= playerBehind.score
+
+				if playerBehind != no_player and current_player.score == playerBehind.score and biped.number[2] != 0 and biped.number[3] != 0 then
+					bottomLeftWidget.set_text("Gap Behind: %n.%n", biped.number[2], biped.number[3])
+				end
+
+				if playerBehind != no_player and current_player.lapsBehind > 1 then
+					--bottomLeftWidget.set_text("Gap Behind: %n Lap(s)", hud_player.lapsBehind)
+				end
+			end
+
+		end
+
+	end
+	-- # Don't display UI if race has started and the Player is on a mongoose #
+
+end
+-- # Handle UI #
+
+
+
+
+-- # Handle Checkpoints #
+for each player do
+	current_player.set_co_op_spawning(true)
+	current_player.biped.set_spawn_location_permissions(no_one)
+
+
+	-- # Get Player Timing Object #
+	alias timing = allocate temporary object
+	timing = current_player.object[1]
+	-- # Get Player Timing Object #
+
+
+	-- # Get players current Vehicle #
+	alias vehicle = allocate temporary object
+	vehicle = no_object
+	vehicle = current_player.get_vehicle()
+	-- # Get players current Vehicle #
+
+
+	-- # If the player is on a vehicle #
+	if current_player.onVehicle == 1 then
+
+		if current_player.currentCheckpoint < firstCheckpoint.order or current_player.currentCheckpoint > finalCheckpoint.order then
+			current_player.currentCheckpoint = firstCheckpoint.order
+		end
+
+		for each object with label "race_flag" do
+			current_object.set_waypoint_visibility(mod_player, current_player, 0)
+			current_object.set_shape_visibility(mod_player, current_player, 0)
+
+			if current_object.order == current_player.currentCheckpoint then-- If checkpoint is the players current checkpoint
+				current_object.set_waypoint_visibility(mod_player, current_player, 1)
+				current_object.set_shape_visibility(mod_player, current_player, 1)
+
+				-- # The player has hit the next checkpoint #
+				if current_object.shape_contains(current_player.biped) then-- If the player is currently inside the checkpoint
+
+
+					-- # Handle Sector Times #
+					if timing.sectorTimeFrames != 0 then
+						alias sectorTimeFrames = allocate temporary number
+						sectorTimeFrames = timing.sectorTimeFrames -- Sector start frame
+						framesIn = sectorTimeFrames
+						timeFromFrames()
+						alias bestOverallSector = allocate temporary number
+						bestOverallSector = 0
+						alias bestPersonalSector = allocate temporary number
+						bestPersonalSector = 0
+
+
+						if current_object.number[1] == 1 then
+							if current_player.score > 0 and current_player.pittedThisLap < 1 then
+								if timing.bestSector1TimeFrames == 0 or timing.bestSector1TimeFrames > sectorTimeFrames then
+									timing.bestSector1TimeFrames = sectorTimeFrames
+									bestPersonalSector = 1
+								end
+								if current_object.number[2] == 0 or current_object.number[2] > sectorTimeFrames then
+									current_object.number[2] = sectorTimeFrames
+									bestOverallSector = 1
+								end
+
+								-- # Send Sector Complete Notifications #
+								if bestOverallSector == 1 then
+									game.show_message_to(current_player, none, "Overall Best Sector 1 time! %n.%n", secondsOut, millisecondsOut )
+								end
+								if bestOverallSector != 1 and bestPersonalSector == 1 then
+									game.show_message_to(current_player, none, "Personal Best Sector 1 time! %n.%n", secondsOut, millisecondsOut )
+								end
+								if bestOverallSector != 1 and bestPersonalSector != 1 then
+									game.show_message_to(current_player, none, "Sector 1: %n.%n", secondsOut, millisecondsOut )
+								end
+								-- # Send Sector Complete Notifications #
+							end
+						end
+						if current_object.number[1] == 2 then
+							if timing.bestSector2TimeFrames == 0 or timing.bestSector2TimeFrames > sectorTimeFrames then
+								timing.bestSector2TimeFrames = sectorTimeFrames
+								bestPersonalSector = 1
+							end
+							if current_object.number[3] == 0 or current_object.number[3] > sectorTimeFrames then
+								current_object.number[3] = sectorTimeFrames
+								bestOverallSector = 1
+							end
+
+							-- # Send Sector Complete Notifications #
+							if bestOverallSector == 1 then
+								game.show_message_to(current_player, none, "Overall Best Sector 2 time! %n.%n", secondsOut, millisecondsOut )
+							end
+							if bestOverallSector != 1 and bestPersonalSector == 1 then
+								game.show_message_to(current_player, none, "Personal Best Sector 2 time! %n.%n", secondsOut, millisecondsOut )
+							end
+							if bestOverallSector != 1 and bestPersonalSector != 1 then
+								game.show_message_to(current_player, none, "Sector 2: %n.%n", secondsOut, millisecondsOut )
+							end
+							-- # Send Sector Complete Notifications #
+						end
+						if current_object.number[1] == 3 then
+							if timing.bestSector3TimeFrames == 0 or timing.bestSector3TimeFrames > sectorTimeFrames then
+								timing.bestSector3TimeFrames = sectorTimeFrames
+								bestPersonalSector = 1
+							end
+							if current_object.number[4] == 0 or current_object.number[4] > sectorTimeFrames then
+								current_object.number[4] = sectorTimeFrames
+								bestOverallSector = 1
+							end
+
+							-- # Send Sector Complete Notifications #
+							if bestOverallSector == 1 then
+								game.show_message_to(current_player, none, "Overall Best Sector 3 time! %n.%n", secondsOut, millisecondsOut )
+							end
+							if bestOverallSector != 1 and bestPersonalSector == 1 then
+								game.show_message_to(current_player, none, "Personal Best Sector 3 time! %n.%n", secondsOut, millisecondsOut )
+							end
+							if bestOverallSector != 1 and bestPersonalSector != 1 then
+								game.show_message_to(current_player, none, "Sector 3: %n.%n", secondsOut, millisecondsOut )
+							end
+							-- # Send Sector Complete Notifications #
+						end
+						if current_object.number[1] == 4 then
+							if timing.bestSector4TimeFrames == 0 or timing.bestSector4TimeFrames > sectorTimeFrames then
+								timing.bestSector4TimeFrames = sectorTimeFrames
+								bestPersonalSector = 1
+							end
+							if current_object.number[5] == 0 or current_object.number[5] > sectorTimeFrames then
+								current_object.number[5] = sectorTimeFrames
+								bestOverallSector = 1
+							end
+
+							-- # Send Sector Complete Notifications #
+							if bestOverallSector == 1 then
+								game.show_message_to(current_player, none, "Overall Best Sector 4 time! %n.%n", secondsOut, millisecondsOut )
+							end
+							if bestOverallSector != 1 and bestPersonalSector == 1 then
+								game.show_message_to(current_player, none, "Personal Best Sector 4 time! %n.%n", secondsOut, millisecondsOut )
+							end
+							if bestOverallSector != 1 and bestPersonalSector != 1 then
+								game.show_message_to(current_player, none, "Sector 4: %n.%n", secondsOut, millisecondsOut )
+							end
+							-- # Send Sector Complete Notifications #
+						end
+						if current_object.number[1] == 5 then
+							if timing.bestSector5TimeFrames == 0 or timing.bestSector5TimeFrames > sectorTimeFrames then
+								timing.bestSector5TimeFrames = sectorTimeFrames
+								bestPersonalSector = 1
+							end
+							if current_object.number[6] == 0 or current_object.number[6] > sectorTimeFrames then
+								current_object.number[6] = sectorTimeFrames
+								bestOverallSector = 1
+							end
+
+							-- # Send Sector Complete Notifications #
+							if bestOverallSector == 1 then
+								game.show_message_to(current_player, none, "Overall Best Sector 5 time! %n.%n", secondsOut, millisecondsOut )
+							end
+							if bestOverallSector != 1 and bestPersonalSector == 1 then
+								game.show_message_to(current_player, none, "Personal Best Sector 5 time! %n.%n", secondsOut, millisecondsOut )
+							end
+							if bestOverallSector != 1 and bestPersonalSector != 1 then
+								game.show_message_to(current_player, none, "Sector 5: %n.%n", secondsOut, millisecondsOut )
+							end
+							-- # Send Sector Complete Notifications #
+						end
+						if current_object.number[1] == 6 then
+							if timing.bestSector6TimeFrames == 0 or timing.bestSector6TimeFrames > sectorTimeFrames then
+								timing.bestSector6TimeFrames = sectorTimeFrames
+								bestPersonalSector = 1
+							end
+							if current_object.number[7] == 0 or current_object.number[7] > sectorTimeFrames then
+								current_object.number[7] = sectorTimeFrames
+								bestOverallSector = 1
+							end
+
+							-- # Send Sector Complete Notifications #
+							if bestOverallSector == 1 then
+								game.show_message_to(current_player, none, "Overall Best Sector 6 time! %n.%n", secondsOut, millisecondsOut )
+							end
+							if bestOverallSector != 1 and bestPersonalSector == 1 then
+								game.show_message_to(current_player, none, "Personal Best Sector 6 time! %n.%n", secondsOut, millisecondsOut )
+							end
+							if bestOverallSector != 1 and bestPersonalSector != 1 then
+								game.show_message_to(current_player, none, "Sector 6: %n.%n", secondsOut, millisecondsOut )
+							end
+							-- # Send Sector Complete Notifications #
+						end
+					end
+					timing.sectorTimeFrames = 0 -- sectorStartFrame -- Set Frame number the user started the current sector on
+					-- # Handle Sector Times #
+
+
+
+					-- # Find next checkpoint #
+					alias nextCheckpointNumber = allocate temporary number
+					nextCheckpointNumber = finalCheckpoint.order
+					nextCheckpointNumber += 1 -- Number of maximum checkpoints + 1
+					for each object with label "race_flag" do
+						if current_object.order > current_player.currentCheckpoint and current_object.order < nextCheckpointNumber then
+							nextCheckpointNumber = current_object.order
+						end
+					end
+					-- # Find next checkpoint #
+
+
+
+					-- # Update Player Current Checkpoint #
+					current_player.currentCheckpoint = nextCheckpointNumber
+					-- # Update Player Current Checkpoint #
+
+
+
+					-- # Player has completed a lap #
+					if raceStatus >= 2 and current_player.currentCheckpoint > finalCheckpoint.order then
+						alias bestPersonalLap = allocate temporary number
+						bestPersonalLap = 0
+						alias bestOverallLap = allocate temporary number
+						bestOverallLap = 0
+
+						-- # Reset Player checkpoint counter #
+						current_player.currentCheckpoint = firstCheckpoint.order
+						-- # Reset Player checkpoint counter #
+
+
+						-- # Increment Player Score #
+						current_player.score += 1
+						-- # Increment Player Score #
+
+
+						-- # Notify the user of how much fuel was used #
+						if vehicle.lapStartingFuel == 0 then
+							vehicle.lapStartingFuel = storage.maxFuelLevel
+						end
+						vehicle.fuelUsedLastLap = vehicle.lapStartingFuel
+						vehicle.fuelUsedLastLap -= current_player.currentFuelLevel
+						vehicle.lapStartingFuel = current_player.currentFuelLevel
+						if vehicle.fuelUsedLastLap > 0 then
+							game.show_message_to(current_player, none, "Fuel Used last lap %n", vehicle.fuelUsedLastLap )
+						end
+						-- # Notify the user of how much fuel was used #
+
+
+						-- # Set Player Best Lap #
+						if current_player.pittedThisLap < 1 then
+							if current_player.score >= 2 and current_player.bestLapSeconds == 0 and current_player.bestLapMilliseconds == 0 then
+								bestPersonalLap = 1
+								current_player.bestLapSeconds = current_player.currentLapSeconds
+								current_player.bestLapMilliseconds = current_player.currentLapMilliseconds
+								current_player.bestLapNumber = current_player.score
+							end
+							if current_player.currentLapSeconds < current_player.bestLapSeconds then
+								bestPersonalLap = 1
+								current_player.bestLapSeconds = current_player.currentLapSeconds
+								current_player.bestLapMilliseconds = current_player.currentLapMilliseconds
+								current_player.bestLapNumber = current_player.score
+							end
+							if current_player.currentLapSeconds == current_player.bestLapSeconds and current_player.currentLapMilliseconds < current_player.bestLapMilliseconds then
+								bestPersonalLap = 1
+								current_player.bestLapSeconds = current_player.currentLapSeconds
+								current_player.bestLapMilliseconds = current_player.currentLapMilliseconds
+								current_player.bestLapNumber = current_player.score
+							end
+						end
+						-- # Set Player Best Lap #
+
+
+						-- # Set Fastest Laptime #
+						if current_player.pittedThisLap < 1 then
+							if current_player.score >= 2 and bestLapSeconds == 0 and bestLapMilliseconds == 0 then
+								bestOverallLap = 1
+								bestLapSeconds = current_player.currentLapSeconds
+								bestLapMilliseconds = current_player.currentLapMilliseconds
+								bestLapPlayer = current_player
+								bestLapNumber = current_player.score
+							end
+							if current_player.currentLapSeconds < bestLapSeconds then
+								bestOverallLap = 1
+								bestLapSeconds = current_player.currentLapSeconds
+								bestLapMilliseconds = current_player.currentLapMilliseconds
+								bestLapPlayer = current_player
+								bestLapNumber = current_player.score
+							end
+							if current_player.currentLapSeconds == bestLapSeconds and current_player.currentLapMilliseconds < bestLapMilliseconds then
+								bestOverallLap = 1
+								bestLapSeconds = current_player.currentLapSeconds
+								bestLapMilliseconds = current_player.currentLapMilliseconds
+								bestLapPlayer = current_player
+								bestLapNumber = current_player.score
+							end
+						end
+						-- # Set Fastest Laptime #
+
+
+						-- # Send Lap Complete Notifications #
+						if bestOverallLap == 1 then
+							game.show_message_to(current_player, none, "Overall Best lap time! %n.%n", current_player.currentLapSeconds, current_player.currentLapMilliseconds )
+							if current_player.currentLapMilliseconds < 100 then
+								game.show_message_to(current_player, none, "Overall Best lap time! %n.0%n", current_player.currentLapSeconds, current_player.currentLapMilliseconds )
+							end
+						end
+						if bestOverallLap != 1 and bestPersonalLap == 1 then
+							game.show_message_to(current_player, none, "Personal Best lap time! %n.%n", current_player.currentLapSeconds, current_player.currentLapMilliseconds )
+							if current_player.currentLapMilliseconds < 100 then
+							game.show_message_to(current_player, none, "Personal Best lap time! %n.0%n", current_player.currentLapSeconds, current_player.currentLapMilliseconds )
+							end
+						end
+						if bestOverallLap != 1 and bestPersonalLap != 1 then
+							game.show_message_to(current_player, none, "Lap Complete: %n.%n", current_player.currentLapSeconds, current_player.currentLapMilliseconds )
+							if current_player.currentLapMilliseconds < 100 then
+							game.show_message_to(current_player, none, "Lap Complete: %n.0%n", current_player.currentLapSeconds, current_player.currentLapMilliseconds )
+							end
+						end
+						send_incident(lap_complete, current_player, no_player)
+						-- # Send Lap Complete Notifications #
+
+
+						-- # Subtract from pit status -1 #
+						current_player.pittedThisLap -= 1
+						-- # Subtract from pit status -1 #
+
+
+						-- # Notify everyone of the final lap #
+						do
+							alias whiteFlagLap = allocate temporary number
+							whiteFlagLap = numberOfLaps -- # Number of laps
+							whiteFlagLap -= 1
+							if current_player.score == whiteFlagLap then
+								alias scoreboardPosition = allocate temporary number
+								scoreboardPosition = 0
+								scoreboardPosition = current_player.get_scoreboard_pos()
+								if scoreboardPosition == 1 then
+									send_incident(final_lap, current_player, all_players)
+								end
+							end
+						end
+						-- # Notify everyone of the final lap #
+
+
+						timing.lapFrames = 0 -- lapFrames -- Reset lap frame count
+					end
+					-- # Player has completed a lap #
+
+
+					-- # Start the race when someone hits a checkpoint #
+					if raceStatus < 2 then
+						raceStatus = 2
+						timing.lapFrames = 0 -- lapFrames
+					end
+					-- # Start the race when someone hits a checkpoint #
+
+
+				end
+				-- # The player has hit the next checkpoint #
+
+			end
+		end
+	end
+	-- # If the player is on a vehicle #
+end
+-- # Handle Checkpoints #
+
+
+
+
+-- # Handle Fuel #
+if raceStatus >= 2 then
+
+	alias debounce = allocate temporary number
+	alias temp = allocate temporary number
+	temp = frames
+	temp /= 20
+	temp *= 20
+	debounce = frames
+	debounce -= temp
+
+
+	if debounce == 0 then -- run 3 times a second
+
+		for each player do
+
+			-- # Get players current Vehicle #
+			alias vehicle = allocate temporary object
+			vehicle = no_object
+			vehicle = current_player.get_vehicle()
+			-- # Get players current Vehicle #
+
+
+			-- # Initialize Fuel #
+			if current_player.currentFuelLevel == -30000 then				-- -30000 is a magic number to indicate that the player has never had fuel before
+				current_player.currentFuelLevel = maxFuel					-- Max Fuel is a percentage of fuel selected in the gametype
+				current_player.currentFuelLevel /= 100						-- Convert Max Fuel to a percentage
+				current_player.currentFuelLevel *= 6000						-- Multiply Max Fuel Percentage by the Base fuel level
+				current_player.currentFuelLevel *= 50						-- Scale Base fuel level up to a useable value with a magic number
+
+
+				-- # Set Max Fuel Level #
+				storage.maxFuelLevel = current_player.currentFuelLevel		-- Store the maxFuelLevel so it can be reused across the gametype
+				-- # Set Max Fuel Level #
+
+
+				-- # Initialize Refuel Amount #
+				vehicle.refuelAmount = storage.maxFuelLevel					-- Start with our max fuel level
+				vehicle.refuelAmount /= 3									-- Divide it by 3 because we run this update code 3x per second
+				vehicle.refuelAmount /= refuelRate							-- Divide it by the desired pit stop length selected in the gametype options
+				-- # Initialize Refuel Amount #
+
+			end
+			-- # Initialize Fuel #
+
+
+			-- # Update Vehicle Fuel #
+			if current_player.onVehicle == 1 and current_player.currentFuelLevel >= 0 then		-- Update fuel if the player is on a vehicle and they have not already run out of fuel
+				alias fuelUsage = allocate temporary number
+				fuelUsage = 95												-- Base fuel usage
+
+				alias fuelCalc = allocate temporary number
+				fuelCalc = current_player.vehicleSpeedKPH					-- Start the fuel calculation with the vehicles current speed
+				fuelCalc -= vehicle.startingFuelSpeed						-- Subtract the vehicles speed from three tenths of a second ago
+				fuelCalc *= 3												-- Multiply by a magic number to scale this up to a useable value
+
+				fuelUsage += fuelCalc										-- Add the rate of change fuel calculation to the base fuel usage
+
+
+				if vehicle.startingFuelSpeed > 55 and current_player.vehicleSpeedKPH > 55 and vehicle.startingFuelSpeed <= current_player.vehicleSpeedKPH then -- 55kmh being roughly the speed that we shift to 2nd
+					fuelUsage -= 20											-- Fuel efficiency slightly better in 2nd gear
+				end
+
+				if vehicle.startingFuelSpeed == 0 and current_player.vehicleSpeedKPH == 0 or fuelUsage < 5 then
+					fuelUsage = 5											-- Idle fuel usage
+				end
+
+
+				current_player.currentFuelLevel -= fuelUsage				-- Subtract the fuel usage calculation from the users current fuel level
+				vehicle.startingFuelSpeed = current_player.vehicleSpeedKPH	-- Store the vehicles current speed for the next time we run this calculation
+			end
+			-- # Update Vehicle Fuel #
+
+
+			-- # Remove Player from Vehicle if they have no fuel #
+			if current_player.currentFuelLevel <= 0 and current_player.currentFuelLevel != -30000 then
+				current_player.biped.detach()
+			end
+			-- # Remove Player from Vehicle if they have no fuel #
+
+
+			-- # Refuel Vehicles that are parked on a Pit Box #
+			for each object with label "pit_stop" do
+
+				alias pitBox = allocate temporary object
+				pitBox = current_object
+				pitBox.set_shape_visibility(everyone)
+				pitBox.set_waypoint_visibility(everyone)
+				pitBox.set_waypoint_priority(normal)
+				pitBox.set_waypoint_icon(arrow)
+				pitBox.set_waypoint_text("Pit Road")
+
+				if current_player.vehicleSpeedKPH <= 0 and pitBox.shape_contains( vehicle ) and current_player.currentFuelLevel < storage.maxFuelLevel then
+					current_player.pittedThisLap = 2 --	# Set Pit Status #
+					current_player.currentFuelLevel += vehicle.refuelAmount
+
+					if current_player.currentFuelLevel > storage.maxFuelLevel then
+						current_player.currentFuelLevel = storage.maxFuelLevel
+					end
+				end
+
+			end
+			-- # Refuel Vehicles that are parked on a Pit Box #
+
+		end
+	end
+
+end
+-- # Handle Fuel #
+
+
+
+on local: do
+	if host == 0 then
+
+		-- # Detect Client Player --
+		for each object with label "target" do
+			current_object.delete()
+		end
+		if client == no_player  then
+			for each player do
+                current_player.biped.detach()
+                alias weapon = allocate temporary object
+                weapon = current_player.try_get_weapon(primary)
+                alias target = allocate temporary object
+                target = weapon.place_at_me(monitor, "target", suppress_effect, 3, 1, 1, none)
+                target.attach_to(weapon, 3, 1, 1, relative)
+                target.detach()
+                alias get = allocate temporary object
+                get = current_player.get_crosshair_target()
+                if get != no_object then
+                   client = current_player
+                end
+            end
+        end
+		-- # Detect Client Player --
+
+
+		if raceStatus >= 2 then
+
+			-- # Get players current Vehicle #
+			alias vehicle = allocate temporary object
+			vehicle = no_object
+			vehicle = client.get_vehicle()
+			-- # Get players current Vehicle #
+
+
+			-- # Set Current Local Lap time #
+			localCurrentLapSeconds = client.localLapFrames
+			localCurrentLapSeconds /= 60
+			alias t = allocate temporary number
+			t = localCurrentLapSeconds
+			t *= 60
+			localCurrentLapMilliseconds = client.localLapFrames
+			localCurrentLapMilliseconds -= t
+			localCurrentLapMilliseconds *= 1000
+			localCurrentLapMilliseconds /= 60
+			-- # Set Current Local Lap time #
+
+
+			bottomMiddleWidget.set_text("%n.%n", localCurrentLapSeconds, localCurrentLapMilliseconds)
+
+
+			-- # Increment the player frame counters #
+			client.localLapFrames += 1 -- lapFrames
+			-- # Increment the player frame counters #
+
+
+			-- # Player has completed a lap #
+			if client.localLapFrames > 15 and client.onVehicle == 1 then
+				for each object with label "race_flag" do
+					if current_object.order == client.currentCheckpoint and client.currentCheckpoint == finalCheckpoint.order then
+						if current_object.shape_contains(client.biped) then
+							client.localLapFrames = 0
+						end
+					end
+				end
+			end
+			-- # Player has completed a lap #
+
+
+			-- # Update Vehicle Speed #
+			client.vehicleSpeedKPH = 0
+			if client.onVehicle == 1 then
+				client.vehicleSpeedKPH = client.biped.get_speed()
+				client.vehicleSpeedKPH *= 109 -- Convert from Feet Per Second to KMH
+				client.vehicleSpeedKPH /= 100 -- Convert from Feet Per Second to KMH
+			end
+			-- # Update Vehicle Speed #
+
+		end
+
+
+	end
+end
