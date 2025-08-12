@@ -831,25 +831,33 @@ for each player do
 		topMiddleWidget.set_text("%n KPH\n   P %n", hud_player.vehicleSpeedKPH, hud_player.position)
 
 
-		bottomMiddleWidget.set_text("%n.%n", hud_player.currentLapSeconds, hud_player.currentLapMilliseconds)
+		if current_player.currentLapMilliseconds >= 100 then
+			bottomMiddleWidget.set_text("%n.%n", hud_player.currentLapSeconds, hud_player.currentLapMilliseconds)
+		end
 		if current_player.currentLapMilliseconds < 100 then
 			bottomMiddleWidget.set_text("%n.0%n", hud_player.currentLapSeconds, hud_player.currentLapMilliseconds)
 		end
 
 
 		if dashStatus == 0 then
-			topLeftWidget.set_text("Fastest Lap: %n.%n", bestLapSeconds, bestLapMilliseconds)
+			if bestLapMilliseconds >= 100 then
+				topLeftWidget.set_text("Fastest Lap: %n.%n", bestLapSeconds, bestLapMilliseconds)
+			end
 			if bestLapMilliseconds < 100 then
 				topLeftWidget.set_text("Fastest Lap: %n.0%n", bestLapSeconds, bestLapMilliseconds)
 			end
-			bottomLeftWidget.set_text("Personal Best: %n.%n", hud_player.bestLapSeconds,hud_player.bestLapMilliseconds)
+			if current_player.bestLapMilliseconds >= 100 then
+				bottomLeftWidget.set_text("Personal Best: %n.%n", hud_player.bestLapSeconds,hud_player.bestLapMilliseconds)
+			end
 			if current_player.bestLapMilliseconds < 100 then
 				bottomLeftWidget.set_text("Personal Best: %n.0%n", hud_player.bestLapSeconds,hud_player.bestLapMilliseconds)
 			end
 		end
 		if dashStatus == 1 then
 			topLeftWidget.set_text("Fastest Lap: %p\nLap %n", bestLapPlayer, bestLapNumber)
-			bottomLeftWidget.set_text("Optimal Lap: %n.%n", storage.optimalLapSeconds, storage.optimalLapMilliseconds)
+			if storage.optimalLapMilliseconds >= 100 then
+				bottomLeftWidget.set_text("Optimal Lap: %n.%n", storage.optimalLapSeconds, storage.optimalLapMilliseconds)
+			end
 			if storage.optimalLapMilliseconds < 100 then
 				bottomLeftWidget.set_text("Optimal Lap: %n.0%n", storage.optimalLapSeconds, storage.optimalLapMilliseconds)
 			end
@@ -1257,19 +1265,25 @@ for each player do
 
 							-- # Send Lap Complete Notifications #
 							if bestOverallLap == 1 then
-								game.show_message_to(current_player, none, "Overall Best lap time! %n.%n", current_player.currentLapSeconds, current_player.currentLapMilliseconds )
+								if current_player.currentLapMilliseconds >= 100 then
+									game.show_message_to(current_player, none, "Overall Best lap time! %n.%n", current_player.currentLapSeconds, current_player.currentLapMilliseconds )
+								end
 								if current_player.currentLapMilliseconds < 100 then
 									game.show_message_to(current_player, none, "Overall Best lap time! %n.0%n", current_player.currentLapSeconds, current_player.currentLapMilliseconds )
 								end
 							end
 							if bestOverallLap != 1 and bestPersonalLap == 1 then
-								game.show_message_to(current_player, none, "Personal Best lap time! %n.%n", current_player.currentLapSeconds, current_player.currentLapMilliseconds )
+								if current_player.currentLapMilliseconds >= 100 then
+									game.show_message_to(current_player, none, "Personal Best lap time! %n.%n", current_player.currentLapSeconds, current_player.currentLapMilliseconds )
+								end
 								if current_player.currentLapMilliseconds < 100 then
 									game.show_message_to(current_player, none, "Personal Best lap time! %n.0%n", current_player.currentLapSeconds, current_player.currentLapMilliseconds )
 								end
 							end
 							if bestOverallLap != 1 and bestPersonalLap != 1 then
-								game.show_message_to(current_player, none, "Lap Complete: %n.%n", current_player.currentLapSeconds, current_player.currentLapMilliseconds )
+								if current_player.currentLapMilliseconds >= 100 then
+									game.show_message_to(current_player, none, "Lap Complete: %n.%n", current_player.currentLapSeconds, current_player.currentLapMilliseconds )
+								end
 								if current_player.currentLapMilliseconds < 100 then
 									game.show_message_to(current_player, none, "Lap Complete: %n.0%n", current_player.currentLapSeconds, current_player.currentLapMilliseconds )
 								end
@@ -1504,7 +1518,9 @@ on local: do
 
 
 			-- # Display the players current lap time #
-			bottomMiddleWidget.set_text("%n.%n", localCurrentLapSeconds, localCurrentLapMilliseconds )
+			if localCurrentLapMilliseconds >= 100 then
+				bottomMiddleWidget.set_text("%n.%n", localCurrentLapSeconds, localCurrentLapMilliseconds )
+			end
 			if localCurrentLapMilliseconds < 100 then
 				bottomMiddleWidget.set_text("%n.0%n", localCurrentLapSeconds, localCurrentLapMilliseconds )
 			end
