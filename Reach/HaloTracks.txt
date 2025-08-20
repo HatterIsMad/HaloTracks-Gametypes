@@ -62,6 +62,7 @@ alias	invincibility					= script_option[3]
 alias	cvDelete						= script_option[4]
 alias	requiredJokers					= script_option[5]
 alias	lowPriorityWaypoints			= script_option[6]
+alias	startGate						= script_option[7]
 
 -- /* SCRIPT OPTIONS */
 
@@ -154,6 +155,7 @@ alias	currentLapSeconds				= player.script_stat[3]
 
 	-- /* Global Storage Object */
 	alias	maxFuelLevel					= object.number[0]
+	alias	startGateFrame					= object.number[1]
 	-- /* Global Storage Object */
 
 
@@ -345,6 +347,15 @@ on init: do
 	--	# Hide Invisible Race Objects #
 
 
+	-- # Delete Race Gates #
+	if raceStatus == 1 and frames > raceGateFrames then
+		for each object with label "race_gate" do
+			current_object.delete()
+		end
+	end
+	-- # Delete Race Gates #
+
+
 	--	# Delete Competitive Version Objects #
 	if cvDelete == 1 then
 		for each object with label "cv_delete" do
@@ -359,6 +370,22 @@ on init: do
 	-- # Create Object for storage #
 
 
+	-- # Set Start Gate Frame #
+	if startGate == 0 then -- 20 +/- 5
+		startGateFrames = rand( 601 )
+		startGateFrames += 900
+	end
+	if startGate == 1 then -- 30 +/- 10
+		startGateFrames = rand( 1201 )
+		startGateFrames += 1200
+	end
+	if startGate == 2 then -- 40 +/- 20
+		startGateFrames = rand( 2401 )
+		startGamteFrames += 1200
+	end
+	-- # Set Start Gate Frame #
+
+
 	raceStatus = 1
 	host = 1
 end
@@ -369,7 +396,6 @@ end
 
 
 -- # Basic Game Logic #
-
 
 	-- # Count number of alive players #
 	numberOfPlayers = 0
@@ -411,7 +437,7 @@ end
 		tempNumber /= 300
 		tempNumber *= 300
 		debounce5 = frames
-		debounce5 -= tempNumber	
+		debounce5 -= tempNumber
 	end
 	-- # Set up a 5 second timer #
 
@@ -1578,6 +1604,15 @@ on local: do
 			current_object.set_hidden(true)
 		end
 		--	# Hide Invisible Race Objects #
+
+
+		-- # Delete Race Gates #
+		if frames > raceGateFrames or raceStatus > 1 then
+			for each object with label "race_gate" do
+				current_object.delete()
+			end
+		end
+		-- # Delete Race Gates #
 
 
 		-- # Detect Client Player --
