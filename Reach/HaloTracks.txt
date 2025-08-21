@@ -156,6 +156,7 @@ alias	currentLapSeconds				= player.script_stat[3]
 	-- /* Global Storage Object */
 	alias	maxFuelLevel					= object.number[0]
 	alias	startGateFrame					= object.number[1]
+	alias	startGateDropped				= object.number[2]
 	-- /* Global Storage Object */
 
 
@@ -347,15 +348,6 @@ on init: do
 	--	# Hide Invisible Race Objects #
 
 
-	-- # Delete Race Gates #
-	if raceStatus == 1 and frames > raceGateFrames then
-		for each object with label "race_gate" do
-			current_object.delete()
-		end
-	end
-	-- # Delete Race Gates #
-
-
 	--	# Delete Competitive Version Objects #
 	if cvDelete == 1 then
 		for each object with label "cv_delete" do
@@ -372,16 +364,16 @@ on init: do
 
 	-- # Set Start Gate Frame #
 	if startGate == 0 then -- 20 +/- 5
-		startGateFrames = rand( 601 )
-		startGateFrames += 900
+		globalStorage.startGateFrame = rand( 601 )
+		globalStorage.startGateFrame += 900
 	end
 	if startGate == 1 then -- 30 +/- 10
-		startGateFrames = rand( 1201 )
-		startGateFrames += 1200
+		globalStorage.startGateFrame = rand( 1201 )
+		globalStorage.startGateFrame += 1200
 	end
 	if startGate == 2 then -- 40 +/- 20
-		startGateFrames = rand( 2401 )
-		startGamteFrames += 1200
+		globalStorage.startGateFrame = rand( 2401 )
+		globalStorage.startGateFrame += 1200
 	end
 	-- # Set Start Gate Frame #
 
@@ -396,6 +388,19 @@ end
 
 
 -- # Basic Game Logic #
+
+
+	-- # Delete Race Gates #
+	if raceStatus == 1 and globalStorage.startGateDropped == 0 and frames > globalStorage.startGateFrame then
+		for each object with label "race_gate" do
+			current_object.delete()
+		end
+		raceStatus = 2
+		frames = 0
+		globalStorage.startGateDropped = 1
+	end
+	-- # Delete Race Gates #
+
 
 	-- # Count number of alive players #
 	numberOfPlayers = 0
@@ -611,12 +616,10 @@ end
 
 
 	-- # Increment the frame counter #
-	if raceStatus >= 2 then
-		frames += 1
-		if frames >= 30000 then
-			frames -= 30000
-			framesOverflow += 1
-		end
+	frames += 1
+	if frames >= 30000 then
+		frames -= 30000
+		framesOverflow += 1
 	end
 	-- # Increment the frame counter #
 
@@ -1447,6 +1450,7 @@ for each player do
 					if raceStatus < 2 then
 						raceStatus = 2
 						timing.lapFrames = 1 -- lapFrames
+						frames = 0
 					end
 					-- # Start the race when someone hits a checkpoint #
 
@@ -1606,13 +1610,16 @@ on local: do
 		--	# Hide Invisible Race Objects #
 
 
-		-- # Delete Race Gates #
-		if frames > raceGateFrames or raceStatus > 1 then
+		-- # Hide Race Gates #
+		alias localStartGateFrame = allocate temporary number
+		localStartGateFrame = globalStorage.startGateFrame
+		localStartGateFrame -= 6 -- How much earlier should the gates visually disappear before they physically disappear
+		if raceStatus == 1 and globalStorage.startGateDropped == 0 and frames > localStartGateFrame then
 			for each object with label "race_gate" do
-				current_object.delete()
+				current_object.set_hidden(true)
 			end
 		end
-		-- # Delete Race Gates #
+		-- # Hide Race Gates #
 
 
 		-- # Detect Client Player --
