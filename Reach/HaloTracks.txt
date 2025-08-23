@@ -149,6 +149,8 @@ alias	currentLapSeconds				= player.script_stat[3]
 	alias	fuelUsedLastLap					= object.number[2]
 	alias	refuelAmount					= object.number[3]
 	alias	fuelTaken						= object.number[4]
+	alias	draftBonus						= object.number[5]
+	alias	speedWarnings					= object.number[6]
 	-- /* Vehicle Object */
 
 
@@ -317,7 +319,7 @@ on init: do
 
 
 	-- # Create Object for storage #
-	globalStorage = finalCheckpoint.place_at_me(hill_marker, none,none,0,0,0,none)
+	globalStorage = finalCheckpoint.place_at_me(hill_marker, none,never_garbage_collect,0,0,0,none)
 	-- # Create Object for storage #
 
 
@@ -410,10 +412,11 @@ end
 
 		-- # Create Objects for storage #
 		if current_player.timing == no_object then
-			current_player.timing = current_player.biped.place_at_me(hill_marker, none,none,0,0,0,none)
+			current_player.timing = current_player.biped.place_at_me(hill_marker, none,never_garbage_collect,0,0,0,none)
+			current_player.timing.attach_to(current_player.biped, 10, 0, 0, relative)
 		end
 		if current_player.storage == no_object then
-			current_player.storage = current_player.biped.place_at_me(hill_marker, none,none,0,0,0,none)
+			current_player.storage = current_player.biped.place_at_me(hill_marker, none,never_garbage_collect,0,0,0,none)
 		end
 		-- # Create Objects for storage #
 
@@ -692,18 +695,7 @@ for each player do
 
 		-- # If the Player doesn't have a vehicle, Put them in one #
 		if current_player.vehicle == no_object then
-			if defaultVehicle == 0 then
-				vehicle = current_player.biped.place_at_me(mongoose, "Vehicle", none, 0, 0, 0, none)
-			end
-			if defaultVehicle == 1 then
-				vehicle = current_player.biped.place_at_me(warthog, "Vehicle", none, 0, 0, 0, none)
-			end
-			if defaultVehicle == 2 then
-				vehicle = current_player.biped.place_at_me(warthog, "Vehicle", none, 0, 0, 0, troop)
-			end
-			if defaultVehicle == 3 then
-				vehicle = current_player.biped.place_at_me(pickup_truck, "Vehicle", none, 0, 0, 0, none)
-			end
+			vehicle = current_player.biped.place_at_me(mongoose, "Vehicle", never_garbage_collect, 0, 0, 0, none)
 			vehicle.player[0] = current_player
 			current_player.vehicle = vehicle
 			current_player.force_into_vehicle(current_player.vehicle)
@@ -1489,6 +1481,102 @@ if maxFuel != -1 then
 
 		if debounce == 0 then -- run 3 times a second
 
+			-- # Enforce Pit Speed Limits #
+			for each object with label "speed_limit" do
+				for each player do
+					current_object.set_shape_visibility(mod_player, current_player, 0)
+					alias vehicle = allocate temporary object
+					vehicle = current_player.vehicle
+
+					if current_player.onVehicle == 1 then
+						alias timing = allocate temporary object
+						timing = current_player.timing
+
+						if current_object.shape_contains( current_player.biped ) then
+							current_object.set_shape_visibility(mod_player, current_player, 1)
+							if current_player.vehicleSpeedKPH > 40 then
+								if vehicle.speedWarnings > 3 then
+									timing.penalty += 300
+									vehicle.speedWarnings = 0
+									game.show_message_to(current_player, none, "You have earned yourself a 5s penalty bud" )
+								end
+								if vehicle.speedWarnings < 10 then
+									vehicle.speedWarnings += 3
+									game.show_message_to(current_player, none, "Slow down to 40kph or you will get a penalty" )
+								end
+							end
+							if current_player.vehicleSpeedKPH <= 40 then
+								vehicle.speedWarnings -= 1
+							end
+							if current_player.vehicleSpeedKPH < 0 then
+								vehicle.speedWarnings = 0
+							end
+						end
+					end
+					if current_player.onVehicle == 0 then
+						vehicle.speedWarnings = 0
+					end
+				end
+			end
+			-- # Enforce Pit Speed Limits #
+
+
+			-- # Calculate Drafts #
+			for each player do
+				alias vehicle = allocate temporary object
+				vehicle = no_object
+				vehicle = current_player.get_vehicle()
+				vehicle.draftBonus = 0
+			end
+			for each player do
+				alias originalPlayer = allocate temporary player
+				originalPlayer = current_player
+				originalPlayer.timing.detach()
+
+				for each player do
+				   if originalPlayer != current_player then
+					   alias distance = allocate temporary number
+					   distance = 0
+					   distance = current_player.biped.get_distance_to(originalPlayer.timing)
+					   alias distance2 = allocate temporary number
+					   distance2 = 0
+					   distance2 = current_player.biped.get_distance_to(originalPlayer.biped)
+					   distance -= distance2
+
+						if current_player.vehicleSpeedKPH > 55 and originalPlayer.vehicleSpeedKPH > 55 and distance >= 8 then
+							current_player.timing.detach()
+							distance = originalPlayer.biped.get_distance_to(current_player.timing)
+							alias distance3 = allocate temporary number
+							distance3 = 0
+							distance3 = originalPlayer.biped.get_distance_to(current_player.biped)
+
+							if distance < distance3 then
+							   alias vehicle = allocate temporary object
+							   vehicle = no_object
+							   vehicle = current_player.get_vehicle()
+								if distance2 < 50 then
+									vehicle.draftBonus += 12
+								end
+								if distance2 >= 50 and distance2 < 100 then
+									vehicle.draftBonus += 6
+								end
+								if distance2 >= 100 and distance2 < 150 then
+									vehicle.draftBonus += 3
+								end
+								if vehicle.draftBonus > 30 then
+									vehicle.draftBonus = 30 -- Cap this shit at 30 because it is OP
+								end
+							end
+						end
+			   			current_player.timing.attach_to(current_player.biped, 10, 0, 0, relative)
+				   end
+				end
+
+			   originalPlayer.timing.attach_to(current_player.biped, 10, 0, 0, relative)
+			end
+			-- # Calculate Drafts #
+
+
 			for each player do
 
 				-- # Get players current Vehicle #
@@ -1515,8 +1603,8 @@ if maxFuel != -1 then
 
 					-- # Set Max Fuel Level #
 					if globalStorage.maxFuelLevel == 0 then
-						globalStorage.maxFuelLevel = 6000								-- Set the Base fuel level
-						globalStorage.maxFuelLevel *= 50								-- Scale Base fuel level up to a useable value with a magic number
+						globalStorage.maxFuelLevel = 5000								-- Set the Base fuel level
+						globalStorage.maxFuelLevel *= 40								-- Scale Base fuel level up to a useable value with a magic number
 						globalStorage.maxFuelLevel *= maxFuel							-- Max Fuel is a percentage of fuel selected in the gametype
 						globalStorage.maxFuelLevel /= 100								-- Convert Max Fuel to a percentage
 					end
@@ -1563,6 +1651,10 @@ if maxFuel != -1 then
 						fuelUsage += fuelCalc										-- Add the rate of change fuel calculation to the base fuel usage
 
 
+						if vehicle.draftBonus > 0 then
+							fuelUsage -= vehicle.draftBonus
+						end
+
 						if vehicle.startingFuelSpeed > 55 and current_player.vehicleSpeedKPH > 55 and vehicle.startingFuelSpeed <= current_player.vehicleSpeedKPH then -- 55kmh being roughly the speed that we shift to 2nd
 							fuelUsage -= 20											-- Fuel efficiency slightly better in 2nd gear
 						end
@@ -1592,7 +1684,7 @@ if maxFuel != -1 then
 							--pitBox.set_shape_visibility(everyone)
 							--pitBox.set_waypoint_visibility(everyone)
 							pitBox.set_waypoint_priority(normal)
-							pitBox.set_waypoint_range(0, 100)
+							pitBox.set_waypoint_range(0, 60)
 							if lowPriorityWaypoints == 1 then
 								pitBox.set_waypoint_priority(low)
 							end
@@ -1613,6 +1705,7 @@ if maxFuel != -1 then
 										game.show_message_to(current_player, none, "Serving Time Penalty %ns", notify )
 									end
 									timing.penalty -= 20
+									current_player.currentFuelLevel += 5 -- Give them the idle fuel back to make sure they don't die while serving a penalty
 								end
 
 								if current_player.currentFuelLevel < globalStorage.maxFuelLevel and timing.penalty <= 0 then
