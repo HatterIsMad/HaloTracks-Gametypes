@@ -786,19 +786,19 @@ for each player do
 
 	-- # Set Player/Vehicle to Invincible if enabled in game options #
 	if invincibility == 1 then
-    	current_player.biped.set_invincibility(1)
-    	current_player.vehicle.set_invincibility(1)
-    end
-    for each object do
-       if current_object.is_of_type(kill_boundary) or current_object.is_of_type(soft_kill_boundary) then
-          for each player do
-             if current_object.shape_contains(current_player.biped) and not current_player.biped.is_of_type(monitor) then
-                current_player.biped.set_invincibility(0)
-                current_player.vehicle.set_invincibility(0)
-             end
-          end
-       end
-    end
+		current_player.biped.set_invincibility(1)
+		current_player.vehicle.set_invincibility(1)
+	end
+	for each object do
+		if current_object.is_of_type(kill_boundary) or current_object.is_of_type(soft_kill_boundary) then
+			for each player do
+				if current_object.shape_contains(current_player.biped) and not current_player.biped.is_of_type(monitor) then
+					current_player.biped.set_invincibility(0)
+					current_player.vehicle.set_invincibility(0)
+				end
+			end
+		end
+	end
 	-- # Set Player/Vehicle to Invincible if enabled in game options #
 
 end
@@ -923,7 +923,7 @@ for each player do
 
 
 
-		topMiddleWidget.set_text("%n KPH\n   P %n", hud_player.vehicleSpeedKPH, hud_player.position)
+		topMiddleWidget.set_text("%n KPH\n	P %n", hud_player.vehicleSpeedKPH, hud_player.position)
 
 
 		if current_player.currentLapMilliseconds >= 100 then
@@ -1027,7 +1027,7 @@ for each player do
 		-- # Handle Jokers #
 		if requiredJokers > 0 then
 			for each object with label "joker" do
-				if storage.jokeredThisLap == 1 or current_object.order != timing.currentCheckpoint or timing.jokerCount >= requiredJokers  then
+				if storage.jokeredThisLap == 1 or current_object.order != timing.currentCheckpoint or timing.jokerCount >= requiredJokers	then
 					current_object.set_waypoint_visibility(mod_player, current_player, 0)
 					current_object.set_shape_visibility(mod_player, current_player, 0)
 				end
@@ -1225,17 +1225,17 @@ for each player do
 
 						-- # Notify the user of how much fuel was used #
 						if maxFuel != -1 then
-						   	if current_player.score == 0 and vehicle.lapStartingFuel == 0 then
-							   	vehicle.lapStartingFuel = globalStorage.maxFuelLevel
-						   	end
+								if current_player.score == 0 and vehicle.lapStartingFuel == 0 then
+									vehicle.lapStartingFuel = globalStorage.maxFuelLevel
+								end
 
-						   	if vehicle.lapStartingFuel != 0 then
-							   	vehicle.fuelUsedLastLap = vehicle.lapStartingFuel
-							   	vehicle.fuelUsedLastLap -= current_player.currentFuelLevel
-							   	if vehicle.lapStartingFuel > current_player.currentFuelLevel then
-								   	game.show_message_to(current_player, none, "Fuel Used last lap %n", vehicle.fuelUsedLastLap )
-							   	end
-						   	end
+								if vehicle.lapStartingFuel != 0 then
+									vehicle.fuelUsedLastLap = vehicle.lapStartingFuel
+									vehicle.fuelUsedLastLap -= current_player.currentFuelLevel
+									if vehicle.lapStartingFuel > current_player.currentFuelLevel then
+										game.show_message_to(current_player, none, "Fuel Used last lap %n", vehicle.fuelUsedLastLap )
+									end
+								end
 							vehicle.lapStartingFuel = current_player.currentFuelLevel
 						end
 						-- # Notify the user of how much fuel was used #
@@ -1261,23 +1261,23 @@ for each player do
 							end
 							-- # If you are on the same lap as the player behind you #
 
-						   -- # If you are on the same lap as the player ahead of you #
-						   alias aheadPlayer = allocate temporary player
-						   aheadPlayer = current_player.playerAhead
-						   alias aheadTiming = allocate temporary object
-						   aheadTiming = aheadPlayer.timing
-						   alias aheadStorage = allocate temporary object
-						   aheadStorage = aheadPlayer.storage
+							-- # If you are on the same lap as the player ahead of you #
+							alias aheadPlayer = allocate temporary player
+							aheadPlayer = current_player.playerAhead
+							alias aheadTiming = allocate temporary object
+							aheadTiming = aheadPlayer.timing
+							alias aheadStorage = allocate temporary object
+							aheadStorage = aheadPlayer.storage
 
-						   if aheadPlayer != no_player and storage.lapsAhead == 0 then
+							if aheadPlayer != no_player and storage.lapsAhead == 0 then
 								framesIn = aheadTiming.lapFrames
 								timeFromFrames()
 								storage.gapAheadSeconds = secondsOut
 								storage.gapAheadMilliseconds = millisecondsOut
 								aheadStorage.gapBehindSeconds = secondsOut
 								aheadStorage.gapBehindMilliseconds = millisecondsOut
-						   end
-						   -- # If you are on the same lap as the player ahead of you #
+							end
+							-- # If you are on the same lap as the player ahead of you #
 
 
 							alias bestPersonalLap = allocate temporary number
@@ -1534,14 +1534,14 @@ if maxFuel != -1 then
 				originalPlayer.timing.detach()
 
 				for each player do
-				   if originalPlayer != current_player then
-					   alias distance = allocate temporary number
-					   distance = 0
-					   distance = current_player.biped.get_distance_to(originalPlayer.timing)
-					   alias distance2 = allocate temporary number
-					   distance2 = 0
-					   distance2 = current_player.biped.get_distance_to(originalPlayer.biped)
-					   distance -= distance2
+					if originalPlayer != current_player then
+						alias distance = allocate temporary number
+						distance = 0
+						distance = current_player.biped.get_distance_to(originalPlayer.timing)
+						alias distance2 = allocate temporary number
+						distance2 = 0
+						distance2 = current_player.biped.get_distance_to(originalPlayer.biped)
+						distance -= distance2
 
 						if current_player.vehicleSpeedKPH > 55 and originalPlayer.vehicleSpeedKPH > 55 and distance >= 8 then
 							current_player.timing.detach()
@@ -1551,9 +1551,9 @@ if maxFuel != -1 then
 							distance3 = originalPlayer.biped.get_distance_to(current_player.biped)
 
 							if distance < distance3 then
-							   alias vehicle = allocate temporary object
-							   vehicle = no_object
-							   vehicle = current_player.get_vehicle()
+								alias vehicle = allocate temporary object
+								vehicle = no_object
+								vehicle = current_player.get_vehicle()
 								if distance2 < 50 then
 									vehicle.draftBonus += 12
 								end
@@ -1568,11 +1568,11 @@ if maxFuel != -1 then
 								end
 							end
 						end
-			   			current_player.timing.attach_to(current_player.biped, 10, 0, 0, relative)
-				   end
+							current_player.timing.attach_to(current_player.biped, 10, 0, 0, relative)
+					end
 				end
 
-			   originalPlayer.timing.attach_to(current_player.biped, 10, 0, 0, relative)
+				originalPlayer.timing.attach_to(current_player.biped, 10, 0, 0, relative)
 			end
 			-- # Calculate Drafts #
 
@@ -1782,22 +1782,22 @@ on local: do
 		for each object with label "target" do
 			current_object.delete()
 		end
-		if client == no_player  then
+		if client == no_player	then
 			for each player do
-                current_player.biped.detach()
-                alias weapon = allocate temporary object
-                weapon = current_player.try_get_weapon(primary)
-                alias target = allocate temporary object
-                target = weapon.place_at_me(monitor, "target", suppress_effect, 3, 1, 1, none)
-                target.attach_to(weapon, 3, 1, 1, relative)
-                target.detach()
-                alias get = allocate temporary object
-                get = current_player.get_crosshair_target()
-                if get != no_object then
-                   client = current_player
-                end
-            end
-        end
+				current_player.biped.detach()
+				alias weapon = allocate temporary object
+				weapon = current_player.try_get_weapon(primary)
+				alias target = allocate temporary object
+				target = weapon.place_at_me(monitor, "target", suppress_effect, 3, 1, 1, none)
+				target.attach_to(weapon, 3, 1, 1, relative)
+				target.detach()
+				alias get = allocate temporary object
+				get = current_player.get_crosshair_target()
+				if get != no_object then
+					client = current_player
+				end
+			end
+		end
 		-- # Detect Client Player --
 
 
