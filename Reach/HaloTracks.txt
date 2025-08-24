@@ -156,7 +156,14 @@ alias	currentLapSeconds				= player.script_stat[3]
 
 	-- /* Checkpoint Object */
 	alias	order							= object.number[0]
+	alias	sector							= object.number[1]
+	alias	bestSectorTimeFrames			= object.number[2]
 	-- /* Checkpoint Object */
+
+
+	-- /* Pit Box Object */
+	alias	registrationTimer				= object.number[0]
+	-- /* Pit Box Object */
 
 
 	-- /* Global Storage Object */
@@ -164,6 +171,7 @@ alias	currentLapSeconds				= player.script_stat[3]
 	alias	startGateFrame					= object.number[1]
 	alias	startGateDropped				= object.number[2]
 	alias	sectorCount						= object.number[3]
+	alias	checkpointCount					= object.number[3]
 	-- /* Global Storage Object */
 
 
@@ -281,19 +289,19 @@ on init: do
 
 
 		for each object with label "race_flag" do
-			current_object.number[1] = 4
+			current_object.sector = 4
 			--current_object.set_waypoint_text("%n", 7)
 
 			if current_object.order == sector1.order then
-				current_object.number[1] = 1
+				current_object.sector = 1
 				--current_object.set_waypoint_text("%n", 1)
 			end
 			if current_object.order == sector2.order then
-				current_object.number[1] = 2
+				current_object.sector = 2
 				--current_object.set_waypoint_text("%n", 2)
 			end
 			if current_object.order == sector3.order then
-				current_object.number[1] = 3
+				current_object.sector = 3
 				--current_object.set_waypoint_text("%n", 3)
 			end
 		end
@@ -353,12 +361,18 @@ end
 
 	-- # Delete Race Gates #
 	if raceStatus == 1 and globalStorage.startGateDropped == 0 and frames > globalStorage.startGateFrame then
+		alias found = allocate temporary number
+		found = 0
 		for each object with label "race_gate" do
 			current_object.delete()
+			found = 1
 		end
-		raceStatus = 2
-		frames = 0
-		globalStorage.startGateDropped = 1
+
+		if found == 1 then
+			raceStatus = 2
+			frames = 0
+			globalStorage.startGateDropped = 1
+		end
 	end
 	-- # Delete Race Gates #
 
@@ -923,7 +937,7 @@ for each player do
 
 
 
-		topMiddleWidget.set_text("%n KPH\n	P %n", hud_player.vehicleSpeedKPH, hud_player.position)
+		topMiddleWidget.set_text("%n KPH\n  P %n", hud_player.vehicleSpeedKPH, hud_player.position)
 
 
 		if current_player.currentLapMilliseconds >= 100 then
@@ -1097,14 +1111,14 @@ for each player do
 						bestPersonalSector = 0
 
 
-						if current_object.number[1] == 1 and current_player.score > 0 and storage.pittedThisLap < 1 then
+						if current_object.sector == 1 and current_player.score > 0 and storage.pittedThisLap < 1 then
 							if storage.sectorInvalidated == 0 then
 								if timing.bestSector1TimeFrames == 0 or timing.bestSector1TimeFrames > sectorTimeFrames then
 									timing.bestSector1TimeFrames = sectorTimeFrames
 									bestPersonalSector = 1
 								end
-								if current_object.number[2] == 0 or current_object.number[2] > sectorTimeFrames then
-									current_object.number[2] = sectorTimeFrames
+								if current_object.bestSectorTimeFrames == 0 or current_object.bestSectorTimeFrames > sectorTimeFrames then
+									current_object.bestSectorTimeFrames = sectorTimeFrames
 									bestOverallSector = 1
 								end
 							end
@@ -1123,14 +1137,14 @@ for each player do
 
 							storage.sectorInvalidated = 0
 						end
-						if current_object.number[1] == 2 and current_player.score > 0 and storage.pittedThisLap < 1 then
+						if current_object.sector == 2 and current_player.score > 0 and storage.pittedThisLap < 1 then
 							if storage.sectorInvalidated == 0 then
 								if timing.bestSector2TimeFrames == 0 or timing.bestSector2TimeFrames > sectorTimeFrames then
 									timing.bestSector2TimeFrames = sectorTimeFrames
 									bestPersonalSector = 1
 								end
-								if current_object.number[3] == 0 or current_object.number[3] > sectorTimeFrames then
-									current_object.number[3] = sectorTimeFrames
+								if current_object.bestSectorTimeFrames == 0 or current_object.bestSectorTimeFrames > sectorTimeFrames then
+									current_object.bestSectorTimeFrames = sectorTimeFrames
 									bestOverallSector = 1
 								end
 							end
@@ -1149,14 +1163,14 @@ for each player do
 
 							storage.sectorInvalidated = 0
 						end
-						if current_object.number[1] == 3 and current_player.score > 0 and storage.pittedThisLap < 1 then
+						if current_object.sector == 3 and current_player.score > 0 and storage.pittedThisLap < 1 then
 							if storage.sectorInvalidated == 0 then
 								if timing.bestSector3TimeFrames == 0 or timing.bestSector3TimeFrames > sectorTimeFrames then
 									timing.bestSector3TimeFrames = sectorTimeFrames
 									bestPersonalSector = 1
 								end
-								if current_object.number[4] == 0 or current_object.number[4] > sectorTimeFrames then
-									current_object.number[4] = sectorTimeFrames
+								if current_object.bestSectorTimeFrames == 0 or current_object.bestSectorTimeFrames > sectorTimeFrames then
+									current_object.bestSectorTimeFrames = sectorTimeFrames
 									bestOverallSector = 1
 								end
 							end
@@ -1451,18 +1465,18 @@ if maxFuel != -1 then
 			end
 
 			if current_object.shape_contains( current_player.biped ) and current_player.pitbox == 999 then
-				if current_object.number[0] < 300 then
-					current_object.number[0] += 1
+				if current_object.registrationTimer < 200 then
+					current_object.registrationTimer += 1
 					found = 1
 				end
-				if current_object.number[0] >= 300 then
+				if current_object.registrationTimer >= 200 then
 					current_player.pitbox = current_object.spawn_sequence
-					current_object.number[0] = 0
+					current_object.registrationTimer = 0
 				end
 			end
 		end
 		if found == 0 then
-			current_object.number[0] = 0
+			current_object.registrationTimer = 0
 		end
 	end
 	-- # Associate pitbox with player #
@@ -1684,7 +1698,7 @@ if maxFuel != -1 then
 							--pitBox.set_shape_visibility(everyone)
 							--pitBox.set_waypoint_visibility(everyone)
 							pitBox.set_waypoint_priority(normal)
-							pitBox.set_waypoint_range(0, 60)
+							pitBox.set_waypoint_range(0, 30)
 							if lowPriorityWaypoints == 1 then
 								pitBox.set_waypoint_priority(low)
 							end
