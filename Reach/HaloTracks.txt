@@ -1939,8 +1939,8 @@ on local: do
 			client.vehicleSpeedKPH = 0
 			if client.onVehicle == 1 and client.biped != no_object then
 				client.vehicleSpeedKPH = client.biped.get_speed()
-				client.vehicleSpeedKPH *= 109 -- Convert from Feet Per Second to KMH
-				client.vehicleSpeedKPH /= 100 -- Convert from Feet Per Second to KMH
+				client.vehicleSpeedKPH *= 109 -- Convert from Feet Per Second to KPH
+				client.vehicleSpeedKPH /= 100 -- Convert from Feet Per Second to KPH
 
 				if client.vehicleSpeedKPH < 0 then
 					client.vehicleSpeedKPH = 0
