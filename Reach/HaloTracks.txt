@@ -172,7 +172,7 @@ alias	currentLapSeconds				= player.script_stat[3]
 	alias	startGateDropped				= object.number[2]
 	alias	sectorCount						= object.number[3]
 	alias	checkpointCount					= object.number[4]
-	alias	pitLaneConfigured   			= object.number[5]
+	alias	pitLaneConfigured				= object.number[5]
 	-- /* Global Storage Object */
 
 
@@ -972,38 +972,38 @@ for each player do
 			alias playerAhead = allocate temporary player
 			playerAhead = current_player.playerAhead
 
-            if storage.lapsAhead == 0 then
-	            current_player.widget11 = 0
-	            current_player.widget12 = 0
-	            if playerAhead != no_player then
-		            current_player.widget11 = storage.gapAheadSeconds
-		            current_player.widget12 = storage.gapAheadMilliseconds
-	            end
-	            topLeftWidget.set_text("Gap Ahead: %n.%n", hud_player.widget11, hud_player.widget12)
-            end
+			if storage.lapsAhead == 0 then
+				current_player.widget11 = 0
+				current_player.widget12 = 0
+				if playerAhead != no_player then
+					current_player.widget11 = storage.gapAheadSeconds
+					current_player.widget12 = storage.gapAheadMilliseconds
+				end
+				topLeftWidget.set_text("Gap Ahead: %n.%n", hud_player.widget11, hud_player.widget12)
+			end
 
-            if storage.lapsAhead > 1 then
-	            current_player.widget11 = storage.lapsAhead
-	            topLeftWidget.set_text("Gap Ahead: %n Lap(s)", hud_player.widget11)
-            end
+			if storage.lapsAhead > 1 then
+				current_player.widget11 = storage.lapsAhead
+				topLeftWidget.set_text("Gap Ahead: %n Lap(s)", hud_player.widget11)
+			end
 
 			alias playerBehind = allocate temporary player
 			playerBehind = current_player.playerBehind
 
-            if storage.lapsAhead == 0 then
-	            current_player.widget21 = 0
-	            current_player.widget22 = 0
-	            if playerBehind != no_player then
+			if storage.lapsAhead == 0 then
+				current_player.widget21 = 0
+				current_player.widget22 = 0
+				if playerBehind != no_player then
 					current_player.widget21 = storage.gapBehindSeconds
 					current_player.widget22 = storage.gapBehindMilliseconds
 				end
-	            bottomLeftWidget.set_text("Gap Behind: %n.%n", hud_player.widget21, hud_player.widget22)
+				bottomLeftWidget.set_text("Gap Behind: %n.%n", hud_player.widget21, hud_player.widget22)
 			end
 
-            if storage.lapsBehind > 1 then
-	            current_player.widget21 = storage.lapsBehind
-	            bottomLeftWidget.set_text("Gap Behind: %n Lap(s)", hud_player.widget21)
-            end
+			if storage.lapsBehind > 1 then
+				current_player.widget21 = storage.lapsBehind
+				bottomLeftWidget.set_text("Gap Behind: %n Lap(s)", hud_player.widget21)
+			end
 
 		end
 
@@ -1256,53 +1256,53 @@ for each player do
 					-- # Update Player Current Checkpoint #
 
 
-                    -- # Calculate Gaps #
+					-- # Calculate Gaps #
 
-                    -- # If you are on the same lap as the player ahead of you #
-                    alias aheadPlayer = allocate temporary player
-                    aheadPlayer = current_player.playerAhead
-                    alias aheadTiming = allocate temporary object
-                    aheadTiming = aheadPlayer.timing
-                    alias aheadStorage = allocate temporary object
-                    aheadStorage = aheadPlayer.storage
+					-- # If you are on the same lap as the player ahead of you #
+					alias aheadPlayer = allocate temporary player
+					aheadPlayer = current_player.playerAhead
+					alias aheadTiming = allocate temporary object
+					aheadTiming = aheadPlayer.timing
+					alias aheadStorage = allocate temporary object
+					aheadStorage = aheadPlayer.storage
 
-                    if aheadPlayer != no_player and storage.lapsAhead == 0 then
-                        alias sectorAhead = allocate temporary number
-                        alias currentSector = allocate temporary number
+					if aheadPlayer != no_player and storage.lapsAhead == 0 then
+						alias sectorAhead = allocate temporary number
+						alias currentSector = allocate temporary number
 
-                        for each object with label "race_flag" do
-                            if current_object.order <= aheadTiming.currentCheckpoint then
-                                if current_object.sector <= 3 and current_object.sector > sectorAhead then
-                                    sectorAhead = current_object.sector
-                                end
-                            end
-                            if current_object.order <= timing.currentCheckpoint then
-                                if current_object.sector <= 3 and current_object.sector > currentSector then
-                                    currentSector = current_object.sector
-                                end
-                            end
-                        end
+						for each object with label "race_flag" do
+							if current_object.order <= aheadTiming.currentCheckpoint then
+								if current_object.sector <= 3 and current_object.sector > sectorAhead then
+									sectorAhead = current_object.sector
+								end
+							end
+							if current_object.order <= timing.currentCheckpoint then
+								if current_object.sector <= 3 and current_object.sector > currentSector then
+									currentSector = current_object.sector
+								end
+							end
+						end
 
-                        if currentSector == sectorAhead then
-                            framesIn = aheadTiming.sectorTimeFrames
-                            timeFromFrames()
-                            storage.gapAheadSeconds = secondsOut
-                            storage.gapAheadMilliseconds = millisecondsOut
+						if currentSector == sectorAhead then
+							framesIn = aheadTiming.sectorTimeFrames
+							timeFromFrames()
+							storage.gapAheadSeconds = secondsOut
+							storage.gapAheadMilliseconds = millisecondsOut
 
-                            if secondsOut < 0 then
-                                secondsOut *= -1
-                            end
-                            if millisecondsOut < 0 then
-                                millisecondsOut *= -1
-                            end
+							if secondsOut < 0 then
+								secondsOut *= -1
+							end
+							if millisecondsOut < 0 then
+								millisecondsOut *= -1
+							end
 
-                            aheadStorage.gapBehindSeconds = secondsOut
-                            aheadStorage.gapBehindMilliseconds = millisecondsOut
-                        end
-                    end
-                    -- # If you are on the same lap as the player ahead of you #
+							aheadStorage.gapBehindSeconds = secondsOut
+							aheadStorage.gapBehindMilliseconds = millisecondsOut
+						end
+					end
+					-- # If you are on the same lap as the player ahead of you #
 
-                    -- # Calculate Gaps #
+					-- # Calculate Gaps #
 
 
 					-- # Player has completed a lap #
@@ -1310,17 +1310,17 @@ for each player do
 
 						-- # Notify the user of how much fuel was used #
 						if maxFuel != -1 then
-				            if current_player.score == 0 and vehicle.lapStartingFuel == 0 then
-					            vehicle.lapStartingFuel = globalStorage.maxFuelLevel
-				            end
+							if current_player.score == 0 and vehicle.lapStartingFuel == 0 then
+								vehicle.lapStartingFuel = globalStorage.maxFuelLevel
+							end
 
-				            if vehicle.lapStartingFuel != 0 then
-					            vehicle.fuelUsedLastLap = vehicle.lapStartingFuel
-					            vehicle.fuelUsedLastLap -= current_player.currentFuelLevel
-					            if vehicle.lapStartingFuel > current_player.currentFuelLevel then
-						            game.show_message_to(current_player, none, "Fuel Used last lap %n", vehicle.fuelUsedLastLap )
-					            end
-				            end
+							if vehicle.lapStartingFuel != 0 then
+								vehicle.fuelUsedLastLap = vehicle.lapStartingFuel
+								vehicle.fuelUsedLastLap -= current_player.currentFuelLevel
+								if vehicle.lapStartingFuel > current_player.currentFuelLevel then
+									game.show_message_to(current_player, none, "Fuel Used last lap %n", vehicle.fuelUsedLastLap )
+								end
+							end
 							vehicle.lapStartingFuel = current_player.currentFuelLevel
 						end
 						-- # Notify the user of how much fuel was used #
