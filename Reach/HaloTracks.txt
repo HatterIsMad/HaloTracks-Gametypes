@@ -1122,48 +1122,6 @@ for each player do
 					-- # Player should spawn at this checkpoint after hitting it #
 
 
-                    -- # Calculate Gaps #
-
-                    -- # If you are on the same lap as the player ahead of you #
-                    alias aheadPlayer = allocate temporary player
-                    aheadPlayer = current_player.playerAhead
-                    alias aheadTiming = allocate temporary object
-                    aheadTiming = aheadPlayer.timing
-                    alias aheadStorage = allocate temporary object
-                    aheadStorage = aheadPlayer.storage
-
-                    if aheadPlayer != no_player and storage.lapsAhead == 0 then
-                        alias sectorAhead = allocate temporary number
-                        alias currentSector = allocate temporary number
-
-                        for each object with label "race_flag" do
-                            if current_object.order < aheadTiming.currentCheckpoint then
-                                if current_object.sector <= 3 and current_object.sector > sectorAhead then
-                                    sectorAhead = current_object.sector
-                                end
-                            end
-                            if current_object.order < timing.currentCheckpoint then
-                                if current_object.sector <= 3 and current_object.sector > currentSector then
-                                    currentSector = current_object.sector
-                                end
-                            end
-                        end
-                        currentSector += 1
-
-                        if currentSector == sectorAhead then
-                            framesIn = aheadTiming.sectorTimeFrames
-                            timeFromFrames()
-                            storage.gapAheadSeconds = secondsOut
-                            storage.gapAheadMilliseconds = millisecondsOut
-                            aheadStorage.gapBehindSeconds = secondsOut
-                            aheadStorage.gapBehindMilliseconds = millisecondsOut
-                        end
-                    end
-                    -- # If you are on the same lap as the player ahead of you #
-
-                    -- # Calculate Gaps #
-
-
 					-- # Handle Sector Times #
 					if timing.sectorTimeFrames != 0 then
 						alias sectorTimeFrames = allocate temporary number
@@ -1298,22 +1256,71 @@ for each player do
 					-- # Update Player Current Checkpoint #
 
 
+                    -- # Calculate Gaps #
+
+                    -- # If you are on the same lap as the player ahead of you #
+                    alias aheadPlayer = allocate temporary player
+                    aheadPlayer = current_player.playerAhead
+                    alias aheadTiming = allocate temporary object
+                    aheadTiming = aheadPlayer.timing
+                    alias aheadStorage = allocate temporary object
+                    aheadStorage = aheadPlayer.storage
+
+                    if aheadPlayer != no_player and storage.lapsAhead == 0 then
+                        alias sectorAhead = allocate temporary number
+                        alias currentSector = allocate temporary number
+
+                        for each object with label "race_flag" do
+                            if current_object.order <= aheadTiming.currentCheckpoint then
+                                if current_object.sector <= 3 and current_object.sector > sectorAhead then
+                                    sectorAhead = current_object.sector
+                                end
+                            end
+                            if current_object.order <= timing.currentCheckpoint then
+                                if current_object.sector <= 3 and current_object.sector > currentSector then
+                                    currentSector = current_object.sector
+                                end
+                            end
+                        end
+
+                        if currentSector == sectorAhead then
+                            framesIn = aheadTiming.sectorTimeFrames
+                            timeFromFrames()
+                            storage.gapAheadSeconds = secondsOut
+                            storage.gapAheadMilliseconds = millisecondsOut
+
+                            if secondsOut < 0 then
+                                secondsOut *= -1
+                            end
+                            if millisecondsOut < 0 then
+                                millisecondsOut *= -1
+                            end
+
+                            aheadStorage.gapBehindSeconds = secondsOut
+                            aheadStorage.gapBehindMilliseconds = millisecondsOut
+                        end
+                    end
+                    -- # If you are on the same lap as the player ahead of you #
+
+                    -- # Calculate Gaps #
+
+
 					-- # Player has completed a lap #
 					if timing.currentCheckpoint > finalCheckpoint.order then
 
 						-- # Notify the user of how much fuel was used #
 						if maxFuel != -1 then
-								if current_player.score == 0 and vehicle.lapStartingFuel == 0 then
-									vehicle.lapStartingFuel = globalStorage.maxFuelLevel
-								end
+				            if current_player.score == 0 and vehicle.lapStartingFuel == 0 then
+					            vehicle.lapStartingFuel = globalStorage.maxFuelLevel
+				            end
 
-								if vehicle.lapStartingFuel != 0 then
-									vehicle.fuelUsedLastLap = vehicle.lapStartingFuel
-									vehicle.fuelUsedLastLap -= current_player.currentFuelLevel
-									if vehicle.lapStartingFuel > current_player.currentFuelLevel then
-										game.show_message_to(current_player, none, "Fuel Used last lap %n", vehicle.fuelUsedLastLap )
-									end
-								end
+				            if vehicle.lapStartingFuel != 0 then
+					            vehicle.fuelUsedLastLap = vehicle.lapStartingFuel
+					            vehicle.fuelUsedLastLap -= current_player.currentFuelLevel
+					            if vehicle.lapStartingFuel > current_player.currentFuelLevel then
+						            game.show_message_to(current_player, none, "Fuel Used last lap %n", vehicle.fuelUsedLastLap )
+					            end
+				            end
 							vehicle.lapStartingFuel = current_player.currentFuelLevel
 						end
 						-- # Notify the user of how much fuel was used #
