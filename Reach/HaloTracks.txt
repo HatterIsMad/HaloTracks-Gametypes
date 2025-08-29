@@ -67,6 +67,7 @@ alias	requiredJokers					= script_option[5]
 alias	lowPriorityWaypoints			= script_option[6]
 alias	startGate						= script_option[7]
 alias	defaultVehicle					= script_option[8]
+alias	draft							= script_option[9]
 
 -- /* SCRIPT OPTIONS */
 
@@ -229,28 +230,54 @@ on init: do
 
 	-- # Initialize Checkpoints #
 	for each object with label "race_flag" do
-		alias checkpoint = allocate temporary object
-		checkpoint = current_object
-		checkpoint.order = checkpoint.spawn_sequence
-		checkpoint.team = neutral_team
-		checkpoint.set_waypoint_icon(none)
-		checkpoint.set_waypoint_priority(normal)
+		current_object.order = current_object.spawn_sequence
+		current_object.team = neutral_team
+		current_object.set_waypoint_icon(none)
+		current_object.set_waypoint_priority(normal)
 		if lowPriorityWaypoints == 1 then
-			checkpoint.set_waypoint_priority(low)
+			current_object.set_waypoint_priority(low)
 		end
-		checkpoint.set_invincibility(1)
-		--checkpoint.set_spawn_location_permissions(no_one)
+		current_object.set_invincibility(1)
+		--current_object.set_spawn_location_permissions(no_one)
 
-		if finalCheckpoint == no_object or checkpoint.order > finalCheckpoint.order then
-			finalCheckpoint = checkpoint
+		if finalCheckpoint == no_object or current_object.order > finalCheckpoint.order then
+			finalCheckpoint = current_object
 		end
 
-		if firstCheckpoint == no_object or checkpoint.order < firstCheckpoint.order then
-			firstCheckpoint = checkpoint
+		if firstCheckpoint == no_object or current_object.order < firstCheckpoint.order then
+			firstCheckpoint = current_object
 		end
 
 	end
 	-- # Initialize Checkpoints #
+
+
+	-- # Reorder Checkpoints #
+	alias count = allocate temporary number
+	count = 0
+	for each object with label "race_flag" do
+
+		-- # Find Next Checkpoint #
+		alias nextCheckpoint = allocate temporary object
+		nextCheckpoint = no_object
+		for each object with label "race_flag" do
+			if nextCheckpoint == no_object or current_object.order >= count and nextCheckpoint.order > current_object.order then
+				nextCheckpoint = current_object
+			end
+		end
+		-- # Find Next Checkpoint #
+
+		-- # Change the order value on all checkpoints with that value #
+		for each object with label "race_flag" do
+			if nextCheckpoint != no_object and nextCheckpoint.order >= count and nextCheckpoint.order == current_object.order then
+				current_object.order = count
+			end
+		end
+		-- # Change the order value on all checkpoints with that value #
+
+		count += 1
+	end
+	-- # Reorder Checkpoints #
 
 
 	-- # Create Object for storage #
@@ -265,41 +292,71 @@ on init: do
 	-- # Check to see if we have a pit lane configured #
 
 
+	-- # Count Distinct Checkpoints #
+	globalStorage.checkpointCount = 0
+	for each object with label "race_flag" do
+		for each object with label "race_flag" do
+			if current_object.order == globalStorage.checkpointCount then
+				globalStorage.checkpointCount += 1
+			end
+		end
+	end
+	-- # Count Distinct Checkpoints #
+
+
 	-- # Figure out Checkpoint Sectors #
 	do
 
 		alias sector1 = allocate temporary object
 		sector1 = no_object
-		for each object with label "race_flag" do
-			if sector1 == no_object or sector1.order > current_object.order then
-				sector1 = current_object
-			end
-		end
-
 		alias sector2 = allocate temporary object
 		sector2 = no_object
-		if sector1 != no_object then
-			for each object with label "race_flag" do
-				if current_object.order > sector1.order then
-					if sector2 == no_object or sector2.order > current_object.order then
-						sector2 = current_object
-					end
-				end
-			end
-		end
-
 		alias sector3 = allocate temporary object
 		sector3 = no_object
-		if sector2 != no_object then
+
+
+		if globalStorage.checkpointCount <= 3 then
 			for each object with label "race_flag" do
-				if current_object.order > sector2.order then
-					if sector3 == no_object or sector3.order > current_object.order then
-						sector3 = current_object
-					end
+				if current_object.order == 0 then
+					sector1 = current_object
+				end
+				if current_object.order == 1 then
+					sector2 = current_object
+				end
+				if current_object.order == 2 then
+					sector3 = current_object
 				end
 			end
 		end
 
+
+		if globalStorage.checkpointCount > 3 then
+		    for each object with label "race_flag" do
+			    if sector1 == no_object or sector1.order > current_object.order then
+				    sector1 = current_object
+			    end
+		    end
+
+		    if sector1 != no_object then
+			    for each object with label "race_flag" do
+				    if current_object.order > sector1.order then
+					    if sector2 == no_object or sector2.order > current_object.order then
+						    sector2 = current_object
+					    end
+				    end
+			    end
+		    end
+
+		    if sector2 != no_object then
+			    for each object with label "race_flag" do
+				    if current_object.order > sector2.order then
+					    if sector3 == no_object or sector3.order > current_object.order then
+						    sector3 = current_object
+					    end
+				    end
+			    end
+		    end
+		end
 
 		if sector1 != no_object then
 			globalStorage.sectorCount = 1
@@ -375,13 +432,13 @@ end
 
 
 	-- # Set up pit boxes #
-	if raceStatus < 2 and f == 0 then
+	if startGate > 0 and raceStatus < 2 and f == 0 then
 		f = 1
 		for each object with label "grid_spot" do
 			alias light = allocate temporary object
 			light = current_object.place_at_me(light_red, "race_gate", none, 0, 0, 2, none)
 			light.set_scale(30)
-			current_object.set_shape(box, 20, 20, 20, 0)
+			current_object.set_shape(box, 7, 10, 10, 0)
 			current_object.set_shape_visibility(everyone)
 
 			for each player do
@@ -1657,51 +1714,58 @@ if maxFuel != -1 then
 				vehicle = current_player.get_vehicle()
 				vehicle.draftBonus = 0
 			end
-			for each player do
-				alias originalPlayer = allocate temporary player
-				originalPlayer = current_player
-				originalPlayer.timing.detach()
-
+			if draft != -1 then
 				for each player do
-					if originalPlayer != current_player then
-						alias distance = allocate temporary number
-						distance = 0
-						distance = current_player.biped.get_distance_to(originalPlayer.timing)
-						alias distance2 = allocate temporary number
-						distance2 = 0
-						distance2 = current_player.biped.get_distance_to(originalPlayer.biped)
-						distance -= distance2
+					alias originalPlayer = allocate temporary player
+					originalPlayer = current_player
+					originalPlayer.timing.detach()
 
-						if current_player.vehicleSpeedKPH > 55 and originalPlayer.vehicleSpeedKPH > 55 and distance >= 8 then
-							current_player.timing.detach()
-							distance = originalPlayer.biped.get_distance_to(current_player.timing)
-							alias distance3 = allocate temporary number
-							distance3 = 0
-							distance3 = originalPlayer.biped.get_distance_to(current_player.biped)
+					for each player do
+						if originalPlayer != current_player then
+							alias distance = allocate temporary number
+							distance = 0
+							distance = current_player.biped.get_distance_to(originalPlayer.timing)
+							alias distance2 = allocate temporary number
+							distance2 = 0
+							distance2 = current_player.biped.get_distance_to(originalPlayer.biped)
+							distance -= distance2
 
-							if distance < distance3 then
-								alias vehicle = allocate temporary object
-								vehicle = no_object
-								vehicle = current_player.get_vehicle()
-								if distance2 < 50 then
-									vehicle.draftBonus += 12
-								end
-								if distance2 >= 50 and distance2 < 100 then
-									vehicle.draftBonus += 6
-								end
-								if distance2 >= 100 and distance2 < 150 then
-									vehicle.draftBonus += 3
-								end
-								if vehicle.draftBonus > 30 then
-									vehicle.draftBonus = 30 -- Cap this shit at 30 because it is OP
+							if current_player.vehicleSpeedKPH > 55 and originalPlayer.vehicleSpeedKPH > 55 and distance >= 8 then
+								current_player.timing.detach()
+								distance = originalPlayer.biped.get_distance_to(current_player.timing)
+								alias distance3 = allocate temporary number
+								distance3 = 0
+								distance3 = originalPlayer.biped.get_distance_to(current_player.biped)
+
+								if distance < distance3 then
+									alias vehicle = allocate temporary object
+									vehicle = no_object
+									vehicle = current_player.get_vehicle()
+
+									if distance2 < 150 then
+										vehicle.draftBonus = 150
+										vehicle.draftBonus -= distance2
+										vehicle.draftBonus *= 100
+										vehicle.draftBonus /= 150
+
+										vehicle.draftBonus *= 50
+										vehicle.draftBonus *= draft
+										vehicle.draftBonus /= 10000
+
+										vehicle.draftBonus *= originalPlayer.vehicleSpeedKPH
+										vehicle.draftBonus /= 100
+
+										vehicle.draftBonus *= current_player.vehicleSpeedKPH
+										vehicle.draftBonus /= 100
+									end
 								end
 							end
+								current_player.timing.attach_to(current_player.biped, 10, 0, 0, relative)
 						end
-							current_player.timing.attach_to(current_player.biped, 10, 0, 0, relative)
 					end
-				end
 
-				originalPlayer.timing.attach_to(current_player.biped, 10, 0, 0, relative)
+					originalPlayer.timing.attach_to(current_player.biped, 10, 0, 0, relative)
+				end
 			end
 			-- # Calculate Drafts #
 
@@ -1733,7 +1797,7 @@ if maxFuel != -1 then
 					-- # Set Max Fuel Level #
 					if globalStorage.maxFuelLevel == 0 then
 						globalStorage.maxFuelLevel = 5000								-- Set the Base fuel level
-						globalStorage.maxFuelLevel *= 40								-- Scale Base fuel level up to a useable value with a magic number
+						globalStorage.maxFuelLevel *= 60								-- Scale Base fuel level up to a useable value with a magic number
 						globalStorage.maxFuelLevel *= maxFuel							-- Max Fuel is a percentage of fuel selected in the gametype
 						globalStorage.maxFuelLevel /= 100								-- Convert Max Fuel to a percentage
 					end
