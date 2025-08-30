@@ -261,7 +261,10 @@ on init: do
 		alias nextCheckpoint = allocate temporary object
 		nextCheckpoint = no_object
 		for each object with label "race_flag" do
-			if nextCheckpoint == no_object or current_object.order >= count and nextCheckpoint.order > current_object.order then
+			if nextCheckpoint == no_object and current_object.order >= count then
+				nextCheckpoint = current_object
+			end
+			if current_object.order >= count and current_object.order < nextCheckpoint.order then
 				nextCheckpoint = current_object
 			end
 		end
@@ -269,7 +272,7 @@ on init: do
 
 		-- # Change the order value on all checkpoints with that value #
 		for each object with label "race_flag" do
-			if nextCheckpoint != no_object and nextCheckpoint.order >= count and nextCheckpoint.order == current_object.order then
+			if nextCheckpoint != no_object and nextCheckpoint.order == current_object.order then
 				current_object.order = count
 			end
 		end
@@ -281,7 +284,7 @@ on init: do
 
 
 	-- # Create Object for storage #
-	globalStorage = finalCheckpoint.place_at_me(hill_marker, none,never_garbage_collect,0,0,0,none)
+	globalStorage = finalCheckpoint.place_at_me( hill_marker, none, never_garbage_collect, 0, 0, 0, none )
 	-- # Create Object for storage #
 
 
@@ -306,14 +309,12 @@ on init: do
 
 	-- # Figure out Checkpoint Sectors #
 	do
-
 		alias sector1 = allocate temporary object
 		sector1 = no_object
 		alias sector2 = allocate temporary object
 		sector2 = no_object
 		alias sector3 = allocate temporary object
 		sector3 = no_object
-
 
 		if globalStorage.checkpointCount <= 3 then
 			for each object with label "race_flag" do
@@ -330,33 +331,32 @@ on init: do
 		end
 
 
+		alias spacing = allocate temporary number
+		spacing = globalStorage.checkpointCount
+		spacing /= 3
+		alias order = allocate temporary number
+		order = globalStorage.checkpointCount
+		order -= 1
+		order -= spacing
 		if globalStorage.checkpointCount > 3 then
-		    for each object with label "race_flag" do
-			    if sector1 == no_object or sector1.order > current_object.order then
-				    sector1 = current_object
-			    end
-		    end
+			sector3 = finalCheckpoint
 
-		    if sector1 != no_object then
-			    for each object with label "race_flag" do
-				    if current_object.order > sector1.order then
-					    if sector2 == no_object or sector2.order > current_object.order then
-						    sector2 = current_object
-					    end
-				    end
-			    end
-		    end
+			for each object with label "race_flag" do
+				if current_object.order == order then
+					sector2 = current_object
+				end
+			end
 
-		    if sector2 != no_object then
-			    for each object with label "race_flag" do
-				    if current_object.order > sector2.order then
-					    if sector3 == no_object or sector3.order > current_object.order then
-						    sector3 = current_object
-					    end
-				    end
-			    end
-		    end
+			order -= spacing
+
+			for each object with label "race_flag" do
+				if current_object.order == order then
+					sector1 = current_object
+				end
+			end
+
 		end
+
 
 		if sector1 != no_object then
 			globalStorage.sectorCount = 1
@@ -369,18 +369,16 @@ on init: do
 		end
 
 		for each object with label "race_flag" do
+
 			current_object.sector = 4
 			if current_object.order == sector1.order then
 				current_object.sector = 1
-				current_object.set_waypoint_text("%n", 1)
 			end
 			if current_object.order == sector2.order then
 				current_object.sector = 2
-				current_object.set_waypoint_text("%n", 2)
 			end
 			if current_object.order == sector3.order then
 				current_object.sector = 3
-				current_object.set_waypoint_text("%n", 3)
 			end
 		end
 
@@ -429,7 +427,6 @@ end
 
 
 -- # Basic Game Logic #
-
 
 	-- # Set up pit boxes #
 	if startGate > 0 and raceStatus < 2 and f == 0 then
