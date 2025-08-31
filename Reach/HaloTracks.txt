@@ -101,6 +101,7 @@ declare	player.pitbox					= 999
 alias	vehicle							= player.object[0]
 alias	timing							= player.object[1]
 alias	storage							= player.object[2]
+alias	storage2						= player.object[3]
 
 alias	playerAhead						= player.player[0]
 alias	playerBehind					= player.player[1]
@@ -428,29 +429,22 @@ end
 
 -- # Basic Game Logic #
 
-	-- # Set up pit boxes #
-	if startGate > 0 and raceStatus < 2 and f == 0 then
-		f = 1
-		for each object with label "grid_spot" do
-			alias light = allocate temporary object
-			light = current_object.place_at_me(light_red, "race_gate", none, 0, 0, 2, none)
-			light.set_scale(30)
-			current_object.set_shape(box, 7, 10, 10, 0)
-			current_object.set_shape_visibility(everyone)
 
-			for each player do
-				if current_object.shape_contains( current_player.biped ) then
-                    game.show_message_to(current_player, none, "Sitting in Pit box" )
+	-- # Initial Spawn Point #
+	for each player do
+		if current_player.biped != no_object and current_player.storage2 == no_object then
+			for each object with label "grid_spot" do
+				if current_player.player[0] == no_player then
+					current_player.storage2 = current_object
+					current_object.player[0] = current_player
+                    current_player.biped.attach_to(current_object, 0, 0, 2, relative)
+                    current_player.biped.detach()
+                    current_player.biped.copy_rotation_from(current_object, false)
 				end
 			end
 		end
 	end
-	if raceStatus >= 2 then
-		for each object with label "grid_spot" do
-			current_object.set_shape_visibility(no_one)
-		end
-	end
-	-- # Set up pit boxes #
+	-- # Initial Spawn Point #
 
 
 	-- # Delete Race Gates #
@@ -726,7 +720,7 @@ end
 			timing.respawnTimer = 0
         	current_player.biped.attach_to(timing.respawnObject, 0, 0, 2, relative)
         	current_player.biped.detach()
-        	current_player.biped.copy_rotation_from(timing.respawnObject, false)
+       	    current_player.biped.copy_rotation_from(timing.respawnObject, false)
 		end
 		-- # Respawn Player #
 
@@ -755,6 +749,43 @@ end
 	-- # Increment the player frame counters #
 
 
+
+	-- # Set up pit boxes #
+    for each object with label "grid_spot" do
+        if f == 0 and startGate > 0 then
+            alias light = allocate temporary object
+            light = current_object.place_at_me(light_red, "race_gate", none, 7, 0, 2, none)
+            light.set_scale(30)
+        end
+
+        if raceStatus < 2 then
+            current_object.set_shape(box, 7, 10, 10, 0)
+            current_object.set_shape_visibility(no_one)
+            for each player do
+                if current_object.shape_contains( current_player.biped ) then
+                    game.show_message_to(current_player, none, "Sitting in Pit box" )
+                end
+            end
+        end
+
+
+        alias found = allocate temporary number
+        found = 0
+
+        for each player do
+            if found == 0 then
+                alias timing = allocate temporary object
+                timing = current_player.timing
+
+                if timing.respawnObject == no_object then
+	                found = 1
+	                timing.respawnObject = current_object
+                end
+            end
+        end
+    end
+	f = 1
+	-- # Set up pit boxes #
 
 
 
@@ -1123,9 +1154,6 @@ end
 
 -- # Handle Checkpoints #
 for each player do
-	--current_player.set_co_op_spawning(true)
-	--current_player.biped.set_spawn_location_permissions(no_one)
-
 
 	-- # Get Player Timing Object #
 	alias timing = allocate temporary object
@@ -1220,11 +1248,6 @@ for each player do
 
 
 					-- # Player should spawn at this checkpoint after hitting it #
-					for each object with label "race_flag" do
-						--current_object.set_spawn_location_permissions(mod_player, current_player, 0)
-					end
-					--current_object.set_spawn_location_permissions(mod_player, current_player, 1)
-					--current_player.set_primary_respawn_object(current_object)
 					timing.respawnObject = current_object
 					-- # Player should spawn at this checkpoint after hitting it #
 
