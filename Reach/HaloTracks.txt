@@ -131,7 +131,8 @@ alias	currentLapSeconds				= player.script_stat[3]
 	alias	bestSector2TimeFrames			= object.timer[1]
 	alias	bestSector3TimeFrames			= object.timer[2]
 	alias	respawnTimer					= object.timer[3]
-	alias	respawnObject					= object.object[1]
+	alias	respawnObject					= object.object[0]
+	alias	draftObject					    = object.object[1]
 	-- /* Player Timing Object */
 
 
@@ -433,14 +434,42 @@ end
 	-- # Initial Spawn Point #
 	for each player do
 		if current_player.biped != no_object and current_player.storage2 == no_object then
+			alias found = allocate temporary number
+			found = 0
+
+			-- # Check to ensure that grid spots exist on the map #
 			for each object with label "grid_spot" do
-				if current_player.player[0] == no_player then
-					current_player.storage2 = current_object
-					current_object.player[0] = current_player
-                    current_player.biped.attach_to(current_object, 0, 0, 2, relative)
-                    current_player.biped.detach()
-                    current_player.biped.copy_rotation_from(current_object, false)
-				end
+				found = 1
+			end
+			-- # Check to ensure that grid spots exist on the map #
+
+			if found == 1 then
+			    -- # Check to see if the player is already assigned to a grid spot #
+			    for each object with label "grid_spot" do
+				    if current_object.player[0] == current_player then
+					    current_player.storage2 = current_object
+				    end
+			    end
+			    -- # Check to see if the player is already assigned to a grid spot #
+
+
+				found = 0
+			    if current_player.storage2 == no_object then
+			        for each object with label "grid_spot" do
+				        if found == 0 and current_object.player[0] == no_player then
+					        current_player.storage2 = current_object
+					        current_object.player[0] = current_player
+					        found = 1
+				        end
+			        end
+			    end
+
+
+			    -- # Spawn them at their grid spot #
+                current_player.biped.attach_to(current_player.storage2, 0, 0, 2, relative)
+                current_player.biped.detach()
+                current_player.biped.copy_rotation_from(current_player.storage2, false)
+			    -- # Spawn them at their grid spot #
 			end
 		end
 	end
@@ -506,11 +535,10 @@ end
 
 	for each player do
 
-
 		-- # Create Objects for storage #
 		if current_player.timing == no_object then
 			current_player.timing = current_player.biped.place_at_me(hill_marker, none,never_garbage_collect,0,0,0,none)
-			current_player.timing.attach_to(current_player.biped, 10, 0, 0, relative)
+			--current_player.timing.attach_to(current_player.biped, 10, 0, 0, relative)
 		end
 		if current_player.storage == no_object then
 			current_player.storage = current_player.biped.place_at_me(hill_marker, none,never_garbage_collect,0,0,0,none)
@@ -659,16 +687,22 @@ end
 				aheadTiming = tempPlayer.timing
 
 				-- # Find out how many laps difference the player ahead is #
-				if tempPlayer.score == current_player.score then
-					racerStorage.lapsAhead = 0
-				end
-				if tempPlayer.score > current_player.score and aheadTiming.currentCheckpoint > racerTiming.currentCheckpoint then
-					racerStorage.lapsAhead = tempPlayer.score
-					racerStorage.lapsAhead -= current_player.score
-				end
-				if racerStorage.lapsAhead < 0 then
-					racerStorage.lapsAhead = 0
-				end
+	            alias difference = allocate temporary number
+	            difference = tempPlayer.score
+	            difference -= current_player.score
+
+	            if difference > 1 then
+		            racerStorage.lapsAhead = difference
+	            end
+	            if difference == 1 then
+		            racerStorage.lapsAhead = 0
+		            if aheadTiming.currentCheckpoint >= racerTiming.currentCheckpoint then
+			            racerStorage.lapsAhead = 1
+		            end
+	            end
+	            if difference <= 0 then
+		            racerStorage.lapsAhead = 0
+	            end
 				-- # Find out how many laps difference the player ahead is #
 			end
 			-- # Find Player Ahead #
@@ -697,17 +731,24 @@ end
 				behindTiming = tempPlayer.timing
 
 				-- # Find out how many laps difference the player behind is #
-				if tempPlayer.score == current_player.score then
-					racerStorage.lapsBehind = 0
-				end
-				if current_player.score > tempPlayer.score and racerTiming.currentCheckpoint > behindTiming.currentCheckpoint then
-					racerStorage.lapsBehind = current_player.score
-					racerStorage.lapsBehind -= tempPlayer.score
-				end
-				if racerStorage.lapsBehind < 0 then
-					racerStorage.lapsBehind = 0
-				end
+	            alias difference = allocate temporary number
+	            difference = current_player.score
+	            difference -= tempPlayer.score
+
+	            if difference > 1 then
+		            racerStorage.lapsBehind = difference
+	            end
+	            if difference == 1 then
+		            racerStorage.lapsBehind = 0
+		            if racerTiming.currentCheckpoint > behindTiming.currentCheckpoint then
+			            racerStorage.lapsBehind = 1
+		            end
+	            end
+	            if difference <= 0 then
+		            racerStorage.lapsBehind = 0
+	            end
 				-- # Find out how many laps difference the player behind is #
+
 			end
 			-- # Find Player Behind #
 
@@ -716,11 +757,17 @@ end
 
 
 		-- # Respawn Player #
-		if current_player.biped != no_object and timing.respawnTimer >= 60 and timing.respawnObject != no_object then
-			timing.respawnTimer = 0
-        	current_player.biped.attach_to(timing.respawnObject, 0, 0, 2, relative)
-        	current_player.biped.detach()
-       	    current_player.biped.copy_rotation_from(timing.respawnObject, false)
+		if current_player.biped != no_object and timing.respawnTimer >= 60 then
+		    if timing.respawnObject == no_object and current_player.storage2 != no_object and current_player.storage2.has_forge_label("grid_spot") then
+			    timing.respawnObject = current_player.storage2
+		    end
+
+		    if timing.respawnTimer >= 60 and timing.respawnObject != no_object then
+                current_player.biped.attach_to(timing.respawnObject, 0, 0, 2, relative)
+                current_player.biped.detach()
+                current_player.biped.copy_rotation_from(timing.respawnObject, false)
+       	    end
+		    timing.respawnTimer = 0
 		end
 		-- # Respawn Player #
 
@@ -750,42 +797,26 @@ end
 
 
 
-	-- # Set up pit boxes #
+	-- # Set up Grid Spot #
     for each object with label "grid_spot" do
-        if f == 0 and startGate > 0 then
-            alias light = allocate temporary object
+        if raceStatus < 2 and f == 0 and startGate > 0 then
+	        alias light = allocate temporary object
             light = current_object.place_at_me(light_red, "race_gate", none, 7, 0, 2, none)
             light.set_scale(30)
-        end
 
-        if raceStatus < 2 then
             current_object.set_shape(box, 7, 10, 10, 0)
             current_object.set_shape_visibility(no_one)
             for each player do
                 if current_object.shape_contains( current_player.biped ) then
-                    game.show_message_to(current_player, none, "Sitting in Pit box" )
-                end
-            end
-        end
-
-
-        alias found = allocate temporary number
-        found = 0
-
-        for each player do
-            if found == 0 then
-                alias timing = allocate temporary object
-                timing = current_player.timing
-
-                if timing.respawnObject == no_object then
-	                found = 1
-	                timing.respawnObject = current_object
+                    alias distance = allocate temporary number
+                    distance = light.get_distance_to( current_player.biped )
+                    game.show_message_to(current_player, none, "%n", distance )
                 end
             end
         end
     end
 	f = 1
-	-- # Set up pit boxes #
+	-- # Set up Grid Spot #
 
 
 
@@ -803,6 +834,13 @@ for each player do
 	vehicle = no_object
 	vehicle = current_player.get_vehicle()
 	-- # Get players current Vehicle #
+
+
+	-- # Get players timing object #
+	alias timing = allocate temporary object
+	timing = no_object
+	timing = current_player.timing
+	-- # Get players timing object #
 
 
 	-- # Remove the Players Vehicle if they die or quit #
@@ -850,7 +888,18 @@ for each player do
 
 		-- # If the Player doesn't have a vehicle, Put them in one #
 		if current_player.vehicle == no_object then
-			vehicle = current_player.biped.place_at_me(mongoose, "Vehicle", never_garbage_collect, 0, 0, 0, none)
+			if defaultVehicle == 0 then
+				vehicle = current_player.biped.place_at_me(mongoose, "Vehicle", none, 0, 0, 0, none)
+			end
+			if defaultVehicle == 1 then
+				vehicle = current_player.biped.place_at_me(warthog, "Vehicle", none, 0, 0, 0, none)
+			end
+			if defaultVehicle == 2 then
+				vehicle = current_player.biped.place_at_me(warthog, "Vehicle", none, 0, 0, 0, troop)
+			end
+			if defaultVehicle == 3 then
+				vehicle = current_player.biped.place_at_me(pickup_truck, "Vehicle", none, 0, 0, 0, none)
+			end
 			vehicle.player[0] = current_player
 			current_player.vehicle = vehicle
 			current_player.force_into_vehicle(current_player.vehicle)
@@ -974,6 +1023,16 @@ for each player do
 		end
 	end
 	-- # Kill balls should kill players #
+
+
+	-- # Ensure the draft object is created and attached to the vehicle #
+	if draft != -1 then
+		if timing.draftObject == no_object then
+			timing.draftObject = current_player.biped.place_at_me( hill_marker, none, never_garbage_collect, 0, 0, 0, none )
+		end
+        timing.draftObject.attach_to(current_player.biped, 10, 0, 0, relative)
+	end
+	-- # Ensure the draft object is created and attached to the vehicle #
 
 end
 
@@ -1119,7 +1178,7 @@ for each player do
 				topLeftWidget.set_text("Gap Ahead: %n.%n", hud_player.widget11, hud_player.widget12)
 			end
 
-			if storage.lapsAhead > 1 then
+			if storage.lapsAhead >= 1 then
 				current_player.widget11 = storage.lapsAhead
 				topLeftWidget.set_text("Gap Ahead: %n Lap(s)", hud_player.widget11)
 			end
@@ -1137,7 +1196,7 @@ for each player do
 				bottomLeftWidget.set_text("Gap Behind: %n.%n", hud_player.widget21, hud_player.widget22)
 			end
 
-			if storage.lapsBehind > 1 then
+			if storage.lapsBehind >= 1 then
 				current_player.widget21 = storage.lapsBehind
 				bottomLeftWidget.set_text("Gap Behind: %n Lap(s)", hud_player.widget21)
 			end
@@ -1264,7 +1323,6 @@ for each player do
 						bestPersonalSector = 0
 
 
-						--if current_object.sector == 1 and current_player.score > 0 and storage.pittedThisLap < 1 then
 						if current_object.sector == 1 then
 							if storage.sectorInvalidated == 0 then
 								if timing.bestSector1TimeFrames == 0 or timing.bestSector1TimeFrames > sectorTimeFrames then
@@ -1289,7 +1347,6 @@ for each player do
 							end
 							-- # Send Sector Complete Notifications #
 						end
-						--if current_object.sector == 2 and current_player.score > 0 and storage.pittedThisLap < 1 then
 						if current_object.sector == 2 then
 							if storage.sectorInvalidated == 0 then
 								if timing.bestSector2TimeFrames == 0 or timing.bestSector2TimeFrames > sectorTimeFrames then
@@ -1314,7 +1371,6 @@ for each player do
 							end
 							-- # Send Sector Complete Notifications #
 						end
-						--if current_object.sector == 3 and current_player.score > 0 and storage.pittedThisLap < 1 then
 						if current_object.sector == 3 then
 							if storage.sectorInvalidated == 0 then
 								if timing.bestSector3TimeFrames == 0 or timing.bestSector3TimeFrames > sectorTimeFrames then
@@ -1367,6 +1423,23 @@ for each player do
 						storage.optimalLapMilliseconds = 0
 					end
 					-- # Update Optimal Laptime #
+
+
+		            -- # Set Shields #
+		            if storage.optimalLapSeconds != 0 or storage.optimalLapMilliseconds != 0 then
+		                alias bestLapFrames = allocate temporary number
+		                if current_object.sector >= 1 then
+		                    bestLapFrames += timing.bestSector1TimeFrames
+		                end
+		                if current_object.sector >= 2 then
+		                    bestLapFrames += timing.bestSector2TimeFrames
+		                end
+		                bestLapFrames -= timing.lapFrames
+						bestLapFrames += 200
+						--current_player.biped.shields = bestLapFrames
+						--game.show_message_to(current_player, none, "%n", bestLapFrames )
+		            end
+		            -- # Set Shields #
 
 
 					-- # Find next checkpoint #
@@ -1738,7 +1811,9 @@ if maxFuel != -1 then
 				for each player do
 					alias originalPlayer = allocate temporary player
 					originalPlayer = current_player
-					originalPlayer.timing.detach()
+					alias originalPlayerTiming = allocate temporary object
+					originalPlayerTiming = originalPlayer.timing
+					originalPlayerTiming.detach()
 
 					for each player do
 						if originalPlayer != current_player then
@@ -1749,9 +1824,11 @@ if maxFuel != -1 then
 							distance2 = 0
 							distance2 = current_player.biped.get_distance_to(originalPlayer.biped)
 							distance -= distance2
+					        alias currentPlayerTiming = allocate temporary object
+					        currentPlayerTiming = current_player.timing
 
 							if current_player.vehicleSpeedKPH > 55 and originalPlayer.vehicleSpeedKPH > 55 and distance >= 8 then
-								current_player.timing.detach()
+								currentPlayerTiming.detach()
 								distance = originalPlayer.biped.get_distance_to(current_player.timing)
 								alias distance3 = allocate temporary number
 								distance3 = 0
@@ -1777,14 +1854,15 @@ if maxFuel != -1 then
 
 										vehicle.draftBonus *= current_player.vehicleSpeedKPH
 										vehicle.draftBonus /= 100
+										--game.show_message_to(current_player, none, "%n", vehicle.draftBonus )
 									end
 								end
 							end
-								current_player.timing.attach_to(current_player.biped, 10, 0, 0, relative)
+								currentPlayerTiming.draftObject.attach_to(current_player.biped, 10, 0, 0, relative)
 						end
 					end
 
-					originalPlayer.timing.attach_to(current_player.biped, 10, 0, 0, relative)
+					originalPlayerTiming.attach_to(current_player.biped, 10, 0, 0, relative)
 				end
 			end
 			-- # Calculate Drafts #
