@@ -64,7 +64,7 @@ alias	refuelRate						= script_option[2]
 alias	invincibility					= script_option[3]
 alias	cvDelete						= script_option[4]
 alias	requiredJokers					= script_option[5]
-alias	lowPriorityWaypoints			= script_option[6]
+alias	waypointVisibility				= script_option[6]
 alias	startGate						= script_option[7]
 alias	defaultVehicle					= script_option[8]
 alias	draft							= script_option[9]
@@ -236,7 +236,7 @@ on init: do
 		current_object.team = neutral_team
 		current_object.set_waypoint_icon(none)
 		current_object.set_waypoint_priority(normal)
-		if lowPriorityWaypoints == 1 then
+		if waypointVisibility == 1 then
 			current_object.set_waypoint_priority(low)
 		end
 		current_object.set_invincibility(1)
@@ -820,6 +820,33 @@ end
 
 
 
+	-- # Handle Waypoint Visibility #
+	for each object do
+		if current_object.has_forge_label("grid_spot") or current_object.has_forge_label("joker") or current_object.has_forge_label("speed_limit") or current_object.has_forge_label("race_flag") then
+
+			if waypointVisibility == 1 then
+				current_object.set_waypoint_priority(low)
+			end
+			if waypointVisibility == 2 then
+				current_object.set_waypoint_priority(high)
+			end
+			if waypointVisibility == 3 then
+				current_object.set_waypoint_priority(high)
+			end
+			if waypointVisibility == 4 then
+				current_object.set_waypoint_priority(blink)
+			end
+
+
+
+			pitBox.set_waypoint_icon(arrow)
+			pitBox.set_waypoint_text("Pit Road")
+		end
+	end
+	-- # Handle Waypoint Visibility #
+
+
+
 -- # Basic Game Logic #
 
 
@@ -1268,7 +1295,7 @@ for each player do
 					current_object.set_waypoint_visibility(mod_player, current_player, 1)
 					current_object.set_shape_visibility(mod_player, current_player, 1)
 					current_object.set_waypoint_priority(normal)
-					if lowPriorityWaypoints == 1 then
+					if waypointVisibility == 1 then
 						current_object.set_waypoint_priority(low)
 					end
 
@@ -1435,9 +1462,9 @@ for each player do
 		                    bestLapFrames += timing.bestSector2TimeFrames
 		                end
 		                bestLapFrames -= timing.lapFrames
-						bestLapFrames += 200
+						bestLapFrames += 100
 						--current_player.biped.shields = bestLapFrames
-						--game.show_message_to(current_player, none, "%n", bestLapFrames )
+						--game.show_message_to(current_player, none, "%n.%n", bestLapFrames, timing.lapFrames )
 		            end
 		            -- # Set Shields #
 
@@ -1714,7 +1741,7 @@ if maxFuel != -1 then
 				current_object.set_waypoint_visibility(mod_player, current_player, 1)
 				current_object.set_shape_visibility(mod_player, current_player, 1)
 				current_object.set_waypoint_priority(normal)
-				if lowPriorityWaypoints == 1 then
+				if waypointVisibility == 1 then
 					current_object.set_waypoint_priority(low)
 				end
 				current_object.set_waypoint_icon(arrow)
@@ -1976,7 +2003,7 @@ if maxFuel != -1 then
 							--pitBox.set_waypoint_visibility(everyone)
 							pitBox.set_waypoint_priority(normal)
 							pitBox.set_waypoint_range(0, 30)
-							if lowPriorityWaypoints == 1 then
+							if waypointVisibility == 1 then
 								pitBox.set_waypoint_priority(low)
 							end
 							pitBox.set_waypoint_icon(arrow)
