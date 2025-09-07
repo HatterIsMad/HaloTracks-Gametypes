@@ -234,13 +234,16 @@ on init: do
 	for each object with label "race_flag" do
 		current_object.order = current_object.spawn_sequence
 		current_object.team = neutral_team
-		current_object.set_waypoint_icon(none)
-		current_object.set_waypoint_priority(normal)
-		if waypointVisibility == 1 then
-			current_object.set_waypoint_priority(low)
-		end
 		current_object.set_invincibility(1)
-		--current_object.set_spawn_location_permissions(no_one)
+
+
+        if waypointVisibility >= 2 then
+            current_object.set_waypoint_icon(diamond)
+        end
+        if waypointVisibility >= 3 then
+			current_object.team = team[1]
+        end
+
 
 		if finalCheckpoint == no_object or current_object.order > finalCheckpoint.order then
 			finalCheckpoint = current_object
@@ -820,30 +823,21 @@ end
 
 
 
-	-- # Handle Waypoint Visibility #
+	-- # Handle Waypoint Priority #
 	for each object do
 		if current_object.has_forge_label("grid_spot") or current_object.has_forge_label("joker") or current_object.has_forge_label("speed_limit") or current_object.has_forge_label("race_flag") then
-
 			if waypointVisibility == 1 then
 				current_object.set_waypoint_priority(low)
 			end
-			if waypointVisibility == 2 then
+			if waypointVisibility >= 2 then
+				current_object.set_waypoint_priority(normal)
+			end
+			if waypointVisibility >= 3 then
 				current_object.set_waypoint_priority(high)
 			end
-			if waypointVisibility == 3 then
-				current_object.set_waypoint_priority(high)
-			end
-			if waypointVisibility == 4 then
-				current_object.set_waypoint_priority(blink)
-			end
-
-
-
-			pitBox.set_waypoint_icon(arrow)
-			pitBox.set_waypoint_text("Pit Road")
 		end
 	end
-	-- # Handle Waypoint Visibility #
+	-- # Handle Waypoint Priority #
 
 
 
@@ -1290,14 +1284,17 @@ for each player do
 				end
 
 				if raceStatus >= 2 and timing.jokerCount < requiredJokers and storage.jokeredThisLap == 0 and current_object.spawn_sequence == timing.currentCheckpoint then
-					current_object.team = team[1]
-					current_object.set_waypoint_icon(vip)
-					current_object.set_waypoint_visibility(mod_player, current_player, 1)
-					current_object.set_shape_visibility(mod_player, current_player, 1)
-					current_object.set_waypoint_priority(normal)
-					if waypointVisibility == 1 then
-						current_object.set_waypoint_priority(low)
-					end
+
+                    if waypointVisibility >= 1 then
+						current_object.set_waypoint_visibility(mod_player, current_player, 1)
+                    end
+                    if waypointVisibility >= 2 then
+						current_object.set_waypoint_icon(vip)
+						current_object.set_shape_visibility(mod_player, current_player, 1)
+                    end
+                    if waypointVisibility >= 3 then
+                        current_object.team = team[3]
+                    end
 
 					if current_object.shape_contains(current_player.biped) then
 						timing.jokerCount += 1
@@ -1315,8 +1312,16 @@ for each player do
 			current_object.set_shape_visibility(mod_player, current_player, 0)
 
 			if current_object.order == timing.currentCheckpoint then-- If checkpoint is the players current checkpoint
-				current_object.set_waypoint_visibility(mod_player, current_player, 1)
-				current_object.set_shape_visibility(mod_player, current_player, 1)
+                if waypointVisibility >= 1 then
+                    current_object.set_waypoint_visibility(mod_player, current_player, 1)
+                end
+                if waypointVisibility >= 2 then
+                    if current_object == finalCheckpoint then
+                        current_object.set_waypoint_icon(vip)
+                    end
+                    current_object.set_shape_visibility(mod_player, current_player, 1)
+                end
+
 
 				-- # The player has hit the checkpoint #
 				if current_object.shape_contains(current_player.biped) then-- If the player is currently inside the checkpoint
@@ -1734,18 +1739,26 @@ if maxFuel != -1 then
 
 	-- # Associate pitbox with player #
 	for each object with label "pit_stop" do
+		current_object.set_waypoint_range(0, 15)
+        current_object.set_waypoint_icon(none)
+
+        if waypointVisibility >= 3 then
+            current_object.set_waypoint_text("Pit Box")
+        end
+
 		alias found = allocate temporary number
 		found = 0
 		for each player do
 			if current_player.pitbox == 999 or current_player.pitbox == current_object.spawn_sequence then
-				current_object.set_waypoint_visibility(mod_player, current_player, 1)
-				current_object.set_shape_visibility(mod_player, current_player, 1)
-				current_object.set_waypoint_priority(normal)
-				if waypointVisibility == 1 then
-					current_object.set_waypoint_priority(low)
+				if numberOfPlayers > 8 or current_object.spawn_sequence <= 8 then
+				    if waypointVisibility >= 1 then
+					    current_object.set_waypoint_visibility(mod_player, current_player, 1)
+				    end
+                    if waypointVisibility >= 2 then
+					    current_object.set_waypoint_visibility(mod_player, current_player, 1)
+					    current_object.set_shape_visibility(mod_player, current_player, 1)
+				    end
 				end
-				current_object.set_waypoint_icon(arrow)
-				current_object.set_waypoint_text("Pit Road")
 			end
 			if current_player.pitbox != 999 and current_player.pitbox != current_object.spawn_sequence then
 				current_object.set_waypoint_visibility(mod_player, current_player, 0)
@@ -1990,28 +2003,8 @@ if maxFuel != -1 then
 
 					-- # Refuel Vehicles that are parked on a Pit Box #
 					for each object with label "pit_stop" do
-						alias pitBox = allocate temporary object
-						pitBox = current_object
-
-						if raceStatus >= 2 then
-							--pitbox.set_waypoint_visibility(mod_player, current_player, 0)
-							--pitbox.set_shape_visibility(mod_player, current_player, 0)
-						end
-
-						if current_player.pitbox == 999 or current_player.pitbox == pitbox.spawn_sequence then
-							--pitBox.set_shape_visibility(everyone)
-							--pitBox.set_waypoint_visibility(everyone)
-							pitBox.set_waypoint_priority(normal)
-							pitBox.set_waypoint_range(0, 30)
-							if waypointVisibility == 1 then
-								pitBox.set_waypoint_priority(low)
-							end
-							pitBox.set_waypoint_icon(arrow)
-							pitBox.set_waypoint_text("Pit Road")
-						end
-
-						if current_player.vehicleSpeedKPH <= 0 and pitBox.shape_contains( vehicle ) and current_player.currentFuelLevel < globalStorage.maxFuelLevel then
-							if current_player.pitbox == 999 or current_player.pitbox == pitbox.spawn_sequence then
+						if current_player.vehicleSpeedKPH <= 1 and current_object.shape_contains( vehicle ) and current_player.currentFuelLevel < globalStorage.maxFuelLevel then
+							if current_player.pitbox == 999 or current_player.pitbox == current_object.spawn_sequence then
 								if timing.penalty > 0 then
 									alias notify = allocate temporary number
 									notify = timing.penalty
