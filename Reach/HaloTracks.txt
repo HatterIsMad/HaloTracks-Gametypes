@@ -263,16 +263,13 @@ on init: do
 	for each object with label "race_flag" do
 
 		-- # Find Next Checkpoint #
-		alias nextCheckpoint = allocate temporary object
-		nextCheckpoint = no_object
 		alias nextCheckpointOrder = allocate temporary number
-		nextCheckpointOrder = 0
+		nextCheckpointOrder = -1
 		for each object with label "race_flag" do
-			if nextCheckpoint == no_object and current_object.order >= count then
-				nextCheckpoint = current_object
+			if nextCheckpointOrder < 0 and current_object.order >= count then
+				nextCheckpointOrder = current_object.order
 			end
 			if current_object.order >= count and current_object.order < nextCheckpointOrder then
-				nextCheckpoint = current_object
 				nextCheckpointOrder = current_object.order
 			end
 		end
@@ -280,7 +277,7 @@ on init: do
 
 		-- # Change the order value on all checkpoints with that value #
 		for each object with label "race_flag" do
-			if nextCheckpoint != no_object and nextCheckpointOrder == current_object.order then
+			if nextCheckpointOrder >= 0 and nextCheckpointOrder == current_object.order then
 				current_object.order = count
 			end
 		end
@@ -1177,16 +1174,16 @@ for each player do
 		if dashStatus == 0 then
 			current_player.widget11 = bestLapSeconds
 			current_player.widget12 = bestLapMilliseconds
-			topLeftWidget.set_text("Fastest Lap: %n.%n", hud_player.widget11, hud_player.widget12)
+			topLeftWidget.set_value_text("Fastest Lap: %n.%n", hud_player.widget11, hud_player.widget12)
 			current_player.widget21 = storage.optimalLapSeconds
 			current_player.widget22 = storage.optimalLapMilliseconds
-			bottomLeftWidget.set_text("Optimal Lap: %n.%n", hud_player.widget21,hud_player.widget22)
+			bottomLeftWidget.set_value_text("Optimal Lap: %n.%n", hud_player.widget21,hud_player.widget22)
 		end
 		if dashStatus == 1 then
-			topLeftWidget.set_text("Fastest Lap: %p\nLap %n", bestLapPlayer, bestLapNumber)
+			topLeftWidget.set_value_text("Fastest Lap: %p\nLap %n", bestLapPlayer, bestLapNumber)
 			current_player.widget21 = current_player.bestLapSeconds
 			current_player.widget22 = current_player.bestLapMilliseconds
-			bottomLeftWidget.set_text("Personal Best: %n.%n", hud_player.widget21,hud_player.widget22)
+			bottomLeftWidget.set_value_text("Personal Best: %n.%n", hud_player.widget21,hud_player.widget22)
 		end
 		if dashStatus == 2 then
 			alias playerAhead = allocate temporary player
@@ -1199,12 +1196,12 @@ for each player do
 					current_player.widget11 = storage.gapAheadSeconds
 					current_player.widget12 = storage.gapAheadMilliseconds
 				end
-				topLeftWidget.set_text("Gap Ahead: %n.%n", hud_player.widget11, hud_player.widget12)
+				topLeftWidget.set_value_text("Gap Ahead: %n.%n", hud_player.widget11, hud_player.widget12)
 			end
 
 			if storage.lapsAhead >= 1 then
 				current_player.widget11 = storage.lapsAhead
-				topLeftWidget.set_text("Gap Ahead: %n Lap(s)", hud_player.widget11)
+				topLeftWidget.set_value_text("Gap Ahead: %n Lap(s)", hud_player.widget11)
 			end
 
 			alias playerBehind = allocate temporary player
@@ -1217,12 +1214,12 @@ for each player do
 					current_player.widget21 = storage.gapBehindSeconds
 					current_player.widget22 = storage.gapBehindMilliseconds
 				end
-				bottomLeftWidget.set_text("Gap Behind: %n.%n", hud_player.widget21, hud_player.widget22)
+				bottomLeftWidget.set_value_text("Gap Behind: %n.%n", hud_player.widget21, hud_player.widget22)
 			end
 
 			if storage.lapsBehind >= 1 then
 				current_player.widget21 = storage.lapsBehind
-				bottomLeftWidget.set_text("Gap Behind: %n Lap(s)", hud_player.widget21)
+				bottomLeftWidget.set_value_text("Gap Behind: %n Lap(s)", hud_player.widget21)
 			end
 
 		end
@@ -1444,6 +1441,7 @@ for each player do
 					timeFromFrames()
 					storage.optimalLapSeconds = secondsOut
 					storage.optimalLapMilliseconds = millisecondsOut
+					game.show_message_to(current_player, none, "%n.%n", timing.bestSector1TimeFrames, timing.bestSector3TimeFrames )
 
 					if globalStorage.sectorCount >= 1 and timing.bestSector1TimeFrames == 0 then
 						storage.optimalLapSeconds = 0
