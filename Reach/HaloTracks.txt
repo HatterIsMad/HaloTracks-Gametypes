@@ -1812,7 +1812,9 @@ if maxFuel != -1 then
 						if current_object.shape_contains( current_player.biped ) then
 							storage.lapInvalidated = 1
 							storage.sectorInvalidated = 1
-							current_object.set_shape_visibility(mod_player, current_player, 1)
+							if waypointVisibility >= 2 then
+								current_object.set_shape_visibility(mod_player, current_player, 1)
+							end
 							if current_player.vehicleSpeedKPH > 40 then
 								if vehicle.speedWarnings > 3 then
 									timing.penalty += 300
