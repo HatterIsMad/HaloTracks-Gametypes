@@ -265,19 +265,22 @@ on init: do
 		-- # Find Next Checkpoint #
 		alias nextCheckpoint = allocate temporary object
 		nextCheckpoint = no_object
+		alias nextCheckpointOrder = allocate temporary number
+		nextCheckpointOrder = 0
 		for each object with label "race_flag" do
 			if nextCheckpoint == no_object and current_object.order >= count then
 				nextCheckpoint = current_object
 			end
-			if current_object.order >= count and current_object.order < nextCheckpoint.order then
+			if current_object.order >= count and current_object.order < nextCheckpointOrder then
 				nextCheckpoint = current_object
+				nextCheckpointOrder = current_object.order
 			end
 		end
 		-- # Find Next Checkpoint #
 
 		-- # Change the order value on all checkpoints with that value #
 		for each object with label "race_flag" do
-			if nextCheckpoint != no_object and nextCheckpoint.order == current_object.order then
+			if nextCheckpoint != no_object and nextCheckpointOrder == current_object.order then
 				current_object.order = count
 			end
 		end
