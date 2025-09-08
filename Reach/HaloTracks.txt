@@ -998,8 +998,8 @@ for each player do
 			if current_player.vehicleSpeedKPH < 0 then
 				current_player.vehicleSpeedKPH = 0
 			end
-			if current_player.vehicleSpeedKPH > 100 then
-				current_player.vehicleSpeedKPH = 100
+			if current_player.vehicleSpeedKPH > 200 then
+				current_player.vehicleSpeedKPH = 200
 			end
 		end
 		-- # Update Vehicle Speed #
@@ -1316,7 +1316,7 @@ for each player do
                     current_object.set_waypoint_visibility(mod_player, current_player, 1)
                 end
                 if waypointVisibility >= 2 then
-                    if current_object == finalCheckpoint then
+                    if current_object.order == finalCheckpoint.order then
                         current_object.set_waypoint_icon(vip)
                     end
                     current_object.set_shape_visibility(mod_player, current_player, 1)
@@ -1441,7 +1441,6 @@ for each player do
 					timeFromFrames()
 					storage.optimalLapSeconds = secondsOut
 					storage.optimalLapMilliseconds = millisecondsOut
-					game.show_message_to(current_player, none, "%n.%n", timing.bestSector1TimeFrames, timing.bestSector3TimeFrames )
 
 					if globalStorage.sectorCount >= 1 and timing.bestSector1TimeFrames == 0 then
 						storage.optimalLapSeconds = 0
@@ -1751,7 +1750,7 @@ if maxFuel != -1 then
 		found = 0
 		for each player do
 			if current_player.pitbox == 999 or current_player.pitbox == current_object.spawn_sequence then
-				if numberOfPlayers > 8 or current_object.spawn_sequence <= 8 then
+				if numberOfPlayers > 8 or current_object.spawn_sequence <= 8 or current_player.pitbox == current_object.spawn_sequence then
 				    if waypointVisibility >= 1 then
 					    current_object.set_waypoint_visibility(mod_player, current_player, 1)
 				    end
@@ -1798,47 +1797,55 @@ if maxFuel != -1 then
 		if debounce == 0 then -- run 3 times a second
 
 			-- # Enforce Pit Speed Limits #
-			for each object with label "speed_limit" do
-				for each player do
+			for each player do
+                alias timing = allocate temporary object
+                timing = current_player.timing
+                alias storage = allocate temporary object
+                storage = current_player.storage
+	            alias vehicle = allocate temporary object
+	            vehicle = current_player.vehicle
+	            alias inPitLane = allocate temporary number
+	            inPitLane = 0
+
+				for each object with label "speed_limit" do
 					current_object.set_shape_visibility(mod_player, current_player, 0)
-					alias vehicle = allocate temporary object
-					vehicle = current_player.vehicle
 
-					if current_player.onVehicle == 1 then
-						alias timing = allocate temporary object
-						timing = current_player.timing
-						alias storage = allocate temporary object
-						storage = current_player.storage
-
-						if current_object.shape_contains( current_player.biped ) then
-							storage.lapInvalidated = 1
-							storage.sectorInvalidated = 1
-							if waypointVisibility >= 2 then
-								current_object.set_shape_visibility(mod_player, current_player, 1)
-							end
-							if current_player.vehicleSpeedKPH > 40 then
-								if vehicle.speedWarnings > 3 then
-									timing.penalty += 300
-									vehicle.speedWarnings = 0
-									game.show_message_to(current_player, none, "You have earned yourself a 5s penalty bud" )
-								end
-								if vehicle.speedWarnings < 10 then
-									vehicle.speedWarnings += 3
-									game.show_message_to(current_player, none, "Slow down to 40kph or you will get a penalty" )
-								end
-							end
-							if current_player.vehicleSpeedKPH <= 40 then
-								vehicle.speedWarnings -= 1
-							end
-							if current_player.vehicleSpeedKPH < 0 then
-								vehicle.speedWarnings = 0
-							end
-						end
-					end
-					if current_player.onVehicle == 0 then
-						vehicle.speedWarnings = 0
+					if current_player.onVehicle == 1 and current_object.shape_contains( current_player.biped ) then
+						inPitLane = 1
+			            storage.lapInvalidated = 1
+			            storage.sectorInvalidated = 1
+			            if waypointVisibility >= 2 then
+				            current_object.set_shape_visibility(mod_player, current_player, 1)
+			            end
 					end
 				end
+
+				if inPitLane == 1 then
+                    if current_player.vehicleSpeedKPH > 40 then
+                        if vehicle.speedWarnings > 3 then
+                            timing.penalty += 300
+                            vehicle.speedWarnings = 0
+                            game.show_message_to(current_player, none, "You have earned yourself a 5s penalty bud" )
+                        end
+                        if vehicle.speedWarnings < 10 then
+                            vehicle.speedWarnings += 3
+                            game.show_message_to(current_player, none, "Slow down to 40kph or you will get a penalty" )
+                        end
+                    end
+				end
+
+				if inPitLane == 0 then
+                    if current_player.vehicleSpeedKPH <= 40 then
+                        vehicle.speedWarnings -= 1
+                    end
+                    if current_player.vehicleSpeedKPH <= 0 then
+                        vehicle.speedWarnings = 0
+                    end
+				end
+
+                if current_player.onVehicle == 0 then
+                    vehicle.speedWarnings = 0
+                end
 			end
 			-- # Enforce Pit Speed Limits #
 
@@ -2006,7 +2013,7 @@ if maxFuel != -1 then
 
 					-- # Refuel Vehicles that are parked on a Pit Box #
 					for each object with label "pit_stop" do
-						if current_player.vehicleSpeedKPH <= 1 and current_object.shape_contains( vehicle ) and current_player.currentFuelLevel < globalStorage.maxFuelLevel then
+						if current_player.vehicleSpeedKPH <= 5 and current_object.shape_contains( vehicle ) and current_player.currentFuelLevel < globalStorage.maxFuelLevel then
 							if current_player.pitbox == 999 or current_player.pitbox == current_object.spawn_sequence then
 								if timing.penalty > 0 then
 									alias notify = allocate temporary number
@@ -2184,8 +2191,8 @@ on local: do
 				if client.vehicleSpeedKPH < 0 then
 					client.vehicleSpeedKPH = 0
 				end
-				if client.vehicleSpeedKPH > 100 then
-					client.vehicleSpeedKPH = 100
+				if client.vehicleSpeedKPH > 200 then
+					client.vehicleSpeedKPH = 200
 				end
 			end
 			-- # Update Vehicle Speed #
