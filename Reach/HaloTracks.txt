@@ -343,6 +343,7 @@ on init: do
 		order = globalStorage.checkpointCount
 		order -= 1
 		order -= spacing
+
 		if globalStorage.checkpointCount > 3 then
 			sector3 = finalCheckpoint
 
@@ -374,15 +375,15 @@ on init: do
 		end
 
 		for each object with label "race_flag" do
-
 			current_object.sector = 4
-			if current_object.order == sector1.order then
+
+			if sector1 != no_object and current_object.order == sector1.order then
 				current_object.sector = 1
 			end
-			if current_object.order == sector2.order then
+			if sector2 != no_object and current_object.order == sector2.order then
 				current_object.sector = 2
 			end
-			if current_object.order == sector3.order then
+			if sector3 != no_object and current_object.order == sector3.order then
 				current_object.sector = 3
 			end
 		end
