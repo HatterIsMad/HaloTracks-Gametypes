@@ -49,9 +49,6 @@ alias	finalCheckpoint					= global.object[0]
 alias	firstCheckpoint					= global.object[1]
 alias	globalStorage					= global.object[2]
 
-
-alias   f = global.timer[0]
-
 -- /* GLOBAL VARIABLES */
 
 
@@ -175,6 +172,11 @@ alias	currentLapSeconds				= player.script_stat[3]
 	-- /* Pit Box Object */
 	alias	registrationTimer				= object.number[0]
 	-- /* Pit Box Object */
+
+
+	-- /* Grid Spot Object */
+	alias	light							= object.object[0]
+	-- /* Grid Spot Object */
 
 
 	-- /* Global Storage Object */
@@ -811,23 +813,26 @@ end
 
 	-- # Set up Grid Spot #
     for each object with label "grid_spot" do
-        if raceStatus < 2 and f == 0 and startGate > 0 then
-	        alias light = allocate temporary object
-            light = current_object.place_at_me(light_red, "race_gate", none, 7, 0, 2, none)
-            light.set_scale(30)
+        if raceStatus < 2 and startGate > 0 then
+			if current_object.light == no_object then
+				current_object.light = current_object.place_at_me(light_red, "race_gate", none, 7, 0, 2, none)
+				current_object.light.set_scale(30)
+			end
 
             current_object.set_shape(box, 7, 10, 10, 0)
             current_object.set_shape_visibility(no_one)
+
             for each player do
                 if current_object.shape_contains( current_player.biped ) then
                     alias distance = allocate temporary number
-                    distance = light.get_distance_to( current_player.biped )
-                    game.show_message_to(current_player, none, "%n", distance )
+                    distance = current_object.light.get_distance_to( current_player.biped )
+                    if distance < 10 then
+                        game.show_message_to(current_player, none, "You are too close. Move the fuck back.", distance )
+                    end
                 end
             end
         end
     end
-	f = 1
 	-- # Set up Grid Spot #
 
 
