@@ -160,6 +160,8 @@ alias	currentLapSeconds				= player.script_stat[3]
 	alias	fuelTaken						= object.number[4]
 	alias	draftBonus						= object.number[5]
 	alias	speedWarnings					= object.number[6]
+	alias	bestSector1TimeFrames			= object.timer[0]
+	alias	bestSector2TimeFrames			= object.timer[1]
 	-- /* Vehicle Object */
 
 
@@ -538,6 +540,12 @@ end
 
 
 	for each player do
+
+		-- # Set Shields #
+		current_player.biped.shields = current_player.money
+		current_player.biped.max_shields = current_player.money
+		-- # Set Shields #
+
 
 		-- # Create Objects for storage #
 		if current_player.timing == no_object then
@@ -1459,18 +1467,49 @@ for each player do
 
 
 		            -- # Set Shields #
-		            if storage.optimalLapSeconds != 0 or storage.optimalLapMilliseconds != 0 then
-		                alias bestLapFrames = allocate temporary number
-		                if current_object.sector >= 1 then
-		                    bestLapFrames += timing.bestSector1TimeFrames
+		            if current_object.sector != 4 then
+		                if storage.optimalLapSeconds != 0 or storage.optimalLapMilliseconds != 0 then
+		                    alias bestLapFrames = allocate temporary number
+		                    bestLapFrames = 0
+		                    if current_object.sector >= 1 then
+		                        bestLapFrames += vehicle.bestSector1TimeFrames
+		                    end
+		                    if current_object.sector >= 2 then
+		                        bestLapFrames += vehicle.bestSector2TimeFrames
+		                    end
+
+		                    alias frameScale = allocate temporary number
+		                    frameScale = bestLapFrames
+		                    frameScale *= 225
+		                    frameScale /= 10000
+
+		                    current_player.money = timing.lapFrames
+						    current_player.money -= bestLapFrames
+
+		                    if current_player.money > 0 then
+							    current_player.money *= 100
+							    current_player.money /= frameScale
+
+							    if current_player.money > 100 then
+								    current_player.money = 100
+							    end
+							    if current_player.money > 0 and current_player.money < 25 then
+							        current_player.money = 25
+							    end
+		                    end
+		                    if current_player.money < 0 then
+							    current_player.money *= -100
+							    current_player.money /= frameScale
+							    current_player.money += 100
+
+							    if current_player.money > 200 then
+								    current_player.money = 200
+							    end
+		                    end
+		                    if current_player.money == 0 then
+							    current_player.money = 100
+		                    end
 		                end
-		                if current_object.sector >= 2 then
-		                    bestLapFrames += timing.bestSector2TimeFrames
-		                end
-		                bestLapFrames -= timing.lapFrames
-						bestLapFrames += 100
-						--current_player.biped.shields = bestLapFrames
-						--game.show_message_to(current_player, none, "%n.%n", bestLapFrames, timing.lapFrames )
 		            end
 		            -- # Set Shields #
 
@@ -1706,6 +1745,13 @@ for each player do
 							-- # Notify everyone of the final lap #
 
 
+							-- # Update Vehicle Cached Time Frames #
+							vehicle.bestSector1TimeFrames = timing.bestSector1TimeFrames
+							vehicle.bestSector2TimeFrames = timing.bestSector2TimeFrames
+							-- # Update Vehicle Cached Time Frames #
+
+
+						    current_player.money = 100
 							storage.lapInvalidated = 0
 							storage.jokeredThisLap = 0 -- Reset joker flag
 							timing.lapFrames = 1 -- lapFrames -- Reset lap frame count
