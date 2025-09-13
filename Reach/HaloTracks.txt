@@ -826,7 +826,7 @@ end
                 if current_object.shape_contains( current_player.biped ) then
                     alias distance = allocate temporary number
                     distance = current_object.light.get_distance_to( current_player.biped )
-                    if distance < 10 then
+                    if distance < 9 then
                         game.show_message_to(current_player, none, "You are too close. Move the fuck back.", distance )
                     end
                 end
@@ -1183,6 +1183,15 @@ for each player do
 
 		topMiddleWidget.set_text("%n KPH\n  P %n", hud_player.vehicleSpeedKPH, hud_player.position)
 		bottomMiddleWidget.set_text("%n.%n", hud_player.currentLapSeconds, hud_player.currentLapMilliseconds)
+
+
+		-- # We don't need to show dashStatus 1 or 2 if it is a single person lobby #
+		if dashStatus == 1 or dashStatus == 2 then
+			if numberOfPlayers == 1 then
+				dashStatus = 0
+			end
+		end
+		-- # We don't need to show dashStatus 1 or 2 if it is a single person lobby #
 
 
 		if dashStatus == 0 then
