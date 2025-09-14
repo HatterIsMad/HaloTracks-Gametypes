@@ -710,7 +710,8 @@ end
 	            end
 	            if difference == 1 then
 		            racerStorage.lapsAhead = 0
-		            if aheadTiming.currentCheckpoint >= racerTiming.currentCheckpoint then
+		            if aheadTiming.currentCheckpoint > racerTiming.currentCheckpoint then
+                        game.show_message_to(current_player, none, "Player Ahead 1 lap" )
 			            racerStorage.lapsAhead = 1
 		            end
 	            end
@@ -755,6 +756,7 @@ end
 	            if difference == 1 then
 		            racerStorage.lapsBehind = 0
 		            if racerTiming.currentCheckpoint > behindTiming.currentCheckpoint then
+                        game.show_message_to(current_player, none, "Player Behind 1 lap" )
 			            racerStorage.lapsBehind = 1
 		            end
 	            end
@@ -1143,6 +1145,7 @@ for each player do
 	-- # Don't display UI if race has started and the Player is on a mongoose #
 	if raceStatus >= 2 and current_player.onVehicle == 1 then
 
+dashStatus = 2
 
 		-- # Get Player Timing Object #
 		alias timing = allocate temporary object
@@ -1230,7 +1233,7 @@ for each player do
 			alias playerBehind = allocate temporary player
 			playerBehind = current_player.playerBehind
 
-			if storage.lapsAhead == 0 then
+			if storage.lapsBehind == 0 then
 				current_player.widget21 = 0
 				current_player.widget22 = 0
 				if playerBehind != no_player then
