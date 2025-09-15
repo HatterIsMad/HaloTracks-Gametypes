@@ -179,6 +179,11 @@ alias	currentLapSeconds				= player.script_stat[3]
 	-- /* Grid Spot Object */
 
 
+	-- /* Light Object */
+	alias	warnings							= object.number[0]
+	-- /* Light Object */
+
+
 	-- /* Global Storage Object */
 	alias	maxFuelLevel					= object.number[0]
 	alias	startGateFrame					= object.number[1]
@@ -492,6 +497,12 @@ end
 		raceStatus = 2
 		frames = 0
 		globalStorage.startGateDropped = 1
+
+		for each player do
+			if current_player.vehicleSpeedKPH > 10 then
+				game.show_message_to(current_player, none, "You have earned yourself a 5s penalty bud" )
+			end
+		end
 	end
 	-- # Delete Race Gates #
 
@@ -544,8 +555,17 @@ end
 	for each player do
 
 		-- # Set Shields #
-		current_player.biped.shields = current_player.money
-		current_player.biped.max_shields = current_player.money
+		do
+		    alias shields = allocate temporary number
+		    shields = current_player.biped.shields
+		    if shields > 0 then
+		        if current_player.money <= 100 then
+			        current_player.money = 300
+		        end
+		        current_player.biped.shields = current_player.money
+		        current_player.biped.max_shields = current_player.money
+		    end
+		end
 		-- # Set Shields #
 
 
@@ -711,7 +731,6 @@ end
 	            if difference == 1 then
 		            racerStorage.lapsAhead = 0
 		            if aheadTiming.currentCheckpoint > racerTiming.currentCheckpoint then
-                        game.show_message_to(current_player, none, "Player Ahead 1 lap" )
 			            racerStorage.lapsAhead = 1
 		            end
 	            end
@@ -756,7 +775,6 @@ end
 	            if difference == 1 then
 		            racerStorage.lapsBehind = 0
 		            if racerTiming.currentCheckpoint > behindTiming.currentCheckpoint then
-                        game.show_message_to(current_player, none, "Player Behind 1 lap" )
 			            racerStorage.lapsBehind = 1
 		            end
 	            end
@@ -824,12 +842,29 @@ end
             current_object.set_shape(box, 7, 10, 10, 0)
             current_object.set_shape_visibility(no_one)
 
-            for each player do
-                if current_object.shape_contains( current_player.biped ) then
-                    alias distance = allocate temporary number
-                    distance = current_object.light.get_distance_to( current_player.biped )
-                    if distance < 9 then
-                        game.show_message_to(current_player, none, "You are too close. Move the fuck back.", distance )
+			alias debounce = allocate temporary number
+			debounce = frames
+			debounce %= 60
+
+			if current_object.light != no_object and debounce == 0 then
+                alias light = allocate temporary object
+                light = current_object.light
+
+                for each player do
+                    if current_object.shape_contains( current_player.biped ) then
+                        alias distance = allocate temporary number
+                        distance = light.get_distance_to( current_player.biped )
+
+                        if distance < 9 then
+                            if frames < 600 or light.warnings < 3 then
+                                game.show_message_to(current_player, none, "You are too close. Move the fuck back." )
+                                light.warnings += 1
+                            end
+                            if frames > 600 and light.warnings > 2 then
+								game.show_message_to(current_player, none, "You have earned yourself a 5s penalty bud" )
+                                light.warnings = 0
+                            end
+                        end
                     end
                 end
             end
@@ -1145,7 +1180,6 @@ for each player do
 	-- # Don't display UI if race has started and the Player is on a mongoose #
 	if raceStatus >= 2 and current_player.onVehicle == 1 then
 
-dashStatus = 2
 
 		-- # Get Player Timing Object #
 		alias timing = allocate temporary object
@@ -1178,7 +1212,7 @@ dashStatus = 2
 
 
 		-- # Update Fuel UI #
-		if maxFuel != -1 then
+		if maxFuel != -1 and vehicle.has_forge_label("Vehicle") then
 			bottomMiddleWidget.set_meter_params(number, hud_player.currentFuelLevel, globalStorage.maxFuelLevel)
 		end
 		-- # Update Fuel UI #
@@ -1395,13 +1429,28 @@ for each player do
 
 							-- # Send Sector Complete Notifications #
 							if bestOverallSector == 1 then
-								game.show_message_to(current_player, none, "Overall Best Sector 1 time! %n.%n", secondsOut, millisecondsOut )
+								if millisecondsOut < 100 then
+									game.show_message_to(current_player, none, "Overall Best Sector 1 time! %n.0%n", secondsOut, millisecondsOut )
+								end
+								if millisecondsOut > 100 then
+									game.show_message_to(current_player, none, "Overall Best Sector 1 time! %n.%n", secondsOut, millisecondsOut )
+								end
 							end
 							if bestOverallSector != 1 and bestPersonalSector == 1 then
-								game.show_message_to(current_player, none, "Personal Best Sector 1 time! %n.%n", secondsOut, millisecondsOut )
+								if millisecondsOut < 100 then
+									game.show_message_to(current_player, none, "Personal Best Sector 1 time! %n.0%n", secondsOut, millisecondsOut )
+								end
+								if millisecondsOut > 100 then
+									game.show_message_to(current_player, none, "Personal Best Sector 1 time! %n.%n", secondsOut, millisecondsOut )
+								end
 							end
 							if bestOverallSector != 1 and bestPersonalSector != 1 then
-								game.show_message_to(current_player, none, "Sector 1: %n.%n", secondsOut, millisecondsOut )
+								if millisecondsOut < 100 then
+									game.show_message_to(current_player, none, "Sector 1: %n.0%n", secondsOut, millisecondsOut )
+								end
+								if millisecondsOut > 100 then
+									game.show_message_to(current_player, none, "Sector 1: %n.%n", secondsOut, millisecondsOut )
+								end
 							end
 							-- # Send Sector Complete Notifications #
 						end
@@ -1419,13 +1468,28 @@ for each player do
 
 							-- # Send Sector Complete Notifications #
 							if bestOverallSector == 1 then
-								game.show_message_to(current_player, none, "Overall Best Sector 2 time! %n.%n", secondsOut, millisecondsOut )
+								if millisecondsOut < 100 then
+									game.show_message_to(current_player, none, "Overall Best Sector 2 time! %n.0%n", secondsOut, millisecondsOut )
+								end
+								if millisecondsOut > 100 then
+									game.show_message_to(current_player, none, "Overall Best Sector 2 time! %n.%n", secondsOut, millisecondsOut )
+								end
 							end
 							if bestOverallSector != 1 and bestPersonalSector == 1 then
-								game.show_message_to(current_player, none, "Personal Best Sector 2 time! %n.%n", secondsOut, millisecondsOut )
+								if millisecondsOut < 100 then
+									game.show_message_to(current_player, none, "Personal Best Sector 2 time! %n.0%n", secondsOut, millisecondsOut )
+								end
+								if millisecondsOut > 100 then
+									game.show_message_to(current_player, none, "Personal Best Sector 2 time! %n.%n", secondsOut, millisecondsOut )
+								end
 							end
 							if bestOverallSector != 1 and bestPersonalSector != 1 then
-								game.show_message_to(current_player, none, "Sector 2: %n.%n", secondsOut, millisecondsOut )
+								if millisecondsOut < 100 then
+									game.show_message_to(current_player, none, "Sector 2: %n.0%n", secondsOut, millisecondsOut )
+								end
+								if millisecondsOut > 100 then
+									game.show_message_to(current_player, none, "Sector 2: %n.%n", secondsOut, millisecondsOut )
+								end
 							end
 							-- # Send Sector Complete Notifications #
 						end
@@ -1443,13 +1507,28 @@ for each player do
 
 							-- # Send Sector Complete Notifications #
 							if bestOverallSector == 1 then
-								game.show_message_to(current_player, none, "Overall Best Sector 3 time! %n.%n", secondsOut, millisecondsOut )
+								if millisecondsOut < 100 then
+									game.show_message_to(current_player, none, "Overall Best Sector 3 time! %n.0%n", secondsOut, millisecondsOut )
+								end
+								if millisecondsOut > 100 then
+									game.show_message_to(current_player, none, "Overall Best Sector 3 time! %n.%n", secondsOut, millisecondsOut )
+								end
 							end
 							if bestOverallSector != 1 and bestPersonalSector == 1 then
-								game.show_message_to(current_player, none, "Personal Best Sector 3 time! %n.%n", secondsOut, millisecondsOut )
+								if millisecondsOut < 100 then
+									game.show_message_to(current_player, none, "Personal Best Sector 3 time! %n.0%n", secondsOut, millisecondsOut )
+								end
+								if millisecondsOut > 100 then
+									game.show_message_to(current_player, none, "Personal Best Sector 3 time! %n.%n", secondsOut, millisecondsOut )
+								end
 							end
 							if bestOverallSector != 1 and bestPersonalSector != 1 then
-								game.show_message_to(current_player, none, "Sector 3: %n.%n", secondsOut, millisecondsOut )
+								if millisecondsOut < 100 then
+									game.show_message_to(current_player, none, "Sector 3: %n.0%n", secondsOut, millisecondsOut )
+								end
+								if millisecondsOut > 100 then
+									game.show_message_to(current_player, none, "Sector 3: %n.%n", secondsOut, millisecondsOut )
+								end
 							end
 							-- # Send Sector Complete Notifications #
 						end
@@ -1506,12 +1585,10 @@ for each player do
 		                    if current_player.money > 0 then
 							    current_player.money *= 100
 							    current_player.money /= frameScale
+							    current_player.money += 300
 
-							    if current_player.money > 100 then
-								    current_player.money = 100
-							    end
-							    if current_player.money > 0 and current_player.money < 25 then
-							        current_player.money = 25
+							    if current_player.money > 400 then
+								    current_player.money = 400
 							    end
 		                    end
 		                    if current_player.money < 0 then
@@ -1524,7 +1601,7 @@ for each player do
 							    end
 		                    end
 		                    if current_player.money == 0 then
-							    current_player.money = 100
+							    current_player.money = 300
 		                    end
 		                end
 		            end
@@ -1601,7 +1678,7 @@ for each player do
 					if timing.currentCheckpoint > finalCheckpoint.order then
 
 						-- # Notify the user of how much fuel was used #
-						if maxFuel != -1 then
+						if maxFuel != -1 and vehicle.has_forge_label("Vehicle") then
 							if current_player.score == 0 and vehicle.lapStartingFuel == 0 then
 								vehicle.lapStartingFuel = globalStorage.maxFuelLevel
 							end
@@ -1610,7 +1687,16 @@ for each player do
 								vehicle.fuelUsedLastLap = vehicle.lapStartingFuel
 								vehicle.fuelUsedLastLap -= current_player.currentFuelLevel
 								if vehicle.lapStartingFuel > current_player.currentFuelLevel then
-									game.show_message_to(current_player, none, "Fuel Used last lap %n", vehicle.fuelUsedLastLap )
+									alias fuelMajor = allocate temporary number
+									fuelMajor = vehicle.fuelUsedLastLap
+									fuelMajor /= 1000
+									fuelMajor *= 1000
+									alias fuelMinor = allocate temporary number
+									fuelMinor = vehicle.fuelUsedLastLap
+									fuelMinor -= fuelMajor
+									fuelMinor /= 100
+									fuelMajor /= 1000
+									game.show_message_to(current_player, none, "Fuel Used last lap %n.%n", fuelMajor, fuelMinor )
 								end
 							end
 							vehicle.lapStartingFuel = current_player.currentFuelLevel
@@ -1813,32 +1899,34 @@ if maxFuel != -1 then
 		alias found = allocate temporary number
 		found = 0
 		for each player do
-			if current_player.pitbox == 999 or current_player.pitbox == current_object.spawn_sequence then
-				if numberOfPlayers > 8 or current_object.spawn_sequence <= 8 or current_player.pitbox == current_object.spawn_sequence then
-				    if waypointVisibility >= 1 then
-					    current_object.set_waypoint_visibility(mod_player, current_player, 1)
+			if current_player.vehicle.has_forge_label("Vehicle") then
+			    if current_player.pitbox == 999 or current_player.pitbox == current_object.spawn_sequence then
+				    if numberOfPlayers > 8 or current_object.spawn_sequence <= 8 or current_player.pitbox == current_object.spawn_sequence then
+				        if waypointVisibility >= 1 then
+					        current_object.set_waypoint_visibility(mod_player, current_player, 1)
+				        end
+                        if waypointVisibility >= 2 then
+					        current_object.set_waypoint_visibility(mod_player, current_player, 1)
+					        current_object.set_shape_visibility(mod_player, current_player, 1)
+				        end
 				    end
-                    if waypointVisibility >= 2 then
-					    current_object.set_waypoint_visibility(mod_player, current_player, 1)
-					    current_object.set_shape_visibility(mod_player, current_player, 1)
-				    end
-				end
-			end
-			if current_player.pitbox != 999 and current_player.pitbox != current_object.spawn_sequence then
-				current_object.set_waypoint_visibility(mod_player, current_player, 0)
-				current_object.set_shape_visibility(mod_player, current_player, 0)
-			end
+			    end
+			    if current_player.pitbox != 999 and current_player.pitbox != current_object.spawn_sequence then
+				    current_object.set_waypoint_visibility(mod_player, current_player, 0)
+				    current_object.set_shape_visibility(mod_player, current_player, 0)
+			    end
 
-			if current_object.shape_contains( current_player.biped ) and current_player.pitbox == 999 then
-				if current_object.registrationTimer < 200 then
-					current_object.registrationTimer += 1
-					found = 1
-				end
-				if current_object.registrationTimer >= 200 then
-					current_player.pitbox = current_object.spawn_sequence
-					current_object.registrationTimer = 0
-				end
-			end
+			    if current_object.shape_contains( current_player.biped ) and current_player.pitbox == 999 then
+				    if current_object.registrationTimer < 200 then
+					    current_object.registrationTimer += 1
+					    found = 1
+				    end
+				    if current_object.registrationTimer >= 200 then
+					    current_player.pitbox = current_object.spawn_sequence
+					    current_object.registrationTimer = 0
+				    end
+			    end
+		    end
 		end
 		if found == 0 then
 			current_object.registrationTimer = 0
@@ -2030,13 +2118,44 @@ if maxFuel != -1 then
 				-- # Initialize Refuel Amount #
 
 
-				-- # Remove Player from Vehicle if they have no fuel #
+				-- # Teleport to pitbox or remove Player from Vehicle if they have no fuel #
 				if current_player.currentFuelLevel <= 0 and current_player.currentFuelLevel != -30000 then
-					current_player.biped.detach()
-					current_player.onVehicle = 0
-					current_player.vehicle.delete()
+					alias selectedPitbox = allocate temporary object
+					selectedPitbox = no_object
+
+					for each object with label "pit_stop" do
+						if selectedPitbox == no_object then
+						    if current_player.pitbox == 999 then
+							    if current_object.player[0] == no_player then
+								    selectedPitbox = current_object
+							    end
+						    end
+
+						    if current_player.pitbox == current_object.spawn_sequence then
+							    selectedPitbox = current_object
+						    end
+						end
+					end
+
+					if selectedPitbox != no_object then
+                        current_player.vehicle.attach_to(selectedPitbox, 0, 0, 2, relative)
+                        current_player.vehicle.detach()
+                        current_player.vehicle.copy_rotation_from(selectedPitbox, false)
+                        current_player.currentFuelLevel = 500
+
+                        if timing.currentCheckpoint == finalCheckpoint.order then
+                            timing.currentCheckpoint = firstCheckpoint.order
+                        end
+					end
+
+					if selectedPitbox == no_object then
+					    current_player.biped.detach()
+					    current_player.onVehicle = 0
+					    current_player.vehicle.delete()
+					end
+
 				end
-				-- # Remove Player from Vehicle if they have no fuel #
+				-- # Teleport to pitbox or remove Player from Vehicle if they have no fuel #
 
 
 				if current_player.onVehicle == 1 and current_player.currentFuelLevel > 0 and current_player.biped != no_object then
@@ -2051,7 +2170,7 @@ if maxFuel != -1 then
 						alias fuelCalc = allocate temporary number
 						fuelCalc = current_player.vehicleSpeedKPH					-- Start the fuel calculation with the vehicles current speed
 						fuelCalc -= vehicle.startingFuelSpeed						-- Subtract the vehicles speed from three tenths of a second ago
-						fuelCalc *= 3												-- Multiply by a magic number to scale this up to a useable value
+						fuelCalc *= 10												-- Multiply by a magic number to scale this up to a useable value
 
 						fuelUsage += fuelCalc										-- Add the rate of change fuel calculation to the base fuel usage
 
@@ -2061,7 +2180,7 @@ if maxFuel != -1 then
 						end
 
 						if vehicle.startingFuelSpeed > 55 and current_player.vehicleSpeedKPH > 55 and vehicle.startingFuelSpeed <= current_player.vehicleSpeedKPH then -- 55kmh being roughly the speed that we shift to 2nd
-							fuelUsage -= 20											-- Fuel efficiency slightly better in 2nd gear
+							fuelUsage -= 25											-- Fuel efficiency slightly better in 2nd gear
 						end
 
 						if vehicle.startingFuelSpeed == 0 and current_player.vehicleSpeedKPH == 0 or fuelUsage < 5 then
@@ -2124,7 +2243,16 @@ if maxFuel != -1 then
 					-- # Alert the racer how much fuel they refilled #
 					if fueling == 0 then
 						if vehicle.fuelTaken > 0 then
-							game.show_message_to(current_player, none, "Amount of fuel refilled %n", vehicle.fuelTaken )
+	                        alias fuelMajor = allocate temporary number
+	                        fuelMajor = vehicle.fuelTaken
+	                        fuelMajor /= 1000
+	                        fuelMajor *= 1000
+	                        alias fuelMinor = allocate temporary number
+	                        fuelMinor = vehicle.fuelTaken
+	                        fuelMinor -= fuelMajor
+	                        fuelMinor /= 100
+	                        fuelMajor /= 1000
+							game.show_message_to(current_player, none, "Amount of fuel refilled %n.%n", fuelMajor, fuelMinor )
 						end
 						vehicle.fuelTaken = 0
 					end
