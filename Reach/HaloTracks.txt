@@ -434,6 +434,12 @@ on init: do
 	-- # Set Start Gate Frame #
 
 
+	-- # Wait for grid spots #
+	for each object with label "grid_spot" do
+		globalStorage.waitForGridSpots = 1
+	end
+	-- # Wait for grid spots #
+
 	raceStatus = 1
 	host = 1
 end
@@ -454,7 +460,6 @@ end
 			-- # Check to ensure that grid spots exist on the map #
 			for each object with label "grid_spot" do
 				found = 1
-				globalStorage.waitForGridSpots = 1
 			end
 			-- # Check to ensure that grid spots exist on the map #
 
@@ -498,7 +503,7 @@ end
 
 
 	-- # Delete Race Gates #
-	if startGate != 0 and raceStatus == 1 and globalStorage.startGateDropped == 0 and frames > globalStorage.startGateFrame then
+	if startGate != 0 and raceStatus == 1 and globalStorage.startGateDropped == 0 and frames > globalStorage.startGateFrame and globalStorage.waitForGridSpots == 0 then
 		for each object with label "race_gate" do
 			current_object.delete()
 		end
@@ -898,6 +903,42 @@ end
 	end
 	-- # Handle Waypoint Priority #
 
+
+	-- # Check to see if everyone is on a grid spot #
+	if globalStorage.waitForGridSpots == 1 then
+		alias ready = allocate temporary number
+		ready = 1
+		for each player do
+			alias onABox = allocate temporary number
+			onABox = 0
+			for each object with label "grid_spot" do
+				if current_object.shape_contains( current_player.biped ) the
+					onABox = 1
+				end
+			end
+			if onABox == 0 then
+				ready = 0
+			end
+		end
+		if ready == 1 then
+			frames = 0
+			globalStorage.waitForGridSpots = 0
+			for each player do
+				game.show_message_to(current_player, none, "The countdown has started" )
+			end
+		end
+		if ready == 0 and frames > 1800 then
+			alias debounce900 = allocate temprary number
+			debounce900 = frames
+			debounce900 %= 900
+			if debounce900 == 0 then
+				for each player do
+					game.show_message_to(current_player, none, "Everyone must be sitting on a grid spot before the race can start." )
+				end
+			end
+		end
+	end
+	-- # Check to see if everyone is on a grid spot #
 
 
 -- # Basic Game Logic #
@@ -2296,7 +2337,7 @@ on local: do
 			alias localStartGateFrame = allocate temporary number
 			localStartGateFrame = globalStorage.startGateFrame
 			localStartGateFrame -= 6 -- How much earlier should the gates visually disappear before they physically disappear
-			if raceStatus == 1 and globalStorage.startGateDropped == 0 and frames > localStartGateFrame then
+			if raceStatus == 1 and globalStorage.startGateDropped == 0 and frames > localStartGateFrame and globalStorage.waitForGridSpots == 0 then
 				for each object with label "race_gate" do
 					current_object.set_hidden(true)
 				end
