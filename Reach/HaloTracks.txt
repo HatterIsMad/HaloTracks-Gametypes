@@ -435,8 +435,10 @@ on init: do
 
 
 	-- # Wait for grid spots #
-	for each object with label "grid_spot" do
-		globalStorage.waitForGridSpots = 1
+	if startGate > 0 then
+	    for each object with label "grid_spot" do
+		    globalStorage.waitForGridSpots = 1
+	    end
 	end
 	-- # Wait for grid spots #
 
@@ -871,12 +873,17 @@ end
                         if distance < 9 then
                             if frames < 600 or light.warnings < 3 then
                                 game.show_message_to(current_player, none, "You are too close. Move the fuck back." )
-                                light.warnings += 1
+                                if globalStorage.waitForGridSpots == 0 then
+                                    light.warnings += 1
+                                end
                             end
-                            if frames > 600 and light.warnings > 2 then
+                            if frames > 600 and light.warnings >= 3 then
 								game.show_message_to(current_player, none, "You have earned yourself a 5s penalty bud" )
                                 light.warnings = 0
                             end
+                        end
+                        if distance >= 9 and light.warnings > 0 then
+                            light.warnings -= 1
                         end
                     end
                 end
@@ -912,7 +919,7 @@ end
 			alias onABox = allocate temporary number
 			onABox = 0
 			for each object with label "grid_spot" do
-				if current_object.shape_contains( current_player.biped ) the
+				if current_object.shape_contains( current_player.biped ) then
 					onABox = 1
 				end
 			end
@@ -928,7 +935,7 @@ end
 			end
 		end
 		if ready == 0 and frames > 1800 then
-			alias debounce900 = allocate temprary number
+			alias debounce900 = allocate temporary number
 			debounce900 = frames
 			debounce900 %= 900
 			if debounce900 == 0 then
@@ -2217,12 +2224,12 @@ if maxFuel != -1 then
 					-- # Update Vehicle Fuel #
 					do
 						alias fuelUsage = allocate temporary number
-						fuelUsage = 95												-- Base fuel usage
+						fuelUsage = 100												-- Base fuel usage
 
 						alias fuelCalc = allocate temporary number
 						fuelCalc = current_player.vehicleSpeedKPH					-- Start the fuel calculation with the vehicles current speed
 						fuelCalc -= vehicle.startingFuelSpeed						-- Subtract the vehicles speed from three tenths of a second ago
-						fuelCalc *= 10												-- Multiply by a magic number to scale this up to a useable value
+						fuelCalc *= 30												-- Multiply by a magic number to scale this up to a useable value
 
 						fuelUsage += fuelCalc										-- Add the rate of change fuel calculation to the base fuel usage
 
@@ -2232,7 +2239,7 @@ if maxFuel != -1 then
 						end
 
 						if vehicle.startingFuelSpeed > 55 and current_player.vehicleSpeedKPH > 55 and vehicle.startingFuelSpeed <= current_player.vehicleSpeedKPH then -- 55kmh being roughly the speed that we shift to 2nd
-							fuelUsage -= 25											-- Fuel efficiency slightly better in 2nd gear
+							fuelUsage -= 28											-- Fuel efficiency slightly better in 2nd gear
 						end
 
 						if vehicle.startingFuelSpeed == 0 and current_player.vehicleSpeedKPH == 0 or fuelUsage < 5 then
