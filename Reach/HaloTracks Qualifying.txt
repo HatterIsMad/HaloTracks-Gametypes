@@ -58,6 +58,7 @@ alias	invincibility					= script_option[1]
 alias	waypointVisibility				= script_option[2]
 alias	startGate						= script_option[3]
 alias	defaultVehicle					= script_option[4]
+alias	f1Mode							= script_option[5]
 
 -- /* SCRIPT OPTIONS */
 
