@@ -466,17 +466,23 @@ end
 			    -- # Check to see if the player is already assigned to a grid spot #
 
 
-				found = 0
 			    if current_player.storage2 == no_object then
+                    alias gridSpot = allocate temporary object
+                    gridSpot = no_object
+
 			        for each object with label "grid_spot" do
-				        if found == 0 and current_object.player[0] == no_player then
-					        current_player.storage2 = current_object
-					        current_object.player[0] = current_player
-					        found = 1
+				        if current_object.player[0] == no_player then
+				            if gridSpot == no_object or current_object.spawn_sequence < gridSpot.spawn_sequence then
+				                gridSpot = current_object
+				            end
 				        end
 			        end
-			    end
 
+			        if gridSpot != no_object then
+                        current_player.storage2 = gridSpot
+                        gridSpot.player[0] = current_player
+			        end
+			    end
 
 			    -- # Spawn them at their grid spot #
                 current_player.biped.attach_to(current_player.storage2, 0, 0, 2, relative)
