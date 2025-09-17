@@ -905,7 +905,7 @@ end
 
 
 	-- # Check to see if everyone is on a grid spot #
-	if globalStorage.waitForGridSpots == 1 then
+	if globalStorage.waitForGridSpots == 1 and frames > 600 then
 		alias ready = allocate temporary number
 		ready = 1
 		for each player do
