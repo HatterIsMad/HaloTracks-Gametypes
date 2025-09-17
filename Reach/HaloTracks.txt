@@ -191,6 +191,7 @@ alias	currentLapSeconds				= player.script_stat[3]
 	alias	sectorCount						= object.number[3]
 	alias	checkpointCount					= object.number[4]
 	alias	pitLaneConfigured				= object.number[5]
+	alias	waitForGridSpots				= object.number[6]
 	-- /* Global Storage Object */
 
 
@@ -453,6 +454,7 @@ end
 			-- # Check to ensure that grid spots exist on the map #
 			for each object with label "grid_spot" do
 				found = 1
+				globalStorage.waitForGridSpots = 1
 			end
 			-- # Check to ensure that grid spots exist on the map #
 
