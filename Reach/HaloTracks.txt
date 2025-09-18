@@ -854,8 +854,7 @@ end
 				current_object.light.set_scale(30)
 			end
 
-            current_object.set_shape(box, 7, 10, 10, 0)
-            current_object.set_shape_visibility(no_one)
+            current_object.set_shape(box, 10, 7, 2, 0)
 
 			alias debounce = allocate temporary number
 			debounce = frames
@@ -866,8 +865,17 @@ end
                 light = current_object.light
 
                 for each player do
+                    alias distance = allocate temporary number
+                    distance = current_object.get_distance_to( current_player.biped )
+                    if distance > 3 and distance < 8 then
+                        current_object.set_shape_visibility(mod_player, current_player, 1)
+                    end
+                    if distance <= 3 or distance >= 9 then
+                        current_object.set_shape_visibility(mod_player, current_player, 0)
+                        current_object.set_shape(box, 10, 7, 10, 0)
+                    end
+
                     if current_object.shape_contains( current_player.biped ) then
-                        alias distance = allocate temporary number
                         distance = light.get_distance_to( current_player.biped )
 
                         if distance < 9 then
