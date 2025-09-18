@@ -1076,7 +1076,7 @@ for each player do
 
 
 	-- # Handle the Player being on a Vehicle #
-	if current_player.onVehicle == 1 then
+	if current_player.onVehicle == 1 and vehicle.has_forge_label("Vehicle") then
 
 		-- # Reset Vehicle Respawn Timer #
 		current_player.vehicleRespawnTimer.reset()
@@ -2123,7 +2123,6 @@ if maxFuel != -1 then
 
 										vehicle.draftBonus *= current_player.vehicleSpeedKPH
 										vehicle.draftBonus /= 100
-										--game.show_message_to(current_player, none, "%n", vehicle.draftBonus )
 									end
 								end
 							end
@@ -2146,185 +2145,188 @@ if maxFuel != -1 then
 				-- # Get players current Vehicle #
 
 
-				-- # Get Player Timing Object #
-				alias timing = allocate temporary object
-				timing = current_player.timing
-				-- # Get Player Timing Object #
+				if vehicle.has_forge_label("Vehicle") then
+
+				    -- # Get Player Timing Object #
+				    alias timing = allocate temporary object
+				    timing = current_player.timing
+				    -- # Get Player Timing Object #
 
 
-				-- # Get Player Storage Object #
-				alias storage = allocate temporary object
-				storage = current_player.storage
-				-- # Get Player Storage Object #
+				    -- # Get Player Storage Object #
+				    alias storage = allocate temporary object
+				    storage = current_player.storage
+				    -- # Get Player Storage Object #
 
 
-				-- # Initialize Fuel #
-				if current_player.currentFuelLevel == -30000 then				-- -30000 is a magic number to indicate that the player has never had fuel before
+				    -- # Initialize Fuel #
+				    if current_player.currentFuelLevel == -30000 then				-- -30000 is a magic number to indicate that the player has never had fuel before
 
-					-- # Set Max Fuel Level #
-					if globalStorage.maxFuelLevel == 0 then
-						globalStorage.maxFuelLevel = 5000								-- Set the Base fuel level
-						globalStorage.maxFuelLevel *= 60								-- Scale Base fuel level up to a useable value with a magic number
-						globalStorage.maxFuelLevel *= maxFuel							-- Max Fuel is a percentage of fuel selected in the gametype
-						globalStorage.maxFuelLevel /= 100								-- Convert Max Fuel to a percentage
-					end
-					-- # Set Max Fuel Level #
+					    -- # Set Max Fuel Level #
+					    if globalStorage.maxFuelLevel == 0 then
+						    globalStorage.maxFuelLevel = 5000								-- Set the Base fuel level
+						    globalStorage.maxFuelLevel *= 60								-- Scale Base fuel level up to a useable value with a magic number
+						    globalStorage.maxFuelLevel *= maxFuel							-- Max Fuel is a percentage of fuel selected in the gametype
+						    globalStorage.maxFuelLevel /= 100								-- Convert Max Fuel to a percentage
+					    end
+					    -- # Set Max Fuel Level #
 
-					current_player.currentFuelLevel = globalStorage.maxFuelLevel		-- Set the players currentFuelLevel to the maxFuelLevel
-					-- # Set Max Fuel Level #
-				end
-				-- # Initialize Fuel #
-
-
-				-- # Initialize Refuel Amount #
-				if vehicle.refuelAmount == 0 then
-					vehicle.refuelAmount = globalStorage.maxFuelLevel					-- Start with our max fuel level
-					vehicle.refuelAmount /= 3									-- Divide it by 3 because we run this update code 3x per second
-					vehicle.refuelAmount /= refuelRate							-- Divide it by the desired pit stop length selected in the gametype options
-				end
-				-- # Initialize Refuel Amount #
+					    current_player.currentFuelLevel = globalStorage.maxFuelLevel		-- Set the players currentFuelLevel to the maxFuelLevel
+					    -- # Set Max Fuel Level #
+				    end
+				    -- # Initialize Fuel #
 
 
-				-- # Teleport to pitbox or remove Player from Vehicle if they have no fuel #
-				if current_player.currentFuelLevel <= 0 and current_player.currentFuelLevel != -30000 then
-					alias selectedPitbox = allocate temporary object
-					selectedPitbox = no_object
+				    -- # Initialize Refuel Amount #
+				    if vehicle.refuelAmount == 0 then
+					    vehicle.refuelAmount = globalStorage.maxFuelLevel					-- Start with our max fuel level
+					    vehicle.refuelAmount /= 3									-- Divide it by 3 because we run this update code 3x per second
+					    vehicle.refuelAmount /= refuelRate							-- Divide it by the desired pit stop length selected in the gametype options
+				    end
+				    -- # Initialize Refuel Amount #
 
-					for each object with label "pit_stop" do
-						if selectedPitbox == no_object then
-						    if current_player.pitbox == 999 then
-							    if current_object.player[0] == no_player then
-								    selectedPitbox = current_object
+
+				    -- # Teleport to pitbox or remove Player from Vehicle if they have no fuel #
+				    if current_player.currentFuelLevel <= 0 and current_player.currentFuelLevel != -30000 then
+					    alias selectedPitbox = allocate temporary object
+					    selectedPitbox = no_object
+
+					    for each object with label "pit_stop" do
+						    if selectedPitbox == no_object then
+						        if current_player.pitbox == 999 then
+							        if current_object.player[0] == no_player then
+								        selectedPitbox = current_object
+							        end
+						        end
+
+						        if current_player.pitbox == current_object.spawn_sequence then
+							        selectedPitbox = current_object
+						        end
+						    end
+					    end
+
+					    if selectedPitbox != no_object then
+                            current_player.vehicle.attach_to(selectedPitbox, 0, 0, 2, relative)
+                            current_player.vehicle.detach()
+                            current_player.vehicle.copy_rotation_from(selectedPitbox, false)
+                            current_player.currentFuelLevel = 500
+
+                            if timing.currentCheckpoint == finalCheckpoint.order then
+                                timing.currentCheckpoint = firstCheckpoint.order
+                            end
+					    end
+
+					    if selectedPitbox == no_object then
+					        current_player.biped.detach()
+					        current_player.onVehicle = 0
+					        current_player.vehicle.delete()
+					    end
+
+				    end
+				    -- # Teleport to pitbox or remove Player from Vehicle if they have no fuel #
+
+
+				    if current_player.onVehicle == 1 and current_player.currentFuelLevel > 0 and current_player.biped != no_object then
+					    alias fueling = allocate temporary number
+					    fueling = 0
+
+					    -- # Update Vehicle Fuel #
+					    do
+						    alias fuelUsage = allocate temporary number
+						    fuelUsage = 100												-- Base fuel usage
+
+						    alias fuelCalc = allocate temporary number
+						    fuelCalc = current_player.vehicleSpeedKPH					-- Start the fuel calculation with the vehicles current speed
+						    fuelCalc -= vehicle.startingFuelSpeed						-- Subtract the vehicles speed from three tenths of a second ago
+						    fuelCalc *= 30												-- Multiply by a magic number to scale this up to a useable value
+
+						    fuelUsage += fuelCalc										-- Add the rate of change fuel calculation to the base fuel usage
+
+
+						    if vehicle.draftBonus > 0 then
+							    fuelUsage -= vehicle.draftBonus
+						    end
+
+						    if vehicle.startingFuelSpeed > 55 and current_player.vehicleSpeedKPH > 55 and vehicle.startingFuelSpeed <= current_player.vehicleSpeedKPH then -- 55kmh being roughly the speed that we shift to 2nd
+							    fuelUsage -= 28											-- Fuel efficiency slightly better in 2nd gear
+						    end
+
+						    if vehicle.startingFuelSpeed == 0 and current_player.vehicleSpeedKPH == 0 or fuelUsage < 5 then
+							    fuelUsage = 5											-- Idle fuel usage
+						    end
+
+
+						    current_player.currentFuelLevel -= fuelUsage				-- Subtract the fuel usage calculation from the users current fuel level
+						    vehicle.startingFuelSpeed = current_player.vehicleSpeedKPH	-- Store the vehicles current speed for the next time we run this calculation
+					    end
+					    -- # Update Vehicle Fuel #
+
+
+					    -- # Refuel Vehicles that are parked on a Pit Box #
+					    for each object with label "pit_stop" do
+						    if current_player.vehicleSpeedKPH <= 5 and current_object.shape_contains( vehicle ) and current_player.currentFuelLevel < globalStorage.maxFuelLevel then
+							    if current_player.pitbox == 999 or current_player.pitbox == current_object.spawn_sequence then
+								    if timing.penalty > 0 then
+									    alias notify = allocate temporary number
+									    notify = timing.penalty
+									    notify /= 60
+									    notify *= 60
+
+									    if timing.penalty == notify then
+										    notify /= 60
+										    game.show_message_to(current_player, none, "Serving Time Penalty %ns", notify )
+									    end
+									    timing.penalty -= 20
+									    current_player.currentFuelLevel += 5 -- Give them the idle fuel back to make sure they don't die while serving a penalty
+								    end
+
+								    if current_player.currentFuelLevel < globalStorage.maxFuelLevel and timing.penalty <= 0 then
+									     storage.pittedThisLap = 2 --	# Set Pit Status #
+									     storage.sectorInvalidated = 1
+									     alias maximumRefuelAmount = allocate temporary number
+									     maximumRefuelAmount = globalStorage.maxFuelLevel
+									     maximumRefuelAmount -= current_player.currentFuelLevel
+									     alias refuelAmount = allocate temporary number
+									     refuelAmount = vehicle.refuelAmount
+
+									     if refuelAmount > maximumRefuelAmount then
+									        refuelAmount = maximumRefuelAmount
+									     end
+
+									     current_player.currentFuelLevel += refuelAmount
+									     vehicle.fuelTaken += refuelAmount
+
+									     if current_player.currentFuelLevel > globalStorage.maxFuelLevel then
+										     current_player.currentFuelLevel = globalStorage.maxFuelLevel
+									     end
+									     fueling = 1
+								    end
 							    end
 						    end
 
-						    if current_player.pitbox == current_object.spawn_sequence then
-							    selectedPitbox = current_object
+					    end
+					    -- # Refuel Vehicles that are parked on a Pit Box #
+
+
+					    -- # Alert the racer how much fuel they refilled #
+					    if fueling == 0 then
+						    if vehicle.fuelTaken > 1000 then
+	                            alias fuelMajor = allocate temporary number
+	                            fuelMajor = vehicle.fuelTaken
+	                            fuelMajor /= 1000
+	                            fuelMajor *= 1000
+	                            alias fuelMinor = allocate temporary number
+	                            fuelMinor = vehicle.fuelTaken
+	                            fuelMinor -= fuelMajor
+	                            fuelMinor /= 100
+	                            fuelMajor /= 1000
+							    game.show_message_to(current_player, none, "Amount of fuel refilled %n.%n", fuelMajor, fuelMinor )
 						    end
-						end
-					end
-
-					if selectedPitbox != no_object then
-                        current_player.vehicle.attach_to(selectedPitbox, 0, 0, 2, relative)
-                        current_player.vehicle.detach()
-                        current_player.vehicle.copy_rotation_from(selectedPitbox, false)
-                        current_player.currentFuelLevel = 500
-
-                        if timing.currentCheckpoint == finalCheckpoint.order then
-                            timing.currentCheckpoint = firstCheckpoint.order
-                        end
-					end
-
-					if selectedPitbox == no_object then
-					    current_player.biped.detach()
-					    current_player.onVehicle = 0
-					    current_player.vehicle.delete()
-					end
-
-				end
-				-- # Teleport to pitbox or remove Player from Vehicle if they have no fuel #
-
-
-				if current_player.onVehicle == 1 and current_player.currentFuelLevel > 0 and current_player.biped != no_object then
-					alias fueling = allocate temporary number
-					fueling = 0
-
-					-- # Update Vehicle Fuel #
-					do
-						alias fuelUsage = allocate temporary number
-						fuelUsage = 100												-- Base fuel usage
-
-						alias fuelCalc = allocate temporary number
-						fuelCalc = current_player.vehicleSpeedKPH					-- Start the fuel calculation with the vehicles current speed
-						fuelCalc -= vehicle.startingFuelSpeed						-- Subtract the vehicles speed from three tenths of a second ago
-						fuelCalc *= 30												-- Multiply by a magic number to scale this up to a useable value
-
-						fuelUsage += fuelCalc										-- Add the rate of change fuel calculation to the base fuel usage
-
-
-						if vehicle.draftBonus > 0 then
-							fuelUsage -= vehicle.draftBonus
-						end
-
-						if vehicle.startingFuelSpeed > 55 and current_player.vehicleSpeedKPH > 55 and vehicle.startingFuelSpeed <= current_player.vehicleSpeedKPH then -- 55kmh being roughly the speed that we shift to 2nd
-							fuelUsage -= 28											-- Fuel efficiency slightly better in 2nd gear
-						end
-
-						if vehicle.startingFuelSpeed == 0 and current_player.vehicleSpeedKPH == 0 or fuelUsage < 5 then
-							fuelUsage = 5											-- Idle fuel usage
-						end
-
-
-						current_player.currentFuelLevel -= fuelUsage				-- Subtract the fuel usage calculation from the users current fuel level
-						vehicle.startingFuelSpeed = current_player.vehicleSpeedKPH	-- Store the vehicles current speed for the next time we run this calculation
-					end
-					-- # Update Vehicle Fuel #
-
-
-					-- # Refuel Vehicles that are parked on a Pit Box #
-					for each object with label "pit_stop" do
-						if current_player.vehicleSpeedKPH <= 5 and current_object.shape_contains( vehicle ) and current_player.currentFuelLevel < globalStorage.maxFuelLevel then
-							if current_player.pitbox == 999 or current_player.pitbox == current_object.spawn_sequence then
-								if timing.penalty > 0 then
-									alias notify = allocate temporary number
-									notify = timing.penalty
-									notify /= 60
-									notify *= 60
-
-									if timing.penalty == notify then
-										notify /= 60
-										game.show_message_to(current_player, none, "Serving Time Penalty %ns", notify )
-									end
-									timing.penalty -= 20
-									current_player.currentFuelLevel += 5 -- Give them the idle fuel back to make sure they don't die while serving a penalty
-								end
-
-								if current_player.currentFuelLevel < globalStorage.maxFuelLevel and timing.penalty <= 0 then
-									 storage.pittedThisLap = 2 --	# Set Pit Status #
-									 storage.sectorInvalidated = 1
-									 alias maximumRefuelAmount = allocate temporary number
-									 maximumRefuelAmount = globalStorage.maxFuelLevel
-									 maximumRefuelAmount -= current_player.currentFuelLevel
-									 alias refuelAmount = allocate temporary number
-									 refuelAmount = vehicle.refuelAmount
-
-									 if refuelAmount > maximumRefuelAmount then
-									 	refuelAmount = maximumRefuelAmount
-									 end
-
-									 current_player.currentFuelLevel += refuelAmount
-									 vehicle.fuelTaken += refuelAmount
-
-									 if current_player.currentFuelLevel > globalStorage.maxFuelLevel then
-										 current_player.currentFuelLevel = globalStorage.maxFuelLevel
-									 end
-									 fueling = 1
-								end
-							end
-						end
+						    vehicle.fuelTaken = 0
+					    end
+					    -- # Alert the racer how much fuel they refilled #
 
 					end
-					-- # Refuel Vehicles that are parked on a Pit Box #
-
-
-					-- # Alert the racer how much fuel they refilled #
-					if fueling == 0 then
-						if vehicle.fuelTaken > 0 then
-	                        alias fuelMajor = allocate temporary number
-	                        fuelMajor = vehicle.fuelTaken
-	                        fuelMajor /= 1000
-	                        fuelMajor *= 1000
-	                        alias fuelMinor = allocate temporary number
-	                        fuelMinor = vehicle.fuelTaken
-	                        fuelMinor -= fuelMajor
-	                        fuelMinor /= 100
-	                        fuelMajor /= 1000
-							game.show_message_to(current_player, none, "Amount of fuel refilled %n.%n", fuelMajor, fuelMinor )
-						end
-						vehicle.fuelTaken = 0
-					end
-					-- # Alert the racer how much fuel they refilled #
-
 				end
 
 			end
