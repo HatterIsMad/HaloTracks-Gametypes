@@ -1413,7 +1413,7 @@ for each player do
 						current_object.set_waypoint_visibility(mod_player, current_player, 1)
                     end
                     if waypointVisibility >= 2 then
-						current_object.set_waypoint_icon(vip)
+						current_object.set_waypoint_icon(crown)
 						current_object.set_shape_visibility(mod_player, current_player, 1)
                     end
                     if waypointVisibility >= 3 then
