@@ -971,7 +971,7 @@ end
                 mon = current_player.biped.place_at_me(monitor, none, never_garbage_collect, 0, 0, 5, none)
                 mon.max_health = 100
                 mon.set_invincibility(1)
-                mon.set_hidden(true)
+                --mon.set_hidden(true)
                 mon.remove_weapon(primary, true)
                 current_player.set_biped(mon)
                 oldBody.delete()
@@ -1040,129 +1040,129 @@ for each player do
 
     if not current_player.biped.is_of_type(monitor) then
 
-	-- # Check if Player is on vehicle #
-	if vehicle != no_object then
-		current_player.onVehicle = 1
-	end
-	-- # Check if Player is on vehicle #
+	    -- # Check if Player is on vehicle #
+	    if vehicle != no_object then
+		    current_player.onVehicle = 1
+	    end
+	    -- # Check if Player is on vehicle #
 
 
 
-	-- # Handle the Player not being on a Vehicle #
-	if current_player.onVehicle == 0 then
-		if maxFuel == -1 or current_player.currentFuelLevel > 0 or current_player.currentFuelLevel == -30000 then
+	    -- # Handle the Player not being on a Vehicle #
+	    if current_player.onVehicle == 0 then
+		    if maxFuel == -1 or current_player.currentFuelLevel > 0 or current_player.currentFuelLevel == -30000 then
 
-		-- # Vehicle Respawn Timer has hit 0 #
-		if current_player.vehicleRespawnTimer.is_zero() then
-			if current_player.vehicle != no_object then
-				vehicle = current_player.vehicle
-				if vehicle.player[0] == current_player or vehicle.player[0] == no_player then
-					current_player.vehicle.delete()
-					current_player.vehicle = no_object
-					vehicle = no_object
-				end
-			end
-			current_player.vehicleRespawnTimer.reset()
-		end
-		-- # Vehicle Respawn Timer has hit 0 #
-
-
-		-- # If the Player doesn't have a vehicle, Put them in one #
-		if current_player.vehicle == no_object then
-			if defaultVehicle == 0 then
-				vehicle = current_player.biped.place_at_me(mongoose, "Vehicle", none, 0, 0, 0, none)
-			end
-			if defaultVehicle == 1 then
-				vehicle = current_player.biped.place_at_me(warthog, "Vehicle", none, 0, 0, 0, none)
-			end
-			if defaultVehicle == 2 then
-				vehicle = current_player.biped.place_at_me(warthog, "Vehicle", none, 0, 0, 0, troop)
-			end
-			if defaultVehicle == 3 then
-				vehicle = current_player.biped.place_at_me(pickup_truck, "Vehicle", none, 0, 0, 0, none)
-			end
-			vehicle.player[0] = current_player
-			current_player.vehicle = vehicle
-			current_player.force_into_vehicle(current_player.vehicle)
-			current_player.onVehicle = 1
-		end
-		-- # If the Player doesn't have a vehicle, Put them in one #
+		    -- # Vehicle Respawn Timer has hit 0 #
+		    if current_player.vehicleRespawnTimer.is_zero() then
+			    if current_player.vehicle != no_object then
+				    vehicle = current_player.vehicle
+				    if vehicle.player[0] == current_player or vehicle.player[0] == no_player then
+					    current_player.vehicle.delete()
+					    current_player.vehicle = no_object
+					    vehicle = no_object
+				    end
+			    end
+			    current_player.vehicleRespawnTimer.reset()
+		    end
+		    -- # Vehicle Respawn Timer has hit 0 #
 
 
-		-- # If the Player still doesn't have a vehicle, start the Vehicle respawn timer #
-		current_player.vehicleRespawnTimer.set_rate(-100%)
-		-- # If the Player still doesn't have a vehicle, start the Vehicle respawn timer #
+		    -- # If the Player doesn't have a vehicle, Put them in one #
+		    if current_player.vehicle == no_object then
+			    if defaultVehicle == 0 then
+				    vehicle = current_player.biped.place_at_me(mongoose, "Vehicle", none, 0, 0, 0, none)
+			    end
+			    if defaultVehicle == 1 then
+				    vehicle = current_player.biped.place_at_me(warthog, "Vehicle", none, 0, 0, 0, none)
+			    end
+			    if defaultVehicle == 2 then
+				    vehicle = current_player.biped.place_at_me(warthog, "Vehicle", none, 0, 0, 0, troop)
+			    end
+			    if defaultVehicle == 3 then
+				    vehicle = current_player.biped.place_at_me(pickup_truck, "Vehicle", none, 0, 0, 0, none)
+			    end
+			    vehicle.player[0] = current_player
+			    current_player.vehicle = vehicle
+			    current_player.force_into_vehicle(current_player.vehicle)
+			    current_player.onVehicle = 1
+		    end
+		    -- # If the Player doesn't have a vehicle, Put them in one #
 
 
-		-- # Handle Abandoned Vehicles #
-		for each object with label "Vehicle" do
-			if current_object.player[0] == no_player then
-
-				-- # If the abandoned vehicle is near the Player, pair them #
-				if current_player.vehicle == no_object then
-					alias distance = allocate temporary number
-					distance = 0
-					distance = current_object.get_distance_to(current_player.biped)
-
-					if distance <= 100 then
-						current_object.player[0] = current_player
-						current_player.vehicle = current_object
-					end
-				end
-				-- # If the abandoned vehicle is near the Player, pair them #
-
-			end
-		end
-		-- # Handle Abandoned Vehicles #
-
-		end
-	end
-	-- # Handle the Player not being on a Vehicle #
+		    -- # If the Player still doesn't have a vehicle, start the Vehicle respawn timer #
+		    current_player.vehicleRespawnTimer.set_rate(-100%)
+		    -- # If the Player still doesn't have a vehicle, start the Vehicle respawn timer #
 
 
-	-- # Handle the Player being on a Vehicle #
-	if current_player.onVehicle == 1 and vehicle.has_forge_label("Vehicle") then
+		    -- # Handle Abandoned Vehicles #
+		    for each object with label "Vehicle" do
+			    if current_object.player[0] == no_player then
 
-		-- # Reset Vehicle Respawn Timer #
-		current_player.vehicleRespawnTimer.reset()
-		-- # Reset Vehicle Respawn Timer #
+				    -- # If the abandoned vehicle is near the Player, pair them #
+				    if current_player.vehicle == no_object then
+					    alias distance = allocate temporary number
+					    distance = 0
+					    distance = current_object.get_distance_to(current_player.biped)
 
+					    if distance <= 100 then
+						    current_object.player[0] = current_player
+						    current_player.vehicle = current_object
+					    end
+				    end
+				    -- # If the abandoned vehicle is near the Player, pair them #
 
-		-- # Player is on a new Vehicle #
-		if current_player.vehicle != vehicle then
-			current_player.vehicle = vehicle
-			alias oldPlayer = allocate temporary player
-			oldPlayer = vehicle.player[0]
-			oldPlayer.vehicle = no_object
-			vehicle.player[0] = current_player
-		end
-		-- # Player is on a new Vehicle #
+			    end
+		    end
+		    -- # Handle Abandoned Vehicles #
 
-
-		-- # Ensure Player is only associated with one Vehicle #
-		for each object with label "Vehicle" do
-			if current_object != vehicle and current_object.player[0] == current_player then
-				current_object.player[0] = no_player
-			end
-		end
-		-- # Ensure Player is only associated with one Vehicle #
+		    end
+	    end
+	    -- # Handle the Player not being on a Vehicle #
 
 
-		-- # Update Vehicle Speed #
-		current_player.vehicleSpeedKPH = 0
-		if current_player.biped != no_object then
-			current_player.vehicleSpeedKPH = current_player.biped.get_speed()
-			current_player.vehicleSpeedKPH *= 109 -- Convert from Feet Per Second to KMH
-			current_player.vehicleSpeedKPH /= 100 -- Convert from Feet Per Second to KMH
+	    -- # Handle the Player being on a Vehicle #
+	    if current_player.onVehicle == 1 and vehicle.has_forge_label("Vehicle") then
 
-			if current_player.vehicleSpeedKPH < 0 then
-				current_player.vehicleSpeedKPH = 0
-			end
-			if current_player.vehicleSpeedKPH > 200 then
-				current_player.vehicleSpeedKPH = 200
-			end
-		end
-		-- # Update Vehicle Speed #
+		    -- # Reset Vehicle Respawn Timer #
+		    current_player.vehicleRespawnTimer.reset()
+		    -- # Reset Vehicle Respawn Timer #
+
+
+		    -- # Player is on a new Vehicle #
+		    if current_player.vehicle != vehicle then
+			    current_player.vehicle = vehicle
+			    alias oldPlayer = allocate temporary player
+			    oldPlayer = vehicle.player[0]
+			    oldPlayer.vehicle = no_object
+			    vehicle.player[0] = current_player
+		    end
+		    -- # Player is on a new Vehicle #
+
+
+		    -- # Ensure Player is only associated with one Vehicle #
+		    for each object with label "Vehicle" do
+			    if current_object != vehicle and current_object.player[0] == current_player then
+				    current_object.player[0] = no_player
+			    end
+		    end
+		    -- # Ensure Player is only associated with one Vehicle #
+
+
+		    -- # Update Vehicle Speed #
+		    current_player.vehicleSpeedKPH = 0
+		    if current_player.biped != no_object then
+			    current_player.vehicleSpeedKPH = current_player.biped.get_speed()
+			    current_player.vehicleSpeedKPH *= 109 -- Convert from Feet Per Second to KMH
+			    current_player.vehicleSpeedKPH /= 100 -- Convert from Feet Per Second to KMH
+
+			    if current_player.vehicleSpeedKPH < 0 then
+				    current_player.vehicleSpeedKPH = 0
+			    end
+			    if current_player.vehicleSpeedKPH > 200 then
+				    current_player.vehicleSpeedKPH = 200
+			    end
+		    end
+		    -- # Update Vehicle Speed #
 
 	    end
 
