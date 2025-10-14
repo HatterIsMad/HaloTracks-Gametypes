@@ -21,9 +21,10 @@ include "strings/common_strings.txt"
 		optionDescriptionCVDelete		"If enabled, objects with the label cv_delete will be deleted."
 		statBestLap						"Best Lap"
 		widgetText						"%n.%n"
-		lapCompleteMessage				"Lap Complete."
+		lapCompleteMessage				"Lap Complete: %n.%n"
 		bestLapMessage					"New best lap time!"
 		finalLapMessage					"Final Lap."
+		holeshotMessage					"%p got the holeshot"
 		debug							"%n"
 	end
 
@@ -148,10 +149,13 @@ include "strings/common_strings.txt"
 ;	# Variables #
 
 	variables global
+		networked	number	startGateFrame			0
+		networked	number	startGateDropped		0
 		networked	number	frames					0
 		networked	number	raceStatus				0
 		networked	object	firstCheckpoint			none
 		networked	object	finalCheckpoint			none
+		networked	player	holeshotPlayer			none
 	end
 
 
@@ -160,13 +164,12 @@ include "strings/common_strings.txt"
 		networked	number	currentLapSeconds		0
 		networked	number	currentLapMilliseconds	0
 		networked	number	onVehicle				0
+		networked	number	currentCheckpoint		-1
 		networked	object	vehicle					none
 
 
-		networked	number	target_gate				-1
 		networked	number	lap						0
 		networked	number	lap_complete			0
-		local		number	legal					1
 		networked	timer	on_foot					10
 		networked	timer	lap_time				0
 	end
@@ -174,6 +177,9 @@ include "strings/common_strings.txt"
 
 	variables object
 		networked	number	order					0
+
+
+
 		networked	timer	deathrow				16
 		networked	player	rider					none
 	end
@@ -222,21 +228,21 @@ include "strings/common_strings.txt"
 				action boundary_set_visible current_object no_one
 			end
 
-			;	# Set firstCheckpoint #
-			action for_each race_flag
-				condition if firstCheckpoint == none or
-				condition if current_object.order > firstCheckpoint.order
-					action set firstCheckpoint = current_object
-			end
-			;	# Set firstCheckpoint #
-
 			;	# Set finalCheckpoint #
 			action for_each race_flag
 				condition if finalCheckpoint == none or
-				condition if current_object.order < finalCheckpoint.order
+				condition if current_object.order > finalCheckpoint.order
 					action set finalCheckpoint = current_object
 			end
 			;	# Set finalCheckpoint #
+
+			;	# Set firstCheckpoint #
+			action for_each race_flag
+				condition if firstCheckpoint == none or
+				condition if current_object.order < firstCheckpoint.order
+					action set firstCheckpoint = current_object
+			end
+			;	# Set firstCheckpoint #
 
 		;	# Initialize Checkpoints
 
@@ -256,7 +262,13 @@ include "strings/common_strings.txt"
 		;	# Hide Invisible Race Objects #
 
 
-		action set raceStatus set_to 2 ; 1
+		;	# Set Start Gate Frame #
+		action random 601 startGateFrame
+		action set startGateFrame add 3300
+		;	# Set Start Gate Frame #
+
+
+		action set raceStatus set_to 1
 	end
 
 ;	# Initialize #
@@ -266,6 +278,21 @@ include "strings/common_strings.txt"
 
 
 ;	# Basic Game Logic #
+
+
+	;	# Delete Race Gates #
+	trigger general
+		condition if raceStatus == 1
+			condition if startGateDropped == 0
+				condition if frames > startGateFrame
+					action for_each race_gate
+						action delete_object current_object
+					end
+					action set raceStatus set_to 2
+					action set frames set_to 0
+					action set startGateDropped set_to 1
+	end
+	;	# Delete Race Gates #
 
 
 	;	# Set Current Lap time #
@@ -297,6 +324,21 @@ include "strings/common_strings.txt"
 	;	# Increment the player frame counters #
 
 
+	; # End the game when time runs out #
+	trigger general
+		;condition if round_time_limit > 0
+		;condition timer_expired round_timer
+		;action end_round
+	end
+	; # End the game when time runs out #
+
+
+
+	;trigger general
+	;	action set round_timer set_to 600
+	;end
+
+
 ;	# Basic Game Logic #
 
 
@@ -320,14 +362,31 @@ include "strings/common_strings.txt"
 			action set current_player.onVehicle set_to 1
 		;	# Check if Player is on vehicle #
 
-
 	end
 
-		;	# Increment the player frame counters #
+
+	;	# Spawn player in vehicle #
 	trigger player
-		action hud_post_message player current_player none debug	current_player.onVehicle
+
+		condition if current_player.vehicle == none
+		temporary object vehicle none
+		action for_each general
+			condition if defaultVehicle == 0
+			action create_object "mongoose" at current_player set vehicle "vehicle"
+		end
+
+		action for_each general
+			condition if defaultVehicle == 1
+			action create_object "warthog" at current_player set vehicle "vehicle"
+		end
+
+		action set current_player.vehicle = vehicle
+		action set vehicle.team = current_player.team
+
+		action player_set_vehicle current_player current_player.vehicle
+
 	end
-	;	# Increment the player frame counters #
+	;	# Spawn player in vehicle #
 
 ;	# Handle Vehicles #
 
@@ -350,7 +409,7 @@ include "strings/common_strings.txt"
 	trigger player
 		action hud_widget_set_visibility widget current_player false
 		temporary object biped current_player
-		condition not if biped equal_to none
+		condition not if biped == none
 			action hud_widget_set_visibility widget current_player true
 	end
 
@@ -361,252 +420,109 @@ include "strings/common_strings.txt"
 
 
 ;	# Handle Checkpoints #
+
+	;	# Make sure all players have valid checkpoints #
+	trigger player
+		condition if current_player.currentCheckpoint < firstCheckpoint.order or
+		condition if current_player.currentCheckpoint > finalCheckpoint.order
+			action set current_player.currentCheckpoint set_to firstCheckpoint.order
+	end
+	;	# Make sure all players have valid checkpoints #
+
+
+	;	# Set Checkpoint Visibility #
+	trigger player
+		condition if current_player.onVehicle == 1
+			action for_each race_flag
+				action boundary_set_visible current_object no_one
+				condition if current_object.order == current_player.currentCheckpoint
+					action boundary_set_visible current_object player current_player 1
+			end
+	end
+	;	# Set Checkpoint Visibility #
+
+
+	;	# The Player has hit the checkpoint #
+	trigger player
+		condition if current_player.onVehicle == 1
+			action for_each race_flag
+				condition if current_object.order == current_player.currentCheckpoint
+					condition object_in_area current_player current_object
+
+						condition if holeshotPlayer == none
+							action set holeshotPlayer set_to current_player
+							action for_each player
+								action hud_post_message player current_player none holeshotMessage holeshotPlayer
+							end
+			end
+	end
+
+
+	trigger player
+		condition if current_player.onVehicle == 1
+			action for_each race_flag
+				condition if current_object.order == current_player.currentCheckpoint
+					condition object_in_area current_player current_object
+
+						;	# Find next checkpoint #
+						temporary number nextCheckpointNumber finalCheckpoint.order
+						action set nextCheckpointNumber add 1
+						action for_each race_flag
+							condition if current_object.order > current_player.currentCheckpoint
+								condition if current_object.order < nextCheckpointNumber
+									action set nextCheckpointNumber set_to current_object.order
+						end
+						;	# Find next checkpoint #
+
+
+						;	# Update Player Current Checkpoint #
+						action set current_player.currentCheckpoint set_to nextCheckpointNumber
+						;	# Update Player Current Checkpoint #
+
+
+						;	# Player has completed a lap #
+						condition if current_player.currentCheckpoint > finalCheckpoint.order
+							condition if raceStatus >= 2
+
+								;	# Reset Player checkpoint counter #
+								action set current_player.currentCheckpoint set_to firstCheckpoint.order
+								;	# Reset Player checkpoint counter #
+
+
+								;	# Increment Player Score #
+								action set_score add 1 player current_player
+								;	# Increment Player Score #
+
+
+								;	# Send Lap Complete Notifications #
+								action hud_post_message player current_player none lapCompleteMessage	current_player.currentLapSeconds	current_player.currentLapMilliseconds
+								;action submit_incident lap_complete player current_player player none
+								;	# Send Lap Complete Notifications #
+
+
+							action set current_player.lapFrames set_to 1	; Reset lap frame count
+						;	# Player has completed a lap #
+
+			end
+	end
+	;	# The Player has hit the checkpoint #
+
+
 ;	# Handle Checkpoints #
 
 
 
 
 
-trigger local
+	trigger local
 
-	action for_each player
+		action for_each player
 
 
+
+		end
 
 	end
-
-end
-
-
-
-
-
-
-
-
-
-
-trigger race_flag
-
-	action boundary_set_visible current_object no_one
-
-	action for_each player
-		condition if current_object.order equal_to current_player.target_gate
-		action boundary_set_visible current_object player current_player 1
-	end
-
-end
-
-
-
-; # make sure you have a vehicle to start #
-trigger player
-
-	condition if current_player.vehicle == none
-	temporary object vehicle none
-	action for_each general
-		condition if defaultVehicle == 0
-		action create_object "mongoose" at current_player set vehicle "vehicle"
-	end
-
-	action for_each general
-		condition if defaultVehicle == 1
-		action create_object "warthog" at current_player set vehicle "vehicle"
-	end
-
-	action set current_player.vehicle = vehicle
-	action set vehicle.rider = current_player
-	action set vehicle.team = current_player.team
-
-	action player_set_vehicle current_player current_player.vehicle
-
-end
-; # make sure you have a vehicle to start #
-
-
-; # make sure your vehicle doesn't get deleted out from under you #
-trigger player
-
-	temporary object vehicle none
-	action player_get_vehicle current_player vehicle
-	condition not if vehicle == none
-	action set current_player.vehicle = vehicle
-	action set vehicle.rider = current_player
-
-end
-; # make sure your vehicle doesn't get deleted out from under you #
-
-
-; need to move the target gate as you hit it
-; score 1 point for hitting target gate
-
-trigger player
-
-	action player_set_coop_spawning current_player 1
-	action set_respawn_filter current_player no_one	 	;no one should be able to bro spawn on me!
-
-
-	temporary number checkpoint_reached 0
-
-	condition if current_player.legal == 1	;must be in a vehicle for the checkpoint to count
-
-	action for_each race_flag
-		condition if current_object.order equal_to current_player.target_gate
-
-		action navpoint_set_visible current_object player current_player 1
-
-		; And if the player has arrived
-		condition object_in_area current_player current_object
-
-		; Clear the nav point, flag the checkpoint as reached
-		action navpoint_set_visible current_object player current_player 0
-		action set checkpoint_reached = 1
-	end
-
-
-	;tysongr - Race robustness. Find the NEXT HIGHEST GATE NUMBER, give that to the player as their next target.
-	; The starting point is the highest recorded gate number + 1
-	temporary number previous_order current_player.target_gate
-	temporary number next_order finalCheckpoint.order
-	action set next_order += 1
-	action for_each race_flag
-		; Is this flag higher than the player's current target?
-		condition if current_object.order > current_player.target_gate
-
-		; AND less than the current candidate gate number?
-		condition if current_object.order < next_order
-		action set next_order = current_object.order
-	end
-	action set current_player.target_gate = next_order
-
-	;tysongr - Race robustness. If the target is higher than the highest gate number, then we've completed a lap
-	action for_each general
-		condition if current_player.target_gate > finalCheckpoint.order
-
-		; Lap complete, and set the target gate back to the starting gate
-		action set current_player.lap_complete = 1
-		action set current_player.target_gate = firstCheckpoint.order
-	end
-
-	;try to do respawning in FFA
-	action for_each race_flag
-		action set_respawn_filter current_object player current_player 0
-		condition if current_object.order equal_to current_player.target_gate
-		action navpoint_set_visible current_object player current_player 1
-	end
-
-	;tysongr - Race robustness. Partly rewritten to use previous_order defined above.
-	action for_each race_flag
-		;temporary number last_gate current_player.target_gate
-		;action set last_gate subtract 1
-
-		condition if current_object.order == previous_order
-		action set_respawn_filter current_object player current_player 1
-		action player_set_primary_respawn_object current_player current_object
-		action navpoint_set_visible current_object player current_player 0
-	end
-end
-
-trigger player
-	action timer_set_rate current_player.lap_time -1
-
-	condition if current_player.lap_complete == 1
-
-	action hud_post_message player current_player none lapCompleteMessage
-	action submit_incident lap_complete player current_player player none
-
-	action set current_player.lap add 1
-	;action set_score add 1 player current_player
-
-	action for_each general
-		condition if current_player.lap equal_to 1
-		action set current_player.stat_best_lap_time set_to current_player.lap_time
-		;action hud_post_message player current_player none "new best lap time!"
-	end
-
-	action for_each general
-		condition not if current_player.lap equal_to 1
-		condition if current_player.lap_time less_than current_player.stat_best_lap_time
-		action set current_player.stat_best_lap_time set_to current_player.lap_time
-		action hud_post_message player current_player none bestLapMessage
-	end
-
-	action timer_reset current_player.lap_time
-
-
-	action for_each general
-		temporary number lastlap numberOfLaps
-
-		action set lastlap subtract 1
-		condition if current_player.lap equal_to lastlap
-		;action hud_post_message player current_player none finalLapMessage
-		temporary number my_place_in_the_world 0
-		action player_get_place current_player my_place_in_the_world
-		condition if my_place_in_the_world == 1
-		action submit_incident final_lap player current_player everyone
-	end
-
-
-	action set current_player.lap_complete = 0
-end
-
-
-
-
-
-; reset you if you're on foot for too long
-trigger player
-	temporary object test_for_vehicle none
-
-	action set current_player.legal set_to 1
-
-	action player_get_vehicle current_player test_for_vehicle
-
-	condition if test_for_vehicle equal_to none
-
-	action hud_widget_set_visibility widget current_player false
-
-	action set current_player.legal set_to 0
-
-	action timer_set_rate current_player.on_foot 1
-	condition timer_expired current_player.on_foot
-
-	; Delete his former vehicle (if the vehicle still thinks he's its rider)
-	action for_each general
-		temporary object vehicle current_player.vehicle
-		condition if vehicle.rider == current_player or
-		condition if vehicle.rider == none
-		action delete_object current_player.vehicle
-	end
-
-	action timer_reset current_player.on_foot
-end
-
-; but reset timer if you get back in a vehicle
-trigger player
-	temporary object test_for_vehicle none
-	action player_get_vehicle current_player test_for_vehicle
-	condition not if test_for_vehicle equal_to none
-	action timer_reset current_player.on_foot
-end
-
-
-
-trigger player
-	;condition not if current_player.lap less_than numberOfLaps
-	;action end_round
-end
-
-;end the round when time runs out!
-trigger general
-	;condition if round_time_limit > 0
-	;condition timer_expired round_timer
-	;action end_round
-end
-
-;delete stuff
-
-
 
 
 
@@ -636,87 +552,3 @@ end
 		action hide_object current_object true
 	end
 ;	# Hide Invisible Race Objects #
-
-
-
-
-; vehicle cleanup
-
-; clean up vehicles that don't seem to be in use
-trigger general
-	action for_each vehicle
-		temporary number speedness 0
-		action object_get_velocity current_object speedness
-		condition if speedness less_than 50
-		action timer_set_rate current_object.deathrow 1
-		condition timer_expired current_object.deathrow
-		action delete_object current_object
-	end
-end
-
-; ...but leave the ones that are near players
-trigger general
-	action for_each vehicle
-		temporary object test_for_player none
-		temporary number distance_to_player 0
-		action for_each player
-			action object_get_distance current_object current_player distance_to_player
-			condition if distance_to_player less_than 10
-			action timer_reset current_object.deathrow
-		end
-	end
-end
-
-
-; Mark redundant, duplicate vehicles for cleaning
-trigger player
-	; Get the player's current vehicle
-	temporary object vehicle current_player.vehicle
-	condition if vehicle != none
-
-	; Is the player's vehicle being ridden by someone else?
-	action for_each general
-		condition if vehicle.rider != current_player
-
-		; How sad. Clear the rider's current vehicle so we can get him a new one
-		action set current_player.vehicle = none
-	end
-
-	; Mark any vehicles who think they they are the current player's (or none's)
-	action for_each vehicle
-		condition if current_object != vehicle
-		condition if current_object.rider == current_player or
-		condition if current_object.rider == none
-		action set current_object.rider = none
-	end
-end
-
-
-; For each vehicle which should find a rider, try to find one, or delete it
-trigger general
-	temporary number distance 0
-
-	; For each vehicle group, look for riderless vehicles, and find nearby riders for them (or delete them)
-	action for_each vehicle
-		condition if current_object.rider == none
-		action for_each player
-			condition if current_player.vehicle == none
-			action object_get_distance current_object current_player distance
-			condition if distance <= 100
-
-			; A match! How happy! Link them up
-			action set current_object.rider = current_player
-			action set current_player.vehicle = current_object
-		end
-		condition if current_object.rider == none
-		action delete_object current_object
-	end
-end
-
-
-; After all of the above has been attempted, take care of any players who just died
-trigger player
-	condition player_died current_player any
-	action delete_object current_player.vehicle
-	action set current_player.vehicle = none
-end
