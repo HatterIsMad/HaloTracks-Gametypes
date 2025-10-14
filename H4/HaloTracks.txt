@@ -7,7 +7,7 @@ include "strings/common_strings.txt"
 ;	# String Tables #
 
 	string_table english
-		engine_category_race			"Slayer"
+		engine_category_slayer			"Slayer"
 		title							"Race"
 		description						"Gentlemen, start your engines."
 		objective						"Hit checkpoints to complete laps.\r\n%n laps to win."
@@ -17,11 +17,14 @@ include "strings/common_strings.txt"
 		optionDescriptionVehicle		"Determines what vehicle players will use in this race."
 		optionVehicleMongoose			"Mongoose"
 		optionVehicleWarthog			"Warthog"
+		optionNameCVDelete				"Competitive"
+		optionDescriptionCVDelete		"If enabled, objects with the label cv_delete will be deleted."
 		statBestLap						"Best Lap"
-		widgetText						"%n KPH"
+		widgetText						"%n.%n"
 		lapCompleteMessage				"Lap Complete."
 		bestLapMessage					"New best lap time!"
 		finalLapMessage					"Final Lap."
+		debug							"%n"
 	end
 
 ;	# String Tables #
@@ -35,8 +38,8 @@ include "strings/common_strings.txt"
 	engine_data
 		name title
 		description description
-		icon 0
-		category race
+		icon 7
+		category slayer
 	end
 
 ;	# Engine Config #
@@ -77,17 +80,6 @@ include "strings/common_strings.txt"
 
 
 
-;	# Constants #
-
-	constants
-		number k_mongoose	1
-		number k_warthog	2
-	end
-
-;	# Constants #
-
-
-
 
 
 ;	# Game Options #
@@ -117,13 +109,14 @@ include "strings/common_strings.txt"
 		override		loadout_palette elite_tier3		empty_palette
 
 		override		base_player_traits
+						shield_hud						false
 						initial_equipment				sprint_equipment
 						assassination_immunity			true
 						damage_resistance				20.00
 						vehicle_usage					not_passenger
 		end
 
-		option	option_lap_count	optionNameNumberOfLaps	optionDescriptionNumberOfLaps	3
+		option	numberOfLaps	optionNameNumberOfLaps	optionDescriptionNumberOfLaps	3
 			1	laps_1		""
 			3	laps_3		""
 			5	laps_5		""
@@ -134,9 +127,14 @@ include "strings/common_strings.txt"
 			100	laps_100	""
 		end
 
-		option	option_vehicle_select	optionNameVehicle	optionDescriptionVehicle	k_mongoose
-			k_mongoose	optionVehicleMongoose	""
-			k_warthog	optionVehicleWarthog	""
+		option	cvDelete	optionNameCVDelete	optionDescriptionCVDelete	0
+			0	option_disabled	""
+			1	option_enabled	""
+		end
+
+		option	defaultVehicle	optionNameVehicle	optionDescriptionVehicle	0
+			0	optionVehicleMongoose	""
+			1	optionVehicleWarthog	""
 		end
 
 	end
@@ -150,31 +148,32 @@ include "strings/common_strings.txt"
 ;	# Variables #
 
 	variables global
-		networked	object	start_gate				none
-		local		number	flag_count				0
-		networked	number	highest_gate_number		0
-		networked	player	new_leader				none
-		networked	player	old_leader				none
+		networked	number	frames					0
+		networked	number	raceStatus				0
+		networked	object	firstCheckpoint			none
+		networked	object	finalCheckpoint			none
 	end
 
 
 	variables player
+		networked	number	lapFrames				0
+		networked	number	currentLapSeconds		0
+		networked	number	currentLapMilliseconds	0
+		networked	number	onVehicle				0
+		networked	object	vehicle					none
+
+
 		networked	number	target_gate				-1
 		networked	number	lap						0
 		networked	number	lap_complete			0
-		networked	player	first_gate_set			none
-		networked	object	vehicle					none
-		local		number	kph						0
 		local		number	legal					1
 		networked	timer	on_foot					10
 		networked	timer	lap_time				0
-		networked	timer	game_start_vo			1
-		networked	number	heard_game_start		0
 	end
 
 
 	variables object
-		networked	number	gate_number				0
+		networked	number	order					0
 		networked	timer	deathrow				16
 		networked	player	rider					none
 	end
@@ -188,7 +187,7 @@ include "strings/common_strings.txt"
 ;	# Widgets #
 
 	hud_widgets
-		speedo			bottom_left
+		widget	bottom_left
 	end
 
 ;	# Widgets #
@@ -200,7 +199,7 @@ include "strings/common_strings.txt"
 ;	# Stats #
 
 	game_stats
-		stat_best_lap_time		timer	statBestLap	none	0	0	0
+		stat_best_lap_time	timer	statBestLap	none	0	0	0
 	end
 
 ;	# Stats #
@@ -214,50 +213,50 @@ include "strings/common_strings.txt"
 	trigger initialization
 
 
-		action for_each player
-			action player_set_objective current_player objective option_lap_count
-			action set current_player.stat_best_lap_time set_to 3600
-		end
+		;	# Initialize Checkpoints
+
+			action for_each race_flag
+				action set current_object.order set_to current_object.user_data
+				action set current_object.team set_to attackers
+				action object_set_invincibility current_object true
+				action boundary_set_visible current_object no_one
+			end
+
+			;	# Set firstCheckpoint #
+			action for_each race_flag
+				condition if firstCheckpoint == none or
+				condition if current_object.order > firstCheckpoint.order
+					action set firstCheckpoint = current_object
+			end
+			;	# Set firstCheckpoint #
+
+			;	# Set finalCheckpoint #
+			action for_each race_flag
+				condition if finalCheckpoint == none or
+				condition if current_object.order < finalCheckpoint.order
+					action set finalCheckpoint = current_object
+			end
+			;	# Set finalCheckpoint #
+
+		;	# Initialize Checkpoints
 
 
-		action for_each race_flag
-			action set current_object.gate_number set_to current_object.user_data
-			action set_boundary current_object cylinder 20 10 25
-			action set current_object.team set_to attackers
-			action navpoint_set_icon current_object destination
-
-			action navpoint_set_priority current_object blink
-			action object_set_invincibility current_object true
-			action set_respawn_filter current_object no_one
-			action set flag_count add 1
-			condition if current_object.gate_number equal_to 1
-			action set start_gate set_to current_object ;tysongr - THIS IS BEING OVERRIDDEN!
-			action navpoint_set_visible current_object no_one
-			action boundary_set_visible current_object no_one
-		end
+		;	# Delete Competitive Version Objects #
+			action for_each cv_delete
+				condition if cvDelete == 1
+					action delete_object current_object
+			end
+		;	# Delete Competitive Version Objects #
 
 
-		;	# Find the race flag with the lowest number, make it the starting gate #
-		action for_each race_flag
-			; If there's no start gate, or if the start gate has a higher user data number than the current object
-			condition if start_gate == none or
-			condition if start_gate.gate_number > current_object.gate_number
-
-			; Then make this current object into the new start gate
-			action set start_gate = current_object
-		end
-		;	# Find the race flag with the lowest number, make it the starting gate #
+		;	# Hide Invisible Race Objects #
+			action for_each race_hide
+				action hide_object current_object true
+			end
+		;	# Hide Invisible Race Objects #
 
 
-
-		;	# Remember the highest gate number for later use #
-		action for_each race_flag
-			; If the current object's gate is higher than the highest, update it
-			condition if current_object.gate_number > highest_gate_number
-			action set highest_gate_number = current_object.gate_number
-		end
-		;	# Remember the highest gate number for later use #
-
+		action set raceStatus set_to 2 ; 1
 	end
 
 ;	# Initialize #
@@ -266,64 +265,137 @@ include "strings/common_strings.txt"
 
 
 
-;	# Double Host Migration #
-
-	trigger double_migration
-
-		;	# Destroy all Vehicles #
-		action for_each vehicle
-			action delete_object current_object
-		end
-		;	# Destroy all Vehicles #
+;	# Basic Game Logic #
 
 
-		;	# Restore the object gate numbers #
-		action for_each race_flag
-			action set current_object.gate_number set_to current_object.user_data
-		end
-		;	# Restore the object gate numbers #
+	;	# Set Current Lap time #
+	trigger player
+		action set current_player.currentLapSeconds set_to current_player.lapFrames
+		action set current_player.currentLapSeconds divide 60
+		temporary number t current_player.currentLapSeconds
+		action set t multiply 60
+		action set current_player.currentLapMilliseconds set_to current_player.lapFrames
+		action set current_player.currentLapMilliseconds subtract t
+		action set current_player.currentLapMilliseconds multiply 1000
+		action set current_player.currentLapMilliseconds divide 60
+	end
+	;	# Set Current Lap time #
 
 
-		;	# Restore the start_gate object reference #
-		action for_each race_flag
-			; If there's no start gate, or if the start gate has a higher user data number than the current object
-			condition if start_gate == none or
-			condition if start_gate.gate_number > current_object.gate_number
-
-			; Then make this current object into the new start gate
-			action set start_gate = current_object
-		end
-		;	# Restore the start_gate object reference #
+	;	# Increment the frame counter #
+	trigger general
+		action set frames add 1
+	end
+	;	# Increment the frame counter #
 
 
-		;	# Restore object members of players #
-		action for_each player
-			action set current_player.first_gate_set = current_player
-		end
-		;	# Restore object members of players #
+	;	# Increment the player frame counters #
+	trigger player
+		condition if raceStatus >= 2
+			action set current_player.lapFrames add 1
+	end
+	;	# Increment the player frame counters #
+
+
+;	# Basic Game Logic #
+
+
+
+
+
+;	# Handle Vehicles #
+
+	trigger player
+
+
+		;	# Get players current Vehicle #
+		temporary object vehicle none
+		action player_get_vehicle current_player vehicle
+		;	# Get players current Vehicle #
+
+
+		;	# Check if Player is on vehicle #
+		action set current_player.onVehicle set_to 0
+		condition if vehicle != none
+			action set current_player.onVehicle set_to 1
+		;	# Check if Player is on vehicle #
+
 
 	end
 
-;	# Double Host Migration #
+		;	# Increment the player frame counters #
+	trigger player
+		action hud_post_message player current_player none debug	current_player.onVehicle
+	end
+	;	# Increment the player frame counters #
+
+;	# Handle Vehicles #
+
+
+
+
+
+;	# Handle UI #
+
+	trigger player
+
+		;	# Initialize UI #
+		action player_set_objective current_player objective numberOfLaps
+		;	# Initialize UI #
+
+		action hud_widget_set_text widget widgetText local_player.currentLapSeconds	local_player.currentLapMilliseconds
+
+	end
+
+	trigger player
+		action hud_widget_set_visibility widget current_player false
+		temporary object biped current_player
+		condition not if biped equal_to none
+			action hud_widget_set_visibility widget current_player true
+	end
+
+;	# Handle UI #
 
 
 
 
 
 ;	# Handle Checkpoints #
+;	# Handle Checkpoints #
+
+
+
+
+
+trigger local
+
+	action for_each player
+
+
+
+	end
+
+end
+
+
+
+
+
+
+
+
+
+
 trigger race_flag
 
 	action boundary_set_visible current_object no_one
 
 	action for_each player
-		condition if current_object.gate_number equal_to current_player.target_gate
+		condition if current_object.order equal_to current_player.target_gate
 		action boundary_set_visible current_object player current_player 1
 	end
 
 end
-;	# Handle Checkpoints #
-
-
 
 
 
@@ -333,12 +405,12 @@ trigger player
 	condition if current_player.vehicle == none
 	temporary object vehicle none
 	action for_each general
-		condition if option_vehicle_select == k_mongoose
+		condition if defaultVehicle == 0
 		action create_object "mongoose" at current_player set vehicle "vehicle"
 	end
 
 	action for_each general
-		condition if option_vehicle_select == k_warthog
+		condition if defaultVehicle == 1
 		action create_object "warthog" at current_player set vehicle "vehicle"
 	end
 
@@ -365,37 +437,6 @@ end
 ; # make sure your vehicle doesn't get deleted out from under you #
 
 
-
-
-; # joining the game #
-trigger player
-
-	action player_set_objective current_player objective option_lap_count
-
-	action hud_widget_set_text speedo widgetText local_player.kph
-
-	action for_each general
-		condition if current_player.first_gate_set == none
-		action set current_player.target_gate = start_gate.gate_number
-		action set current_player.first_gate_set = current_player
-	end
-
-	action timer_set_rate current_player.game_start_vo 1
-
-	condition if current_player.heard_game_start == 0
-
-	condition timer_expired current_player.game_start_vo
-
-	action submit_incident race_game_start player current_player player none
-
-	action set current_player.stat_best_lap_time set_to 3600
-
-	action set current_player.heard_game_start = 1
-
-end
-; # joining the game #
-
-
 ; need to move the target gate as you hit it
 ; score 1 point for hitting target gate
 
@@ -410,7 +451,7 @@ trigger player
 	condition if current_player.legal == 1	;must be in a vehicle for the checkpoint to count
 
 	action for_each race_flag
-		condition if current_object.gate_number equal_to current_player.target_gate
+		condition if current_object.order equal_to current_player.target_gate
 
 		action navpoint_set_visible current_object player current_player 1
 
@@ -422,59 +463,44 @@ trigger player
 		action set checkpoint_reached = 1
 	end
 
-	condition if checkpoint_reached == 1
-	action set_score add 1 player current_player
-	action submit_incident checkpoint_reached_team player current_player player none
-
-	;yellow jersey yammer protection
-	temporary number my_place 0
-
-	action for_each general
-		action player_get_place current_player my_place
-		condition if my_place == 1
-		condition if old_leader != current_player
-		action set new_leader = current_player
-		action set_score subtract 1 player old_leader
-	end
-
 
 	;tysongr - Race robustness. Find the NEXT HIGHEST GATE NUMBER, give that to the player as their next target.
 	; The starting point is the highest recorded gate number + 1
-	temporary number previous_gate_number current_player.target_gate
-	temporary number next_gate_number highest_gate_number
-	action set next_gate_number += 1
+	temporary number previous_order current_player.target_gate
+	temporary number next_order finalCheckpoint.order
+	action set next_order += 1
 	action for_each race_flag
 		; Is this flag higher than the player's current target?
-		condition if current_object.gate_number > current_player.target_gate
+		condition if current_object.order > current_player.target_gate
 
 		; AND less than the current candidate gate number?
-		condition if current_object.gate_number < next_gate_number
-		action set next_gate_number = current_object.gate_number
+		condition if current_object.order < next_order
+		action set next_order = current_object.order
 	end
-	action set current_player.target_gate = next_gate_number
+	action set current_player.target_gate = next_order
 
 	;tysongr - Race robustness. If the target is higher than the highest gate number, then we've completed a lap
 	action for_each general
-		condition if current_player.target_gate > highest_gate_number
+		condition if current_player.target_gate > finalCheckpoint.order
 
 		; Lap complete, and set the target gate back to the starting gate
 		action set current_player.lap_complete = 1
-		action set current_player.target_gate = start_gate.gate_number
+		action set current_player.target_gate = firstCheckpoint.order
 	end
 
 	;try to do respawning in FFA
 	action for_each race_flag
 		action set_respawn_filter current_object player current_player 0
-		condition if current_object.gate_number equal_to current_player.target_gate
+		condition if current_object.order equal_to current_player.target_gate
 		action navpoint_set_visible current_object player current_player 1
 	end
 
-	;tysongr - Race robustness. Partly rewritten to use previous_gate_number defined above.
+	;tysongr - Race robustness. Partly rewritten to use previous_order defined above.
 	action for_each race_flag
 		;temporary number last_gate current_player.target_gate
 		;action set last_gate subtract 1
 
-		condition if current_object.gate_number == previous_gate_number
+		condition if current_object.order == previous_order
 		action set_respawn_filter current_object player current_player 1
 		action player_set_primary_respawn_object current_player current_object
 		action navpoint_set_visible current_object player current_player 0
@@ -490,6 +516,7 @@ trigger player
 	action submit_incident lap_complete player current_player player none
 
 	action set current_player.lap add 1
+	;action set_score add 1 player current_player
 
 	action for_each general
 		condition if current_player.lap equal_to 1
@@ -508,7 +535,7 @@ trigger player
 
 
 	action for_each general
-		temporary number lastlap option_lap_count
+		temporary number lastlap numberOfLaps
 
 		action set lastlap subtract 1
 		condition if current_player.lap equal_to lastlap
@@ -524,12 +551,7 @@ trigger player
 end
 
 
-trigger player
-	action hud_widget_set_visibility speedo current_player false
-	temporary object living_body current_player
-	condition not if living_body equal_to none
-	action hud_widget_set_visibility speedo current_player true
-end
+
 
 
 ; reset you if you're on foot for too long
@@ -542,7 +564,7 @@ trigger player
 
 	condition if test_for_vehicle equal_to none
 
-	action hud_widget_set_visibility speedo current_player false
+	action hud_widget_set_visibility widget current_player false
 
 	action set current_player.legal set_to 0
 
@@ -571,16 +593,15 @@ end
 
 
 trigger player
-	condition not if current_player.lap less_than option_lap_count
-	action end_round
+	;condition not if current_player.lap less_than numberOfLaps
+	;action end_round
 end
 
 ;end the round when time runs out!
 trigger general
-	;tysongr - 56956: Round time limit of 0 means round can never end (and especially not "immediately on rounds past the first")
-	condition if round_time_limit > 0
-	condition timer_expired round_timer
-	action end_round
+	;condition if round_time_limit > 0
+	;condition timer_expired round_timer
+	;action end_round
 end
 
 ;delete stuff
@@ -599,11 +620,22 @@ end
 
 
 
-;	# Hide Objects marked as race_hide #
+;	# Delete Competitive Version Objects #
+	trigger cv_delete
+		condition if cvDelete == 1
+			action delete_object current_object
+	end
+;	# Delete Competitive Version Objects #
+
+
+
+
+
+;	# Hide Invisible Race Objects #
 	trigger race_hide
 		action hide_object current_object true
 	end
-;	# Hide Objects marked as race_hide #
+;	# Hide Invisible Race Objects #
 
 
 
@@ -687,33 +719,4 @@ trigger player
 	condition player_died current_player any
 	action delete_object current_player.vehicle
 	action set current_player.vehicle = none
-end
-
-;tysongr - Moved this down here so that we can be sure that we have score_zone set before we hit it
-; check player velocity for use in collisions down the road
-; LOCAL TRIGGER!
-trigger local
-	action for_each player
-
-		action object_get_velocity current_player current_player.kph
-		action set current_player.kph multiply 109
-		action set current_player.kph divide 100
-
-		temporary object score_zone none
-		action for_each race_flag
-			condition if current_object.gate_number equal_to current_player.target_gate
-			action set score_zone = current_object
-		end
-
-	end
-
-end
-
-
-; yellow jersey yammer protection
-trigger player
-	condition if current_player == new_leader
-	action set_score add 1 player current_player
-	action set old_leader = current_player
-	action set new_leader = none
 end
