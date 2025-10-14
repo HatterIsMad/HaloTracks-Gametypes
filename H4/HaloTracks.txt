@@ -20,7 +20,7 @@ include "strings/common_strings.txt"
 		optionNameCVDelete				"Competitive"
 		optionDescriptionCVDelete		"If enabled, objects with the label cv_delete will be deleted."
 		statBestLap						"Best Lap"
-		widgetText						"%n.%n"
+		widgetText						"Lap Time: %n"
 		lapCompleteMessage				"Lap Complete: %n.%n"
 		bestLapMessage					"New best lap time!"
 		finalLapMessage					"Final Lap."
@@ -51,13 +51,17 @@ include "strings/common_strings.txt"
 
 ;	# Object Labels #
 
-	map_object race_flag
+	map_object race_checkpoint
 		label "race_checkpoint"
 		min 1
 	end
 
 	map_object race_delete
 		label "race_delete"
+	end
+
+	map_object race_holeshot
+		label "race_holeshot"
 	end
 
 	map_object race_hide
@@ -74,6 +78,10 @@ include "strings/common_strings.txt"
 
 	map_object vehicle
 		label "vehicle"
+	end
+
+	map_object Target
+		label "Target"
 	end
 
 
@@ -110,11 +118,18 @@ include "strings/common_strings.txt"
 		override		loadout_palette elite_tier3		empty_palette
 
 		override		base_player_traits
+						damage_multiplier				0
+						initial_secondary_weapon		sticky_grenade_launcher
+						initial_primary_weapon			magnum
+						melee_damage_multiplier			0
+						initial_grenade_count			none
 						shield_hud						false
 						initial_equipment				sprint_equipment
 						assassination_immunity			true
-						damage_resistance				20.00
+						headshot_immunity				true
+						damage_resistance				true
 						vehicle_usage					not_passenger
+						infinite_ammo					on
 		end
 
 		option	numberOfLaps	optionNameNumberOfLaps	optionDescriptionNumberOfLaps	3
@@ -149,39 +164,36 @@ include "strings/common_strings.txt"
 ;	# Variables #
 
 	variables global
-		networked	number	startGateFrame			0
-		networked	number	startGateDropped		0
-		networked	number	frames					0
-		networked	number	raceStatus				0
-		networked	object	firstCheckpoint			none
-		networked	object	finalCheckpoint			none
-		networked	player	holeshotPlayer			none
+		local		number	localCurrentLapSeconds		0
+		local		number	localCurrentLapMilliseconds	0
+		local		number	localLapFrames				0
+		networked	number	startGateFrame				0
+		networked	number	startGateDropped			0
+		networked	number	frames						0
+		networked	number	raceStatus					0
+		networked	object	firstCheckpoint				none
+		networked	object	finalCheckpoint				none
+		networked	player	holeshotPlayer				none
+		local		player	client						none
+		local		player	target						none
+		local		number	host						0
 	end
 
 
 	variables player
-		networked	number	lapFrames				0
-		networked	number	currentLapSeconds		0
-		networked	number	currentLapMilliseconds	0
-		networked	number	onVehicle				0
-		networked	number	currentCheckpoint		-1
-		networked	object	vehicle					none
-
-
-		networked	number	lap						0
-		networked	number	lap_complete			0
-		networked	timer	on_foot					10
-		networked	timer	lap_time				0
+		networked	number	lapFrames					0
+		networked	number	currentLapSeconds			0
+		networked	number	currentLapMilliseconds		0
+		networked	number	onVehicle					0
+		networked	number	currentCheckpoint			-1
+		networked	object	vehicle						none
+		local		object	local_target				none
+		networked	timer	delay						2
 	end
 
 
 	variables object
-		networked	number	order					0
-
-
-
-		networked	timer	deathrow				16
-		networked	player	rider					none
+		networked	number	order						0
 	end
 
 ;	# Variables #
@@ -221,7 +233,7 @@ include "strings/common_strings.txt"
 
 		;	# Initialize Checkpoints
 
-			action for_each race_flag
+			action for_each race_checkpoint
 				action set current_object.order set_to current_object.user_data
 				action set current_object.team set_to attackers
 				action object_set_invincibility current_object true
@@ -229,7 +241,7 @@ include "strings/common_strings.txt"
 			end
 
 			;	# Set finalCheckpoint #
-			action for_each race_flag
+			action for_each race_checkpoint
 				condition if finalCheckpoint == none or
 				condition if current_object.order > finalCheckpoint.order
 					action set finalCheckpoint = current_object
@@ -237,7 +249,7 @@ include "strings/common_strings.txt"
 			;	# Set finalCheckpoint #
 
 			;	# Set firstCheckpoint #
-			action for_each race_flag
+			action for_each race_checkpoint
 				condition if firstCheckpoint == none or
 				condition if current_object.order < firstCheckpoint.order
 					action set firstCheckpoint = current_object
@@ -264,11 +276,12 @@ include "strings/common_strings.txt"
 
 		;	# Set Start Gate Frame #
 		action random 601 startGateFrame
-		action set startGateFrame add 3300
+		action set startGateFrame add 3600
 		;	# Set Start Gate Frame #
 
 
 		action set raceStatus set_to 1
+		action set host set_to 1
 	end
 
 ;	# Initialize #
@@ -291,8 +304,31 @@ include "strings/common_strings.txt"
 					action set raceStatus set_to 2
 					action set frames set_to 0
 					action set startGateDropped set_to 1
+					action set round_timer set_to 480
 	end
 	;	# Delete Race Gates #
+
+
+	;	# Delete Objects marked as race_delete #
+		trigger race_delete
+			action delete_object current_object
+		end
+	;	# Delete Objects marked as race_delete #
+
+
+	;	# Delete Competitive Version Objects #
+		trigger cv_delete
+			condition if cvDelete == 1
+				action delete_object current_object
+		end
+	;	# Delete Competitive Version Objects #
+
+
+	;	# Hide Invisible Race Objects #
+		trigger race_hide
+			action hide_object current_object true
+		end
+	;	# Hide Invisible Race Objects #
 
 
 	;	# Set Current Lap time #
@@ -331,12 +367,6 @@ include "strings/common_strings.txt"
 		;action end_round
 	end
 	; # End the game when time runs out #
-
-
-
-	;trigger general
-	;	action set round_timer set_to 600
-	;end
 
 
 ;	# Basic Game Logic #
@@ -402,7 +432,7 @@ include "strings/common_strings.txt"
 		action player_set_objective current_player objective numberOfLaps
 		;	# Initialize UI #
 
-		action hud_widget_set_text widget widgetText local_player.currentLapSeconds	local_player.currentLapMilliseconds
+		action hud_widget_set_text widget widgetText local_player.currentLapSeconds		;	local_player.currentLapMilliseconds
 
 	end
 
@@ -410,7 +440,8 @@ include "strings/common_strings.txt"
 		action hud_widget_set_visibility widget current_player false
 		temporary object biped current_player
 		condition not if biped == none
-			action hud_widget_set_visibility widget current_player true
+			condition if raceStatus >= 2
+				action hud_widget_set_visibility widget current_player true
 	end
 
 ;	# Handle UI #
@@ -433,10 +464,10 @@ include "strings/common_strings.txt"
 	;	# Set Checkpoint Visibility #
 	trigger player
 		condition if current_player.onVehicle == 1
-			action for_each race_flag
+			action for_each race_checkpoint
 				action boundary_set_visible current_object no_one
 				condition if current_object.order == current_player.currentCheckpoint
-					action boundary_set_visible current_object player current_player 1
+					;action boundary_set_visible current_object player current_player 1
 			end
 	end
 	;	# Set Checkpoint Visibility #
@@ -445,29 +476,28 @@ include "strings/common_strings.txt"
 	;	# The Player has hit the checkpoint #
 	trigger player
 		condition if current_player.onVehicle == 1
-			action for_each race_flag
-				condition if current_object.order == current_player.currentCheckpoint
-					condition object_in_area current_player current_object
+			action for_each race_holeshot
+	            condition object_in_area current_player current_object
 
-						condition if holeshotPlayer == none
-							action set holeshotPlayer set_to current_player
-							action for_each player
-								action hud_post_message player current_player none holeshotMessage holeshotPlayer
-							end
+		            condition if holeshotPlayer == none
+			            action set holeshotPlayer set_to current_player
+			            action for_each player
+				            action hud_post_message player current_player none holeshotMessage holeshotPlayer
+			            end
 			end
 	end
 
 
 	trigger player
 		condition if current_player.onVehicle == 1
-			action for_each race_flag
+			action for_each race_checkpoint
 				condition if current_object.order == current_player.currentCheckpoint
 					condition object_in_area current_player current_object
 
 						;	# Find next checkpoint #
 						temporary number nextCheckpointNumber finalCheckpoint.order
 						action set nextCheckpointNumber add 1
-						action for_each race_flag
+						action for_each race_checkpoint
 							condition if current_object.order > current_player.currentCheckpoint
 								condition if current_object.order < nextCheckpointNumber
 									action set nextCheckpointNumber set_to current_object.order
@@ -514,41 +544,36 @@ include "strings/common_strings.txt"
 
 
 
-	trigger local
+	trigger host_migration
 
-		action for_each player
+		;	# Delete Objects marked as race_delete #
+			action for_each race_delete
+				action delete_object current_object
+			end
+		;	# Delete Objects marked as race_delete #
 
 
+		;	# Delete Competitive Version Objects #
+			action for_each cv_delete
+				condition if cvDelete == 1
+					action delete_object current_object
+			end
+		;	# Delete Competitive Version Objects #
 
-		end
+
+		;	# Hide Invisible Race Objects #
+			action for_each race_hide
+				action hide_object current_object true
+			end
+		;	# Hide Invisible Race Objects #
 
 	end
 
 
 
-;	# Delete Objects marked as race_delete #
-	trigger race_delete
-		action delete_object current_object
-	end
-;	# Delete Objects marked as race_delete #
 
 
 
 
 
-;	# Delete Competitive Version Objects #
-	trigger cv_delete
-		condition if cvDelete == 1
-			action delete_object current_object
-	end
-;	# Delete Competitive Version Objects #
 
-
-
-
-
-;	# Hide Invisible Race Objects #
-	trigger race_hide
-		action hide_object current_object true
-	end
-;	# Hide Invisible Race Objects #
