@@ -615,6 +615,7 @@ end
 
 		current_player.biped.health = 100
         current_player.vehicle.set_invincibility( 1 )
+        current_player.biped.remove_weapon(primary, true)
 
 
 		-- # Police Track Limits #
@@ -956,6 +957,47 @@ end
 	-- # Check to see if everyone is on a grid spot #
 
 
+	-- # Spectator Mode #
+	for each object with label "Spectator" do
+		for each player do
+
+			-- # Transform Player into Monitor #
+			if current_object.team == team[0] and current_object.shape_contains(current_player.biped) and not current_player.biped.is_of_type(monitor) then
+                alias oldBody = allocate temporary object
+                oldBody = current_player.biped
+                oldBody.detach()
+                current_player.vehicle.delete()
+                alias mon = allocate temporary object
+                mon = current_player.biped.place_at_me(monitor, none, never_garbage_collect, 0, 0, 5, none)
+                mon.max_health = 100
+                mon.set_invincibility(1)
+                mon.set_hidden(true)
+                mon.remove_weapon(primary, true)
+                current_player.set_biped(mon)
+                oldBody.delete()
+			end
+			-- # Transform Player into Monitor #
+
+
+			-- # Transform Player into Spartan #
+			if current_object.team == team[1] and current_object.shape_contains(current_player.biped) and current_player.biped.is_of_type(monitor) then
+                alias oldBody = allocate temporary object
+                oldBody = current_player.biped
+                oldBody.detach()
+                alias mon = allocate temporary object
+                mon = current_player.biped.place_at_me(spartan, none, never_garbage_collect, 0, 0, 5, none)
+                mon.max_health = 100
+                mon.remove_weapon(primary, true)
+                current_player.set_biped(mon)
+                oldBody.delete()
+			end
+			-- # Transform Player into Spartan #
+
+		end
+	end
+	-- # Spectator Mode #
+
+
 -- # Basic Game Logic #
 
 
@@ -994,8 +1036,11 @@ for each player do
 	-- # Remove the Players Vehicle if they die or quit #
 
 
-	-- # Check if Player is on vehicle #
 	current_player.onVehicle = 0
+
+    if not current_player.biped.is_of_type(monitor) then
+
+	-- # Check if Player is on vehicle #
 	if vehicle != no_object then
 		current_player.onVehicle = 1
 	end
@@ -1119,6 +1164,7 @@ for each player do
 		end
 		-- # Update Vehicle Speed #
 
+	    end
 
 	end
 	-- # Handle the Player being on a Vehicle #
@@ -1206,11 +1252,11 @@ end
 -- # Rotate Dash Status #
 if debounce5 == 0 then
 	if dashStatus != 4 then
-		if dashStatus != 3 then
+		if dashStatus != 2 then
 			dashStatus += 1
 		end
 
-		if dashStatus == 3 then
+		if dashStatus == 2 then
 			dashStatus = 0
 		end
 	end
@@ -2041,15 +2087,21 @@ if maxFuel != -1 then
 
 				if inPitLane == 1 then
                     if current_player.vehicleSpeedKPH > 40 then
-                        if vehicle.speedWarnings > 3 then
+                        if vehicle.speedWarnings >= 12 then
                             timing.penalty += 300
                             vehicle.speedWarnings = 0
                             game.show_message_to(current_player, none, "You have earned yourself a 5s penalty bud" )
                         end
-                        if vehicle.speedWarnings < 10 then
+                        if vehicle.speedWarnings < 12 then
                             vehicle.speedWarnings += 3
                             game.show_message_to(current_player, none, "Slow down to 40kph or you will get a penalty" )
                         end
+                    end
+                    if current_player.vehicleSpeedKPH <= 40 and vehicle.speedWarnings > 0 then
+                        vehicle.speedWarnings -= 1
+                    end
+                    if vehicle.speedWarnings <= 0 then
+                        vehicle.speedWarnings = 0
                     end
 				end
 
@@ -2057,7 +2109,7 @@ if maxFuel != -1 then
                     if current_player.vehicleSpeedKPH <= 40 then
                         vehicle.speedWarnings -= 1
                     end
-                    if current_player.vehicleSpeedKPH <= 0 then
+                    if vehicle.speedWarnings <= 0 then
                         vehicle.speedWarnings = 0
                     end
 				end

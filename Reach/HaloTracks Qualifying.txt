@@ -576,6 +576,7 @@ end
 
 		current_player.biped.health = 100
         current_player.vehicle.set_invincibility( 1 )
+        current_player.remove_weapon(primary, true)
 
 
 		-- # Police Track Limits #
