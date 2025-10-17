@@ -112,7 +112,7 @@ include "strings/common_strings.txt"
 		override		suicide_respawn_penalty			3
 		lock override	score_to_win_round				500
 		override		round_count						1
-		override		round_time_limit				60
+		override		round_time_limit				10
 		override		early_victory_win_count			0
 		override		indestructible_vehicles			1
 		override		grenades_on_map					0
@@ -193,7 +193,7 @@ include "strings/common_strings.txt"
 		local		number	localCurrentLapSeconds		0
 		local		number	localCurrentLapMilliseconds	0
 		local		number	localLapFrames				0
-		networked	number	startGateFrame				0
+		networked	number	startGateFrame				1
 		networked	number	startGateDropped			0
 		networked	number	raceStatus					0
 		networked	object	firstCheckpoint				none
@@ -303,31 +303,6 @@ include "strings/common_strings.txt"
 		;	# Hide Invisible Race Objects #
 
 
-		;	# Set Start Gate Frame #
-		begin
-			condition if startGate == 1 ; 20 +/- 5
-				action random 571 startGateFrame
-				action set startGateFrame add 900
-		end
-		begin
-			condition if startGate == 2 ; 30 +/- 10
-				action random 1171 startGateFrame
-				action set startGateFrame add 1200
-		end
-		begin
-			condition if startGate == 3 ; 40 +/- 20
-				action random 2371 startGateFrame
-				action set startGateFrame add 1200
-		end
-		begin
-			condition if startGate == 4 ; 55 +/- 5
-				action random 571 startGateFrame
-				action set startGateFrame add 3000
-		end
-		action set startGateFrame add 600 ; Add 10s for the initial H4 spawn
-		;	# Set Start Gate Frame #
-
-
 		;	# Cache the Initial Round Time Length #
 		action set roundTime set_to round_timer
 		;	# Cache the Initial Round Time Length #
@@ -413,22 +388,42 @@ include "strings/common_strings.txt"
 	;	# Increment the player frame counters #
 
 
-	; # End the round when time runs out #
+	; # # If everyone has met the number of laps, end the round #
+	trigger general
+		condition if numberOfLaps > 0
+			temporary number done 1
+			action for_each player
+				begin
+					condition if current_player.score < numberOfLaps
+						action set done set_to 0
+				end
+				begin
+					condition if current_player.score >= numberOfLaps
+						action delete_object current_player.vehicle
+						action set current_player.score set_to current_player.bestLapFrames
+						action set current_player.score multiply -1
+				end
+			end
+
+			condition if done == 1
+				action set raceStatus set_to 3
+	end
+	; # # If everyone has met the number of laps, end the round #
+
+
+	; # If the round time limit has been exceeded, end the round #
 	trigger general
 		condition if roundTime > 0
 			condition timer_expired round_timer
-				;action end_round
-	end
-	; # End the round when time runs out #
+				action set raceStatus set_to 3
 
+				action for_each player
+					action set current_player.score set_to current_player.bestLapFrames
+					action set current_player.score multiply -1
+				end
 
-	; # End the round if anyone has met the numberOfLaps
-	trigger player
-		condition if numberOfLaps > 0
-			condition if current_player.score >= numberOfLaps
-				action end_round
 	end
-	; # End the round if anyone has met the numberOfLaps
+	; # If the round time limit has been exceeded, end the round #
 
 
 ;	# Basic Game Logic #
