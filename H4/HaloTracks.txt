@@ -19,18 +19,25 @@ include "strings/common_strings.txt"
 		optionVehicleWarthog			"Warthog"
 		optionNameCVDelete				"Competitive"
 		optionDescriptionCVDelete		"If enabled, objects with the label cv_delete will be deleted."
-		statBestLap						"Best Lap"
-		widgetText						"Lap Time: %n"
-		lapCompleteMessage				"Lap Complete: %n.%n"
+		optionNameStartGate				"Start Gate"
+		optionDescriptionStartGate		"If enabled, objects with the label race_gate will disappear at the selected time."
+		optionStartGate1				"20 +/- 5"
+		optionStartGate2				"30 +/- 10"
+		optionStartGate3				"40 +/- 20"
+		optionStartGate4				"55 +/- 5"
+		empty							""
+		widgetText						"Lap Time: %n.%n"
+		widgetText2						"Lap Time: %n.0%n"
 		bestLapMessage					"New best lap time!"
 		finalLapMessage					"Final Lap."
 		holeshotMessage					"%p got the holeshot"
+		overallBestLapMessage			"Overall Best lap time! %n.%n"
+		personalBestLapMessage			"Personal Best lap time! %n.%n"
+		lapCompleteMessage				"Lap Complete: %n.%n"
 		debug							"%n"
 	end
 
 ;	# String Tables #
-
-
 
 
 
@@ -143,7 +150,7 @@ include "strings/common_strings.txt"
 			100	laps_100	""
 		end
 
-		option	cvDelete	optionNameCVDelete	optionDescriptionCVDelete	0
+		option	cvDelete		optionNameCVDelete	optionDescriptionCVDelete	0
 			0	option_disabled	""
 			1	option_enabled	""
 		end
@@ -151,6 +158,14 @@ include "strings/common_strings.txt"
 		option	defaultVehicle	optionNameVehicle	optionDescriptionVehicle	0
 			0	optionVehicleMongoose	""
 			1	optionVehicleWarthog	""
+		end
+
+		option	startGate		optionNameStartGate	optionDescriptionStartGate	1
+			0	option_disabled		""
+			1	optionStartGate1	""
+			2	optionStartGate2	""
+			3	optionStartGate3	""
+			4	optionStartGate4	""
 		end
 
 	end
@@ -164,23 +179,28 @@ include "strings/common_strings.txt"
 ;	# Variables #
 
 	variables global
+		networked	number	bestLapSeconds				0
+		networked	number	bestLapMilliseconds			0
+		networked	number	bestLapNumber				0
+		networked	number	frames						0
+		local		number	host						0
 		local		number	localCurrentLapSeconds		0
 		local		number	localCurrentLapMilliseconds	0
 		local		number	localLapFrames				0
 		networked	number	startGateFrame				0
 		networked	number	startGateDropped			0
-		networked	number	frames						0
 		networked	number	raceStatus					0
 		networked	object	firstCheckpoint				none
 		networked	object	finalCheckpoint				none
+		local		object	target						none
 		networked	player	holeshotPlayer				none
+		networked	player	bestLapPlayer				none
 		local		player	client						none
-		local		player	target						none
-		local		number	host						0
 	end
 
 
 	variables player
+		networked	number	lapInvalidated				1
 		networked	number	lapFrames					0
 		networked	number	currentLapSeconds			0
 		networked	number	currentLapMilliseconds		0
@@ -217,7 +237,10 @@ include "strings/common_strings.txt"
 ;	# Stats #
 
 	game_stats
-		stat_best_lap_time	timer	statBestLap	none	0	0	0
+		bestLapSeconds		number	empty	none	0	0	0
+		bestLapMilliseconds	number	empty	none	0	0	0
+		bestLapNumber		number	empty	none	0	0	0
+		bestLapFrames		number	empty	none	0	0	0
 	end
 
 ;	# Stats #
@@ -275,8 +298,27 @@ include "strings/common_strings.txt"
 
 
 		;	# Set Start Gate Frame #
-		action random 601 startGateFrame
-		action set startGateFrame add 3600
+		begin
+			condition if startGate == 1 ; 20 +/- 5
+				action random 571 startGateFrame
+				action set startGateFrame add 900
+		end
+		begin
+			condition if startGate == 2 ; 30 +/- 10
+				action random 1171 startGateFrame
+				action set startGateFrame add 1200
+		end
+		begin
+			condition if startGate == 3 ; 40 +/- 20
+				action random 2371 startGateFrame
+				action set startGateFrame add 1200
+		end
+		begin
+			condition if startGate == 4 ; 55 +/- 5
+				action random 571 startGateFrame
+				action set startGateFrame add 3000
+		end
+		action set startGateFrame add 600 ; Add 10s for the initial H4 spawn
 		;	# Set Start Gate Frame #
 
 
@@ -399,21 +441,22 @@ include "strings/common_strings.txt"
 	trigger player
 
 		condition if current_player.vehicle == none
-		temporary object vehicle none
-		action for_each general
-			condition if defaultVehicle == 0
-			action create_object "mongoose" at current_player set vehicle "vehicle"
-		end
+			temporary object vehicle none
+			action for_each general
+				condition if defaultVehicle == 0
+				action create_object "mongoose" at current_player set vehicle "vehicle"
+			end
 
-		action for_each general
-			condition if defaultVehicle == 1
-			action create_object "warthog" at current_player set vehicle "vehicle"
-		end
+			action for_each general
+				condition if defaultVehicle == 1
+				action create_object "warthog" at current_player set vehicle "vehicle"
+			end
 
-		action set current_player.vehicle = vehicle
-		action set vehicle.team = current_player.team
+			action set current_player.vehicle = vehicle
+			action set vehicle.team = current_player.team
 
-		action player_set_vehicle current_player current_player.vehicle
+			condition not if client == none
+				action player_set_vehicle current_player current_player.vehicle
 
 	end
 	;	# Spawn player in vehicle #
@@ -432,7 +475,10 @@ include "strings/common_strings.txt"
 		action player_set_objective current_player objective numberOfLaps
 		;	# Initialize UI #
 
-		action hud_widget_set_text widget widgetText local_player.currentLapSeconds		;	local_player.currentLapMilliseconds
+
+		;	# Display the players current lap time #
+		action hud_widget_set_text widget widgetText local_player.currentLapSeconds	local_player.currentLapMilliseconds
+		;	# Display the players current lap time #
 
 	end
 
@@ -513,6 +559,9 @@ include "strings/common_strings.txt"
 						;	# Player has completed a lap #
 						condition if current_player.currentCheckpoint > finalCheckpoint.order
 							condition if raceStatus >= 2
+								temporary number bestPersonalLap	0
+								temporary number bestOverallLap		0
+
 
 								;	# Reset Player checkpoint counter #
 								action set current_player.currentCheckpoint set_to firstCheckpoint.order
@@ -524,13 +573,98 @@ include "strings/common_strings.txt"
 								;	# Increment Player Score #
 
 
+								;	# Set Player Best Lap #
+								begin
+									condition if current_player.lapInvalidated == 0
+										condition if current_player.bestLapSeconds == 0
+											condition if current_player.bestLapMilliseconds == 0
+												action set bestPersonalLap set_to 1
+												action set current_player.bestLapFrames set_to current_player.lapFrames
+												action set current_player.bestLapFrames subtract 1
+												action set current_player.bestLapSeconds set_to current_player.currentLapSeconds
+												action set current_player.bestLapMilliseconds set_to current_player.currentLapMilliseconds
+												action set current_player.bestLapNumber set_to current_player.score
+								end
+								begin
+									condition if current_player.lapInvalidated == 0
+										condition if current_player.currentLapSeconds < current_player.bestLapSeconds
+											action set bestPersonalLap set_to 1
+											action set current_player.bestLapFrames set_to current_player.lapFrames
+											action set current_player.bestLapFrames subtract 1
+											action set current_player.bestLapSeconds set_to current_player.currentLapSeconds
+											action set current_player.bestLapMilliseconds set_to current_player.currentLapMilliseconds
+											action set current_player.bestLapNumber set_to current_player.score
+								end
+								begin
+									condition if current_player.lapInvalidated == 0
+										condition if current_player.currentLapSeconds == current_player.bestLapSeconds
+											condition if current_player.currentLapMilliseconds < current_player.bestLapMilliseconds
+												action set bestPersonalLap set_to 1
+												action set current_player.bestLapFrames set_to current_player.lapFrames
+												action set current_player.bestLapFrames subtract 1
+												action set current_player.bestLapSeconds set_to current_player.currentLapSeconds
+												action set current_player.bestLapMilliseconds set_to current_player.currentLapMilliseconds
+												action set current_player.bestLapNumber set_to current_player.score
+								end
+								;	# Set Player Best Lap #
+
+
+								;	# Set Fastest Laptime #
+								begin
+									condition if current_player.lapInvalidated == 0
+										condition if bestLapSeconds == 0
+											condition if bestLapMilliseconds == 0
+												action set bestOverallLap set_to 1
+												action set bestLapSeconds set_to current_player.currentLapSeconds
+												action set bestLapMilliseconds set_to current_player.currentLapMilliseconds
+												action set bestLapPlayer set_to current_player
+												action set bestLapNumber set_to current_player.score
+								end
+								begin
+									condition if current_player.lapInvalidated == 0
+										condition if current_player.currentLapSeconds < bestLapSeconds
+											action set bestOverallLap set_to 1
+											action set bestLapSeconds set_to current_player.currentLapSeconds
+											action set bestLapMilliseconds set_to current_player.currentLapMilliseconds
+											action set bestLapPlayer set_to current_player
+											action set bestLapNumber set_to current_player.score
+								end
+								begin
+									condition if current_player.lapInvalidated == 0
+										condition if current_player.currentLapSeconds == bestLapSeconds
+											condition if current_player.currentLapMilliseconds < bestLapMilliseconds
+												action set bestOverallLap set_to 1
+												action set bestLapSeconds set_to current_player.currentLapSeconds
+												action set bestLapMilliseconds set_to current_player.currentLapMilliseconds
+												action set bestLapPlayer set_to current_player
+												action set bestLapNumber set_to current_player.score
+								end
+								;	# Set Fastest Laptime #
+
+
 								;	# Send Lap Complete Notifications #
-								action hud_post_message player current_player none lapCompleteMessage	current_player.currentLapSeconds	current_player.currentLapMilliseconds
+								begin
+									condition if bestOverallLap == 1
+										condition if current_player.lapInvalidated == 0
+											action hud_post_message player current_player none overallBestLapMessage current_player.currentLapSeconds current_player.currentLapMilliseconds
+								end
+								begin
+									condition if bestOverallLap != 1
+										condition if bestPersonalLap == 1
+											condition if current_player.lapInvalidated == 0
+												action hud_post_message player current_player none personalBestLapMessage current_player.currentLapSeconds current_player.currentLapMilliseconds
+								end
+								begin
+									condition if bestOverallLap != 1
+										condition if bestPersonalLap != 1
+											action hud_post_message player current_player none lapCompleteMessage	current_player.currentLapSeconds	current_player.currentLapMilliseconds
+								end
 								;action submit_incident lap_complete player current_player player none
 								;	# Send Lap Complete Notifications #
 
 
-							action set current_player.lapFrames set_to 1	; Reset lap frame count
+								action set current_player.lapInvalidated set_to 0
+								action set current_player.lapFrames set_to 1	; Reset lap frame count
 						;	# Player has completed a lap #
 
 			end
@@ -544,36 +678,102 @@ include "strings/common_strings.txt"
 
 
 
-	trigger host_migration
-
-		;	# Delete Objects marked as race_delete #
-			action for_each race_delete
-				action delete_object current_object
-			end
-		;	# Delete Objects marked as race_delete #
-
-
-		;	# Delete Competitive Version Objects #
-			action for_each cv_delete
-				condition if cvDelete == 1
-					action delete_object current_object
-			end
-		;	# Delete Competitive Version Objects #
-
-
-		;	# Hide Invisible Race Objects #
-			action for_each race_hide
-				action hide_object current_object true
-			end
-		;	# Hide Invisible Race Objects #
-
+	trigger player
+		begin
+			temporary object biped none
+			action set biped set_to current_player
+				condition if current_player.local_target equal_to none
+					condition not if biped equal_to none
+						condition not timer_expired current_player.delay
+							action object_detach current_player.vehicle
+							action create_object "monitor" at current_player set current_player.local_target label Target
+							action object_attach current_player.local_target current_player 8 0 5
+							action object_detach current_player.local_target
+							action timer_set_rate current_player.delay 100
+		end
 	end
 
 
 
 
 
+	trigger local
 
 
+		;	# Detect Client Player #
+		action for_each player
+			begin
+				condition timer_expired current_player.delay
+					action for_each Target
+						action delete_object current_object
+						action player_set_vehicle current_player current_player.vehicle
+					end
+			end
+			begin
+				action player_get_target_object current_player target
+				condition not if target equal_to none
+					action set client set_to current_player
+			end
+			begin
+				condition if client equal_to current_player
 
+					;	# Hide Invisible Race Objects #
+						action for_each race_hide
+							action hide_object current_object true
+						end
+					;	# Hide Invisible Race Objects #
+
+
+					condition if raceStatus >= 2
+
+						begin
+							condition if host == 0
+
+
+								;	# Set Current Local Lap time #
+								action set localCurrentLapSeconds set_to localLapFrames
+								action set localCurrentLapSeconds divide 60
+								temporary number t localCurrentLapSeconds
+								action set t multiply 60
+								action set localCurrentLapMilliseconds set_to localLapFrames
+								action set localCurrentLapMilliseconds subtract t
+								action set localCurrentLapMilliseconds multiply 1000
+								action set localCurrentLapMilliseconds divide 60
+								;	# Set Current Local Lap time #
+
+
+								;	# Display the players current lap time #
+								begin
+									condition if localCurrentLapMilliseconds >= 100
+										action hud_widget_set_text widget widgetText localCurrentLapSeconds	localCurrentLapMilliseconds
+								end
+								begin
+									condition if localCurrentLapMilliseconds < 100
+										action hud_widget_set_text widget widgetText2 localCurrentLapSeconds	localCurrentLapMilliseconds
+								end
+								;	# Display the players current lap time #
+
+
+								;	# Increment the player frame counters #
+								action set localLapFrames add 1
+								;	# Increment the player frame counters #
+
+
+								;	# Player has completed a lap #
+									condition if localLapFrames > 15
+										condition if client.onVehicle == 1
+											action for_each race_checkpoint
+												condition if current_object.order == client.currentCheckpoint
+													condition if current_object.order == finalCheckpoint.order
+														condition object_in_area client current_object
+															action set localLapFrames set_to 0
+								;	# Player has completed a lap #
+
+					end
+
+			end
+		end
+		;	# Detect Client Player #
+
+	end
 

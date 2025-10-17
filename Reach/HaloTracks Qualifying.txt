@@ -576,7 +576,14 @@ end
 
 		current_player.biped.health = 100
         current_player.vehicle.set_invincibility( 1 )
-        current_player.remove_weapon(primary, true)
+
+		if current_player.onVehicle == 0 then
+            alias weapon = allocate temporary object
+            weapon = current_player.get_weapon(primary)
+            if weapon != no_object then
+                current_player.biped.remove_weapon(primary, true)
+            end
+        end
 
 
 		-- # Police Track Limits #

@@ -70,6 +70,12 @@ alias	draft							= script_option[9]
 
 
 
+-- /* SCRIPT TRAITS */
+alias spectatorTraits                   = script_traits[0]
+-- /* SCRIPT TRAITS */
+
+
+
 -- /* PLAYER VARIABLES */
 
 alias	position						= player.number[0]
@@ -615,7 +621,14 @@ end
 
 		current_player.biped.health = 100
         current_player.vehicle.set_invincibility( 1 )
-        current_player.biped.remove_weapon(primary, true)
+
+		if current_player.onVehicle == 0 then
+            alias weapon = allocate temporary object
+            weapon = current_player.get_weapon(primary)
+            if weapon != no_object then
+                current_player.biped.remove_weapon(primary, true)
+            end
+        end
 
 
 		-- # Police Track Limits #
@@ -961,6 +974,12 @@ end
 	for each object with label "Spectator" do
 		for each player do
 
+			-- # Make Monitors Invisible #
+		   if current_player.biped.is_of_type(monitor) then
+              current_player.apply_traits(spectatorTraits)
+           end
+			-- # Make Monitors Invisible #
+
 			-- # Transform Player into Monitor #
 			if current_object.team == team[0] and current_object.shape_contains(current_player.biped) and not current_player.biped.is_of_type(monitor) then
                 alias oldBody = allocate temporary object
@@ -971,7 +990,6 @@ end
                 mon = current_player.biped.place_at_me(monitor, none, never_garbage_collect, 0, 0, 5, none)
                 mon.max_health = 100
                 mon.set_invincibility(1)
-                --mon.set_hidden(true)
                 mon.remove_weapon(primary, true)
                 current_player.set_biped(mon)
                 oldBody.delete()
