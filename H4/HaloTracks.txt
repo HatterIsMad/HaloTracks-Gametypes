@@ -36,6 +36,7 @@ include "strings/common_strings.txt"
 		overallBestLapPlayerMessage		"Lap %n %p got the fastest lap"
 		personalBestLapMessage			"Personal Best lap time! %n.%n"
 		lapCompleteMessage				"Lap Complete: %n.%n"
+		averageLapMessage               "Average Lap: %n.%n"
 		debug							"%n"
 	end
 
@@ -208,6 +209,7 @@ include "strings/common_strings.txt"
 	variables player
 		networked	number	lapInvalidated				1
 		networked	number	lapFrames					0
+		networked	number	averageLapFrames			0
 		networked	number	currentLapSeconds			0
 		networked	number	currentLapMilliseconds		0
 		networked	number	onVehicle					0
@@ -592,6 +594,29 @@ include "strings/common_strings.txt"
 								;	# Increment Player Score #
 
 
+								;   # Update Average Lap time #
+								begin
+									condition if current_player.score > 1
+								        temporary number score current_player.score
+								        action set score subtract 1
+										action set current_player.averageLapFrames add current_player.lapFrames
+										temporary number averageLapFrames current_player.averageLapFrames
+										action set averageLapFrames divide score
+										action set averageLapFrames add 1
+										temporary number averageLapSeconds averageLapFrames
+								        action set averageLapSeconds divide 60
+								        temporary number t averageLapSeconds
+								        action set t multiply 60
+										temporary number averageLapMilliseconds averageLapFrames
+								        action set averageLapMilliseconds subtract t
+								        action set averageLapMilliseconds multiply 1000
+								        action set averageLapMilliseconds divide 60
+								        condition if current_player.score > 2
+											action hud_post_message player current_player none averageLapMessage averageLapSeconds averageLapMilliseconds
+								end
+								;   # Update Average Lap time #
+
+
 								;	# Set Player Best Lap #
 								begin
 									condition if current_player.lapInvalidated == 0
@@ -795,4 +820,3 @@ include "strings/common_strings.txt"
 		;	# Detect Client Player #
 
 	end
-
