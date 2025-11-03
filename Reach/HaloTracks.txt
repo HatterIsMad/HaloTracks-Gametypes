@@ -2321,7 +2321,7 @@ if maxFuel != -1 then
 							    fuelUsage -= 28											-- Fuel efficiency slightly better in 2nd gear
 						    end
 
-						    if vehicle.startingFuelSpeed == 0 and current_player.vehicleSpeedKPH == 0 or fuelUsage < 5 then
+						    if vehicle.startingFuelSpeed == 0 and current_player.vehicleSpeedKPH <= 3 or fuelUsage < 5 then
 							    fuelUsage = 5											-- Idle fuel usage
 						    end
 
