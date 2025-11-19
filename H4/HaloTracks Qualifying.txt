@@ -165,7 +165,7 @@ include "strings/common_strings.txt"
 			1	optionVehicleWarthog	""
 		end
 
-		option	startGate		optionNameStartGate	optionDescriptionStartGate	1
+		option	startGate		optionNameStartGate	optionDescriptionStartGate	0
 			0	option_disabled		""
 			1	optionStartGate1	""
 			2	optionStartGate2	""
@@ -301,6 +301,31 @@ include "strings/common_strings.txt"
 				action hide_object current_object true
 			end
 		;	# Hide Invisible Race Objects #
+
+
+		;	# Set Start Gate Frame #
+		begin
+			condition if startGate == 1 ; 20 +/- 5
+				action random 571 startGateFrame
+				action set startGateFrame add 900
+		end
+		begin
+			condition if startGate == 2 ; 30 +/- 10
+				action random 1171 startGateFrame
+				action set startGateFrame add 1200
+		end
+		begin
+			condition if startGate == 3 ; 40 +/- 20
+				action random 2371 startGateFrame
+				action set startGateFrame add 1200
+		end
+		begin
+			condition if startGate == 4 ; 55 +/- 5
+				action random 571 startGateFrame
+				action set startGateFrame add 3000
+		end
+		action set startGateFrame add 600 ; Add 10s for the initial H4 spawn
+		;	# Set Start Gate Frame #
 
 
 		;	# Cache the Initial Round Time Length #
@@ -533,19 +558,7 @@ include "strings/common_strings.txt"
 	;	# Set Checkpoint Visibility #
 
 
-	;	# The Player has hit the checkpoint #
-	trigger player
-		condition if current_player.onVehicle == 1
-			action for_each race_holeshot
-	            condition object_in_area current_player current_object
 
-		            condition if holeshotPlayer == none
-			            action set holeshotPlayer set_to current_player
-			            action for_each player
-				            action hud_post_message player current_player none holeshotMessage holeshotPlayer
-			            end
-			end
-	end
 
 
 	trigger player
