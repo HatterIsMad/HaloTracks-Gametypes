@@ -271,6 +271,7 @@ include "strings/common_strings.txt"
 		networked	number	bestSector1TimeFrames		0
 		networked	number	bestSector2TimeFrames		0
 		networked	number	bestSector3TimeFrames		0
+		networked	number	sectorInvalidated			1
 	end
 
 ;	# Variables #
@@ -587,6 +588,8 @@ include "strings/common_strings.txt"
 	;	# Increment the player frame counters #
 	trigger player
 		condition if raceStatus == 2
+			temporary object timing current_player.timing
+			action set timing.sectorTimeFrames add 1
 			action set current_player.lapFrames add 1
 	end
 	;	# Increment the player frame counters #
@@ -613,7 +616,8 @@ include "strings/common_strings.txt"
 	;	# Create Objects for storage #
 	trigger player
 		condition if current_player.timing == none
-			action create_object "invisible_marker" at current_player set current_player.timing
+			action create_object "flag" at finalCheckpoint set current_player.timing
+			action hide_object current_player.timing true
 	end
 	;	# Create Objects for storage #
 
@@ -854,19 +858,23 @@ include "strings/common_strings.txt"
 								;	# Calculate Lap Time #
 
 
+
 								begin
 									condition if current_object.sector == 1
 										begin
-											condition if timing.bestSector1TimeFrames == 0 or
-											condition if timing.bestSector1TimeFrames > sectorTimeFrames
-												action set timing.bestSector1TimeFrames set_to sectorTimeFrames
-												action set bestPersonalSector set_to 1
-										end
-										begin
-											condition if current_object.bestSectorTimeFrames == 0 or
-											condition if current_object.bestSectorTimeFrames > sectorTimeFrames
-												action set current_object.bestSectorTimeFrames set_to sectorTimeFrames
-												action set bestOverallSector set_to 1
+											condition if timing.sectorInvalidated == 0
+												begin
+													condition if timing.bestSector1TimeFrames == 0 or
+													condition if timing.bestSector1TimeFrames > sectorTimeFrames
+														action set timing.bestSector1TimeFrames set_to sectorTimeFrames
+														action set bestPersonalSector set_to 1
+												end
+												begin
+													condition if current_object.bestSectorTimeFrames == 0 or
+													condition if current_object.bestSectorTimeFrames > sectorTimeFrames
+														action set current_object.bestSectorTimeFrames set_to sectorTimeFrames
+														action set bestOverallSector set_to 1
+												end
 										end
 
 
@@ -888,22 +896,26 @@ include "strings/common_strings.txt"
 										;	# Send Sector Complete Notifications #
 
 										action set timing.sectorTimeFrames set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
+										action set timing.sectorInvalidated set_to 0
 								end
 
 
 								begin
 									condition if current_object.sector == 2
 										begin
-											condition if timing.bestSector2TimeFrames == 0 or
-											condition if timing.bestSector2TimeFrames > sectorTimeFrames
-												action set timing.bestSector2TimeFrames set_to sectorTimeFrames
-												action set bestPersonalSector set_to 1
-										end
-										begin
-											condition if current_object.bestSectorTimeFrames == 0 or
-											condition if current_object.bestSectorTimeFrames > sectorTimeFrames
-												action set current_object.bestSectorTimeFrames set_to sectorTimeFrames
-												action set bestOverallSector set_to 1
+											condition if timing.sectorInvalidated == 0
+												begin
+													condition if timing.bestSector2TimeFrames == 0 or
+													condition if timing.bestSector2TimeFrames > sectorTimeFrames
+														action set timing.bestSector2TimeFrames set_to sectorTimeFrames
+														action set bestPersonalSector set_to 1
+												end
+												begin
+													condition if current_object.bestSectorTimeFrames == 0 or
+													condition if current_object.bestSectorTimeFrames > sectorTimeFrames
+														action set current_object.bestSectorTimeFrames set_to sectorTimeFrames
+														action set bestOverallSector set_to 1
+												end
 										end
 
 
@@ -925,22 +937,26 @@ include "strings/common_strings.txt"
 										;	# Send Sector Complete Notifications #
 
 										action set timing.sectorTimeFrames set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
+										action set timing.sectorInvalidated set_to 0
 								end
 
 
 								begin
 									condition if current_object.sector == 3
 										begin
-											condition if timing.bestSector3TimeFrames == 0 or
-											condition if timing.bestSector3TimeFrames > sectorTimeFrames
-												action set timing.bestSector3TimeFrames set_to sectorTimeFrames
-												action set bestPersonalSector set_to 1
-										end
-										begin
-											condition if current_object.bestSectorTimeFrames == 0 or
-											condition if current_object.bestSectorTimeFrames > sectorTimeFrames
-												action set current_object.bestSectorTimeFrames set_to sectorTimeFrames
-												action set bestOverallSector set_to 1
+											condition if timing.sectorInvalidated == 0
+												begin
+													condition if timing.bestSector3TimeFrames == 0 or
+													condition if timing.bestSector3TimeFrames > sectorTimeFrames
+														action set timing.bestSector3TimeFrames set_to sectorTimeFrames
+														action set bestPersonalSector set_to 1
+												end
+												begin
+													condition if current_object.bestSectorTimeFrames == 0 or
+													condition if current_object.bestSectorTimeFrames > sectorTimeFrames
+														action set current_object.bestSectorTimeFrames set_to sectorTimeFrames
+														action set bestOverallSector set_to 1
+												end
 										end
 
 
@@ -962,6 +978,7 @@ include "strings/common_strings.txt"
 										;	# Send Sector Complete Notifications #
 
 										action set timing.sectorTimeFrames set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
+										action set timing.sectorInvalidated set_to 0
 								end
 
 						end
