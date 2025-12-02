@@ -55,6 +55,7 @@ include "strings/common_strings.txt"
 		sector3Message						"Sector 3: %n.%n"
 		overallBestSector3Message			"Overall Best Sector 3 time! %n.%n"
 		personalBestSector3Message			"Personal Best Sector 3 time! %n.%n"
+		optimalLapMessage                   "New Optimal Lap: %n.%n"
 		debug								"%n"
 	end
 
@@ -262,12 +263,12 @@ include "strings/common_strings.txt"
 
 	variables object
 		networked	number	order						0
-		networked	number	bestSectorTimeFrames		0
+		networked	number	optimalLapFrames    		0
 		networked	number	jokeredThisLap				0
 		networked	number	jokerCount					0
 		networked	number	sector						0
 		networked	number	sectorTimeFrames			0
-		networked	number	bestSector1TimeFrames		0
+		networked	number	bestSectorTimeFrames		0
 		networked	number	bestSector2TimeFrames		0
 		networked	number	bestSector3TimeFrames		0
 		networked	number	sectorInvalidated			1
@@ -862,9 +863,9 @@ include "strings/common_strings.txt"
 										begin
 											condition if timing.sectorInvalidated == 0
 												begin
-													condition if timing.bestSector1TimeFrames == 0 or
-													condition if timing.bestSector1TimeFrames > sectorTimeFrames
-														action set timing.bestSector1TimeFrames set_to sectorTimeFrames
+													condition if timing.bestSectorTimeFrames == 0 or
+													condition if timing.bestSectorTimeFrames > sectorTimeFrames
+														action set timing.bestSectorTimeFrames set_to sectorTimeFrames
 														action set bestPersonalSector set_to 1
 												end
 												begin
@@ -981,6 +982,54 @@ include "strings/common_strings.txt"
 
 						end
 						;	# Handle Sector Times #
+
+
+                        ;   # Update Optimal Laptime #
+                        begin
+                            framesIn = timing.bestSectorTimeFrames
+                            framesIn += timing.bestSector2TimeFrames
+                            framesIn += timing.bestSector3TimeFrames
+
+                            ;	# Calculate Lap Time #
+                            temporary number secondsOut framesIn
+                            action set secondsOut divide 60
+                            temporary number t secondsOut
+                            action set t multiply 60
+                            temporary number millisecondsOut framesIn
+                            action set millisecondsOut subtract t
+                            action set millisecondsOut multiply 1000
+                            action set millisecondsOut divide 60
+                            ;	# Calculate Lap Time #
+
+
+                            temporary number oldOptimalFrames optimalLapFrames
+                            action set optimalLapFrames set_to framesIn
+
+
+                            begin
+                                condition if sectorCount >= 1
+                                    condition if timing.bestSectorTimeFrames == 0
+                                        action set optimalLapFrames set_to 0
+                            end
+                            begin
+                                condition if sectorCount >= 2
+                                    condition if timing.bestSectorTimeFrames == 0
+                                        action set optimalLapFrames set_to 0
+                            end
+                            begin
+                                condition if sectorCount >= 3
+                                    condition if timing.bestSectorTimeFrames == 0
+                                        action set optimalLapFrames set_to 0
+                            end
+
+
+                            condition if optimalLapFrames != 0
+                                condition if optimalLapFrames != oldOptimalFrames
+                                    action hud_post_message player current_player none optimalLapMessage secondsOut millisecondsOut
+
+
+                        end
+                        ;   # Update Optimal Laptime #
 
 
 						;	# Find next checkpoint #
