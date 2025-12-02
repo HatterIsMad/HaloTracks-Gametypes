@@ -221,16 +221,13 @@ include "strings/common_strings.txt"
 
 	variables global
 		networked	number	roundTime					0
-		networked	number	bestLapSeconds				0
-		networked	number	bestLapMilliseconds			0
-		networked	number	bestLapNumber				0
+		networked   number  bestLapFrames               0
 		networked	number	frames						0
 		local		number	host						0
 		local		number	localCurrentLapSeconds		0
 		local		number	localCurrentLapMilliseconds	0
 		local		number	localLapFrames				0
 		networked	number	startGateFrame				0
-		networked	number	startGateDropped			0
 		networked	number	raceStatus					0
 		networked	number	numberOfPlayers				0
 		networked	number	checkpointCount				0
@@ -245,7 +242,6 @@ include "strings/common_strings.txt"
 
 
 	variables player
-		networked	number	lapInvalidated				1
 		networked	number	lapFrames					0
 		networked	number	averageLapFrames			0
 		networked	number	currentLapSeconds			0
@@ -295,9 +291,6 @@ include "strings/common_strings.txt"
 ;	# Stats #
 
 	game_stats
-		bestLapSeconds		number	empty	none	0	0	0
-		bestLapMilliseconds	number	empty	none	0	0	0
-		bestLapNumber		number	empty	none	0	0	0
 		bestLapFrames		number	empty	none	0	0	0
 	end
 
@@ -515,15 +508,13 @@ include "strings/common_strings.txt"
 	;	# Delete Race Gates #
 	trigger general
 		condition if raceStatus == 1
-			condition if startGateDropped == 0
-				condition if frames > startGateFrame
-					action for_each race_gate
-						action delete_object current_object
-					end
-					action set raceStatus set_to 2
-					action set frames set_to 0
-					action set startGateDropped set_to 1
-					action set round_timer set_to roundTime
+		    condition if frames > startGateFrame
+				action for_each race_gate
+					action delete_object current_object
+				end
+				action set raceStatus set_to 2
+				action set frames set_to 0
+				action set round_timer set_to roundTime
 	end
 	;	# Delete Race Gates #
 
@@ -1002,29 +993,29 @@ include "strings/common_strings.txt"
                             ;	# Calculate Lap Time #
 
 
-                            temporary number oldOptimalFrames optimalLapFrames
-                            action set optimalLapFrames set_to framesIn
+                            temporary number oldOptimalFrames timing.optimalLapFrames
+                            action set timing.optimalLapFrames set_to framesIn
 
 
                             begin
                                 condition if sectorCount >= 1
                                     condition if timing.bestSectorTimeFrames == 0
-                                        action set optimalLapFrames set_to 0
+                                        action set timing.optimalLapFrames set_to 0
                             end
                             begin
                                 condition if sectorCount >= 2
                                     condition if timing.bestSectorTimeFrames == 0
-                                        action set optimalLapFrames set_to 0
+                                        action set timing.optimalLapFrames set_to 0
                             end
                             begin
                                 condition if sectorCount >= 3
                                     condition if timing.bestSectorTimeFrames == 0
-                                        action set optimalLapFrames set_to 0
+                                        action set timing.optimalLapFrames set_to 0
                             end
 
 
-                            condition if optimalLapFrames != 0
-                                condition if optimalLapFrames != oldOptimalFrames
+                            condition if timing.optimalLapFrames != 0
+                                condition if timing.optimalLapFrames != oldOptimalFrames
                                     action hud_post_message player current_player none optimalLapMessage secondsOut millisecondsOut
 
 
@@ -1090,69 +1081,24 @@ include "strings/common_strings.txt"
 
 								;	# Set Player Best Lap #
 								begin
-									condition if current_player.lapInvalidated == 0
-										condition if current_player.bestLapSeconds == 0
-											condition if current_player.bestLapMilliseconds == 0
+									condition if current_player.score > 0
+									    condition if current_player.bestLapFrames == 0 or
+									    condition if current_player.frames < current_player.bestLapFrames
 												action set bestPersonalLap set_to 1
 												action set current_player.bestLapFrames set_to current_player.lapFrames
 												action set current_player.bestLapFrames subtract 1
-												action set current_player.bestLapSeconds set_to current_player.currentLapSeconds
-												action set current_player.bestLapMilliseconds set_to current_player.currentLapMilliseconds
-												action set current_player.bestLapNumber set_to current_player.score
-								end
-								begin
-									condition if current_player.lapInvalidated == 0
-										condition if current_player.currentLapSeconds < current_player.bestLapSeconds
-											action set bestPersonalLap set_to 1
-											action set current_player.bestLapFrames set_to current_player.lapFrames
-											action set current_player.bestLapFrames subtract 1
-											action set current_player.bestLapSeconds set_to current_player.currentLapSeconds
-											action set current_player.bestLapMilliseconds set_to current_player.currentLapMilliseconds
-											action set current_player.bestLapNumber set_to current_player.score
-								end
-								begin
-									condition if current_player.lapInvalidated == 0
-										condition if current_player.currentLapSeconds == current_player.bestLapSeconds
-											condition if current_player.currentLapMilliseconds < current_player.bestLapMilliseconds
-												action set bestPersonalLap set_to 1
-												action set current_player.bestLapFrames set_to current_player.lapFrames
-												action set current_player.bestLapFrames subtract 1
-												action set current_player.bestLapSeconds set_to current_player.currentLapSeconds
-												action set current_player.bestLapMilliseconds set_to current_player.currentLapMilliseconds
-												action set current_player.bestLapNumber set_to current_player.score
 								end
 								;	# Set Player Best Lap #
 
 
 								;	# Set Fastest Laptime #
 								begin
-									condition if current_player.lapInvalidated == 0
-										condition if bestLapSeconds == 0
-											condition if bestLapMilliseconds == 0
-												action set bestOverallLap set_to 1
-												action set bestLapSeconds set_to current_player.currentLapSeconds
-												action set bestLapMilliseconds set_to current_player.currentLapMilliseconds
-												action set bestLapPlayer set_to current_player
-												action set bestLapNumber set_to current_player.score
-								end
-								begin
-									condition if current_player.lapInvalidated == 0
-										condition if current_player.currentLapSeconds < bestLapSeconds
+									condition if current_player.score > 0
+									    condition if bestLapFrames == 0 or
+									    condition if current_player.lapFrames < bestLapFrames
 											action set bestOverallLap set_to 1
-											action set bestLapSeconds set_to current_player.currentLapSeconds
-											action set bestLapMilliseconds set_to current_player.currentLapMilliseconds
+											action set bestLapFrames set_to current_player.lapFrames
 											action set bestLapPlayer set_to current_player
-											action set bestLapNumber set_to current_player.score
-								end
-								begin
-									condition if current_player.lapInvalidated == 0
-										condition if current_player.currentLapSeconds == bestLapSeconds
-											condition if current_player.currentLapMilliseconds < bestLapMilliseconds
-												action set bestOverallLap set_to 1
-												action set bestLapSeconds set_to current_player.currentLapSeconds
-												action set bestLapMilliseconds set_to current_player.currentLapMilliseconds
-												action set bestLapPlayer set_to current_player
-												action set bestLapNumber set_to current_player.score
 								end
 								;	# Set Fastest Laptime #
 
@@ -1160,13 +1106,13 @@ include "strings/common_strings.txt"
 								;	# Send Lap Complete Notifications #
 								begin
 									condition if bestOverallLap == 1
-										condition if current_player.lapInvalidated == 0
+										condition if current_player.score > 0
 											action hud_post_message player current_player none overallBestLapMessage current_player.currentLapSeconds current_player.currentLapMilliseconds
 								end
 								begin
 									condition if bestOverallLap != 1
 										condition if bestPersonalLap == 1
-											condition if current_player.lapInvalidated == 0
+											condition if current_player.score > 0
 												action hud_post_message player current_player none personalBestLapMessage current_player.currentLapSeconds current_player.currentLapMilliseconds
 								end
 								begin
@@ -1178,7 +1124,6 @@ include "strings/common_strings.txt"
 								;	# Send Lap Complete Notifications #
 
 
-								action set current_player.lapInvalidated set_to 0
 								action set timing.jokeredThisLap set_to 0	; Reset joker flag
 								action set current_player.lapFrames set_to 1	; Reset lap frame count
 						;	# Player has completed a lap #
