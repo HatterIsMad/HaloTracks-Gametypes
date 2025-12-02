@@ -511,13 +511,6 @@ include "strings/common_strings.txt"
 
 ;	# Basic Game Logic #
 
-    ;	# Hide Flags used for storage #
-        action for_each flag
-            action hide_object current_object true
-        end
-    ;	# Hide Flags used for storage #
-
-
 	;	# Delete Race Gates #
 	trigger general
 		condition if raceStatus == 1
@@ -621,7 +614,7 @@ include "strings/common_strings.txt"
 	;	# Create Objects for storage #
 	trigger player
 		condition if current_player.timing == none
-			action create_object "flag" at finalCheckpoint set current_player.timing
+			action create_object "flag" at finalCheckpoint set current_player.timing label race_hide
 			action hide_object current_player.timing true
 	end
 	;	# Create Objects for storage #
@@ -1204,12 +1197,6 @@ include "strings/common_strings.txt"
 							action hide_object current_object true
 						end
 					;	# Hide Invisible Race Objects #
-
-                    ;	# Hide Flags used for storage #
-                        action for_each flag
-                            action hide_object current_object true
-                        end
-                    ;	# Hide Flags used for storage #
 
 
 					condition if raceStatus == 2
