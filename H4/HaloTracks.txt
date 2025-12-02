@@ -11,6 +11,8 @@ include "strings/common_strings.txt"
 		title								"Race"
 		description							"Gentlemen, start your engines."
 		objective							"Hit checkpoints to complete laps.\r\n%n laps to win."
+		optionNameRounds		            "Rounds"
+		optionDescriptionRounds         	"If enabled, time expiration or lap count will start a new round or end the game"
 		optionNameWaypointVisibility		"Waypoint Visibility"
 		optionDescriptionWaypointVisibility	"Show waypoints on the checkpoints"
 		optionNameRequiredJokers			"Required Jokers"
@@ -56,6 +58,7 @@ include "strings/common_strings.txt"
 		overallBestSector3Message			"Overall Best Sector 3 time! %n.%n"
 		personalBestSector3Message			"Personal Best Sector 3 time! %n.%n"
 		optimalLapMessage                   "New Optimal Lap: %n.%n"
+		whiteFlagMessage                    "White Flag"
 		debug								"%n"
 	end
 
@@ -209,6 +212,11 @@ include "strings/common_strings.txt"
 			1	option_enabled	""
 		end
 
+		option	rounds	optionNameRounds	optionDescriptionRounds	0
+			0	option_disabled	""
+			1	option_enabled	""
+		end
+
 	end
 
 ;	# Game Options #
@@ -232,6 +240,8 @@ include "strings/common_strings.txt"
 		networked	number	numberOfPlayers				0
 		networked	number	checkpointCount				0
 		networked	number	sectorCount					0
+		networked	number	finalLap     				0
+		networked	number	whiteFlag     				0
 		networked	object	firstCheckpoint				none
 		networked	object	finalCheckpoint				none
 		local		object	target						none
@@ -242,6 +252,7 @@ include "strings/common_strings.txt"
 
 
 	variables player
+		networked	number	bestLapFrames				0
 		networked	number	lapFrames					0
 		networked	number	averageLapFrames			0
 		networked	number	currentLapSeconds			0
@@ -291,7 +302,10 @@ include "strings/common_strings.txt"
 ;	# Stats #
 
 	game_stats
-		bestLapFrames		number	empty	none	0	0	0
+		stat1		number	empty	none	0	0	0
+		stat2		number	empty	none	0	0	0
+		stat3		number	empty	none	0	0	0
+		stat4		number	empty	none	0	0	0
 	end
 
 ;	# Stats #
@@ -589,18 +603,67 @@ include "strings/common_strings.txt"
 	trigger general
 		condition if roundTime > 0
 			condition timer_expired round_timer
-				;action end_round
+				begin
+					condition if rounds == 1
+						action end_round
+				end
+				begin
+					condition if rounds == 0
+						condition if numberOfLaps < 0
+							condition if finalLap == 0
+								action for_each player
+									condition if current_player.score > finalLap
+										action set finalLap set_to current_player.score
+								end
+								begin
+									condition if numberOfLaps == -1
+										action set finalLap add 2
+								end
+								begin
+									condition if numberOfLaps == -2
+										action set finalLap add 3
+								end
+				end
 	end
 	;	# End the round when time runs out #
 
 
+	;	# End the round if anyone has met the finalLap
+	trigger player
+		condition if roundTime > 0
+			condition timer_expired round_timer
+				begin
+					temporary number whiteFlagLap finalLap
+					action set whiteFlagLap subtract 1
+					condition if rounds == 0
+						condition if finalLap != 0
+							condition if current_player.position == 1
+							     condition if current_player.score == whiteFlagLap
+							         condition if whiteFlag == 0
+							             action set whiteFlag set_to 1
+							             action for_each player
+								             action hud_post_message player current_player none whiteFlagMessage
+								         end
+				end
+	end
+	;	# End the round if anyone has met the finalLap
+
+
 	;	# End the round if anyone has met the numberOfLaps
 	trigger player
-		condition if numberOfLaps > 0
-			condition if current_player.score >= numberOfLaps
-				action end_round
+		condition if rounds == 1
+			condition if numberOfLaps > 0
+				condition if current_player.score >= numberOfLaps
+					action end_round
 	end
 	;	# End the round if anyone has met the numberOfLaps
+
+
+	;	# Set Stats
+	trigger player
+
+	end
+	;	# Set Stats
 
 
 	;	# Create Objects for storage #
@@ -977,11 +1040,11 @@ include "strings/common_strings.txt"
 
                         ;   # Update Optimal Laptime #
                         begin
-                            framesIn = timing.bestSectorTimeFrames
-                            framesIn += timing.bestSector2TimeFrames
-                            framesIn += timing.bestSector3TimeFrames
 
                             ;	# Calculate Lap Time #
+							temporary number framesIn timing.bestSectorTimeFrames
+                            action set framesIn add timing.bestSector2TimeFrames
+                            action set framesIn add timing.bestSector3TimeFrames
                             temporary number secondsOut framesIn
                             action set secondsOut divide 60
                             temporary number t secondsOut
@@ -1083,7 +1146,7 @@ include "strings/common_strings.txt"
 								begin
 									condition if current_player.score > 0
 									    condition if current_player.bestLapFrames == 0 or
-									    condition if current_player.frames < current_player.bestLapFrames
+									    condition if current_player.lapFrames < current_player.bestLapFrames
 												action set bestPersonalLap set_to 1
 												action set current_player.bestLapFrames set_to current_player.lapFrames
 												action set current_player.bestLapFrames subtract 1
