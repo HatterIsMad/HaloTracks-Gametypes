@@ -114,7 +114,6 @@ include "strings/common_strings.txt"
 
 	map_object joker
 		label "joker"
-		min 1
 	end
 
 
@@ -511,6 +510,12 @@ include "strings/common_strings.txt"
 
 
 ;	# Basic Game Logic #
+
+    ;	# Hide Flags used for storage #
+        action for_each flag
+            action hide_object current_object true
+        end
+    ;	# Hide Flags used for storage #
 
 
 	;	# Delete Race Gates #
@@ -1199,6 +1204,12 @@ include "strings/common_strings.txt"
 							action hide_object current_object true
 						end
 					;	# Hide Invisible Race Objects #
+
+                    ;	# Hide Flags used for storage #
+                        action for_each flag
+                            action hide_object current_object true
+                        end
+                    ;	# Hide Flags used for storage #
 
 
 					condition if raceStatus == 2
