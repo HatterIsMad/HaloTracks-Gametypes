@@ -1121,7 +1121,7 @@ include "strings/common_strings.txt"
 
 								;   # Update Average Lap time #
 								begin
-									condition if current_player.score > 1
+									condition if current_player.score > 2
 								        temporary number score current_player.score
 								        action set score subtract 1
 										action set current_player.averageLapFrames add current_player.lapFrames
@@ -1144,7 +1144,7 @@ include "strings/common_strings.txt"
 
 								;	# Set Player Best Lap #
 								begin
-									condition if current_player.score > 0
+									condition if current_player.score > 1
 									    condition if current_player.bestLapFrames == 0 or
 									    condition if current_player.lapFrames < current_player.bestLapFrames
 												action set bestPersonalLap set_to 1
@@ -1156,7 +1156,7 @@ include "strings/common_strings.txt"
 
 								;	# Set Fastest Laptime #
 								begin
-									condition if current_player.score > 0
+									condition if current_player.score > 1
 									    condition if bestLapFrames == 0 or
 									    condition if current_player.lapFrames < bestLapFrames
 											action set bestOverallLap set_to 1
@@ -1169,13 +1169,13 @@ include "strings/common_strings.txt"
 								;	# Send Lap Complete Notifications #
 								begin
 									condition if bestOverallLap == 1
-										condition if current_player.score > 0
+										condition if current_player.score > 1
 											action hud_post_message player current_player none overallBestLapMessage current_player.currentLapSeconds current_player.currentLapMilliseconds
 								end
 								begin
 									condition if bestOverallLap != 1
 										condition if bestPersonalLap == 1
-											condition if current_player.score > 0
+											condition if current_player.score > 1
 												action hud_post_message player current_player none personalBestLapMessage current_player.currentLapSeconds current_player.currentLapMilliseconds
 								end
 								begin
