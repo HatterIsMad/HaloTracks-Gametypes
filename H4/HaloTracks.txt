@@ -963,7 +963,6 @@ include "strings/common_strings.txt"
 													action hud_post_message player current_player none sector1Message secondsOut millisecondsOut
 										end
 										;	# Send Sector Complete Notifications #
-												action hud_post_message player current_player none navpointRacePos current_player.position
 
 										action set timing.sectorTimeFrames set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
 										action set timing.sectorInvalidated set_to 0
@@ -1005,7 +1004,6 @@ include "strings/common_strings.txt"
 													action hud_post_message player current_player none sector2Message secondsOut millisecondsOut
 										end
 										;	# Send Sector Complete Notifications #
-												action hud_post_message player current_player none navpointRacePos current_player.position
 
 										action set timing.sectorTimeFrames set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
 										action set timing.sectorInvalidated set_to 0
@@ -1047,7 +1045,6 @@ include "strings/common_strings.txt"
 													action hud_post_message player current_player none sector3Message secondsOut millisecondsOut
 										end
 										;	# Send Sector Complete Notifications #
-												action hud_post_message player current_player none navpointRacePos current_player.position
 
 										action set timing.sectorTimeFrames set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
 										action set timing.sectorInvalidated set_to 0
