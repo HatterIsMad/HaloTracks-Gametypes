@@ -1121,7 +1121,7 @@ include "strings/common_strings.txt"
 
 								;   # Update Average Lap time #
 								begin
-									condition if current_player.score > 2
+									condition if current_player.score > 1
 								        temporary number score current_player.score
 								        action set score subtract 1
 										action set current_player.averageLapFrames add current_player.lapFrames
