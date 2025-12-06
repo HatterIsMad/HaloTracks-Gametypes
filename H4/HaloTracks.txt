@@ -59,6 +59,7 @@ include "strings/common_strings.txt"
 		personalBestSector3Message			"Personal Best Sector 3 time! %n.%n"
 		optimalLapMessage                   "New Optimal Lap: %n.%n"
 		whiteFlagMessage                    "White Flag"
+		navpointRacePos						"%n P"
 		debug								"%n"
 	end
 
@@ -120,6 +121,9 @@ include "strings/common_strings.txt"
 		label "joker"
 	end
 
+	map_object race_pos
+		label "race_pos"
+	end
 
 ;	# Object Labels #
 
@@ -692,12 +696,12 @@ include "strings/common_strings.txt"
 			condition if current_player.score == racer.score
 
 				begin
-					condition if current_player.currentCheckpoint < racer.currentCheckpoint
+					condition if current_player.currentCheckpoint > racer.currentCheckpoint
 						action set position add 1
 				end
 
 				condition if current_player.currentCheckpoint == racer.currentCheckpoint
-					condition if racer.sectorTimeFrames > current_player.sectorTimeFrames
+					condition if racer.sectorTimeFrames < current_player.sectorTimeFrames
 						action set position add 1
 
 		end
@@ -741,11 +745,11 @@ include "strings/common_strings.txt"
 			temporary object vehicle none
 			begin
 				condition if defaultVehicle == 0
-					action create_object "mongoose" at current_player set vehicle "vehicle"
+					action create_object "mongoose" at current_player set vehicle label race_pos "vehicle"
 			end
 			begin
 				condition if defaultVehicle == 1
-					action create_object "warthog" at current_player set vehicle "vehicle"
+					action create_object "warthog" at current_player set vehicle label race_pos "vehicle"
 			end
 
 			action set current_player.vehicle = vehicle
@@ -785,6 +789,18 @@ include "strings/common_strings.txt"
 			condition if raceStatus == 2
 				action hud_widget_set_visibility widget current_player true
 	end
+
+	;	# Handle navpoint widget #
+	trigger player
+		condition if current_player.onVehicle == 1
+			condition if raceStatus == 2
+				condition if holeshotPlayer != none
+					temporary object vehicle current_player.vehicle
+						action NavPointSetType vehicle navpoint_megalo_message_hostile ;This navpoint type is rendered as an additional text widget in the player's UI.
+						action navpoint_set_visible vehicle player current_player true
+						action set vehicle.team set_to attackers ;Setting the navpoint's team to attackers ensures it presents user-defined text.
+	end
+	;	# Handle navpoint widget #
 
 ;	# Handle UI #
 
@@ -947,6 +963,7 @@ include "strings/common_strings.txt"
 													action hud_post_message player current_player none sector1Message secondsOut millisecondsOut
 										end
 										;	# Send Sector Complete Notifications #
+												action hud_post_message player current_player none navpointRacePos current_player.position
 
 										action set timing.sectorTimeFrames set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
 										action set timing.sectorInvalidated set_to 0
@@ -988,6 +1005,7 @@ include "strings/common_strings.txt"
 													action hud_post_message player current_player none sector2Message secondsOut millisecondsOut
 										end
 										;	# Send Sector Complete Notifications #
+												action hud_post_message player current_player none navpointRacePos current_player.position
 
 										action set timing.sectorTimeFrames set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
 										action set timing.sectorInvalidated set_to 0
@@ -1029,6 +1047,7 @@ include "strings/common_strings.txt"
 													action hud_post_message player current_player none sector3Message secondsOut millisecondsOut
 										end
 										;	# Send Sector Complete Notifications #
+												action hud_post_message player current_player none navpointRacePos current_player.position
 
 										action set timing.sectorTimeFrames set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
 										action set timing.sectorInvalidated set_to 0
@@ -1121,7 +1140,7 @@ include "strings/common_strings.txt"
 
 								;   # Update Average Lap time #
 								begin
-									condition if current_player.score > 1
+									condition if current_player.score > 2
 								        temporary number score current_player.score
 								        action set score subtract 1
 										action set current_player.averageLapFrames add current_player.lapFrames
@@ -1257,6 +1276,15 @@ include "strings/common_strings.txt"
 
 
 					condition if raceStatus == 2
+
+	                    ;	# Handle navpoint widget #
+	                    begin
+		                        condition if current_player.onVehicle == 1
+				                        condition if holeshotPlayer != none
+					                        temporary object vehicle current_player.vehicle
+					                        action navpoint_set_secondary_text vehicle navpointRacePos current_player.position
+	                    end
+	                    ;	# Handle navpoint widget #
 
 						begin
 							condition if host == 0
