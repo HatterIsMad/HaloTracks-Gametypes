@@ -59,7 +59,7 @@ include "strings/common_strings.txt"
 		personalBestSector3Message			"Personal Best Sector 3 time! %n.%n"
 		optimalLapMessage                   "New Optimal Lap: %n.%n"
 		whiteFlagMessage                    "White Flag"
-		navpointRacePos						"%n P"
+		navpointRacePos						"P%n"
 		debug								"%n"
 	end
 
@@ -268,21 +268,22 @@ include "strings/common_strings.txt"
 		networked	object	vehicle						none
 		local		object	local_target				none
 		networked	object	timing						none
+		networked	object	storage						none
 		networked	timer	delay						2
 	end
 
 
 	variables object
-		networked	number	order						0
-		networked	number	optimalLapFrames    		0
-		networked	number	jokeredThisLap				0
-		networked	number	jokerCount					0
-		networked	number	sector						0
-		networked	number	sectorTimeFrames			0
-		networked	number	bestSectorTimeFrames		0
-		networked	number	bestSector2TimeFrames		0
-		networked	number	bestSector3TimeFrames		0
-		networked	number	sectorInvalidated			1
+		networked	number	number1						0    ; Checkpoint.order
+		networked	number	number2              		0    ; Timing.optimalLapFrames
+		networked	number	number3     				0    ; Timing.jokeredThisLap
+		networked	number	number4 					0    ; Timing.jokerCount
+		networked	number	number5						0    ; Timing.sector
+		networked	number	number6         			0    ; Timing.sectorTimeFrames
+		networked	number	number7             		0    ; Checkpoint.bestSectorTimeFrames | Timing.bestSector1TimeFrames
+		networked	number	number8             		0    ; Timing.bestSector2TimeFrames
+		networked	number	number9             		0    ; Timing.bestSector3TimeFrames
+		networked	number	number10        			1    ; Timing.sectorInvalidated
 	end
 
 ;	# Variables #
@@ -326,7 +327,7 @@ include "strings/common_strings.txt"
 		;	# Initialize Checkpoints
 			action for_each race_checkpoint
 
-				action set current_object.order set_to current_object.user_data
+				action set current_object.number1 set_to current_object.user_data
 				action set current_object.team set_to neutral
 				action object_set_invincibility current_object true
 				action navpoint_set_visible current_object no_one
@@ -344,7 +345,7 @@ include "strings/common_strings.txt"
 				;	# Set finalCheckpoint #
 				begin
 					condition if finalCheckpoint == none or
-					condition if current_object.order > finalCheckpoint.order
+					condition if current_object.number1 > finalCheckpoint.number1
 						action set finalCheckpoint = current_object
 				end
 				;	# Set finalCheckpoint #
@@ -353,7 +354,7 @@ include "strings/common_strings.txt"
 				;	# Set firstCheckpoint #
 				begin
 					condition if firstCheckpoint == none or
-					condition if current_object.order < firstCheckpoint.order
+					condition if current_object.number1 < firstCheckpoint.number1
 						action set firstCheckpoint = current_object
 				end
 				;	# Set firstCheckpoint #
@@ -366,7 +367,7 @@ include "strings/common_strings.txt"
 		begin
 			action for_each race_checkpoint
 				action for_each race_checkpoint
-					condition if current_object.order == checkpointCount
+					condition if current_object.number1 == checkpointCount
 						action set checkpointCount add 1
 				end
 			end
@@ -384,15 +385,15 @@ include "strings/common_strings.txt"
 				condition if checkpointCount <= 3
 					action for_each race_checkpoint
 						begin
-							condition if current_object.order == 0
+							condition if current_object.number1 == 0
 								action set sector1 set_to current_object
 						end
 						begin
-							condition if current_object.order == 1
+							condition if current_object.number1 == 1
 								action set sector2 set_to current_object
 						end
 						begin
-							condition if current_object.order == 2
+							condition if current_object.number1 == 2
 								action set sector3 set_to current_object
 						end
 					end
@@ -410,14 +411,14 @@ include "strings/common_strings.txt"
 					action set sector3 set_to finalCheckpoint
 
 					action for_each race_checkpoint
-						condition if current_object.order == order
+						condition if current_object.number1 == order
 							action set sector2 set_to current_object
 					end
 
 					action set order subtract spacing
 
 					action for_each race_checkpoint
-						condition if current_object.order == order
+						condition if current_object.number1 == order
 							action set sector1 set_to current_object
 					end
 			end
@@ -440,24 +441,24 @@ include "strings/common_strings.txt"
 
 			begin
 				action for_each race_checkpoint
-					action set current_object.sector set_to 4
+					action set current_object.number5 set_to 4
 
 					begin
 						condition not if sector1 == none
-							condition if current_object.order == sector1.order
-								action set current_object.sector set_to 1
+							condition if current_object.number1 == sector1.number1
+								action set current_object.number5 set_to 1
 					end
 
 					begin
 						condition not if sector2 == none
-							condition if current_object.order == sector2.order
-								action set current_object.sector set_to 2
+							condition if current_object.number1 == sector2.number1
+								action set current_object.number5 set_to 2
 					end
 
 					begin
 						condition not if sector3 == none
-							condition if current_object.order == sector3.order
-								action set current_object.sector set_to 3
+							condition if current_object.number1 == sector3.number1
+								action set current_object.number5 set_to 3
 					end
 				end
 			end
@@ -597,7 +598,7 @@ include "strings/common_strings.txt"
 	trigger player
 		condition if raceStatus == 2
 			temporary object timing current_player.timing
-			action set timing.sectorTimeFrames add 1
+			action set timing.number6 add 1
 			action set current_player.lapFrames add 1
 	end
 	;	# Increment the player frame counters #
@@ -672,9 +673,16 @@ include "strings/common_strings.txt"
 
 	;	# Create Objects for storage #
 	trigger player
-		condition if current_player.timing == none
-			action create_object "flag" at finalCheckpoint set current_player.timing label race_hide
-			action hide_object current_player.timing true
+		begin
+		    condition if current_player.timing == none
+			    action create_object "flag" at finalCheckpoint set current_player.timing label race_hide
+			    action hide_object current_player.timing true
+		end
+		begin
+		    condition if current_player.storage == none
+			    action create_object "flag" at finalCheckpoint set current_player.storage label race_hide
+			    action hide_object current_player.storage true
+		end
 	end
 	;	# Create Objects for storage #
 
@@ -791,15 +799,15 @@ include "strings/common_strings.txt"
 	end
 
 	;	# Handle navpoint widget #
-	trigger player
-		condition if current_player.onVehicle == 1
-			condition if raceStatus == 2
-				condition if holeshotPlayer != none
-					temporary object vehicle current_player.vehicle
-						action NavPointSetType vehicle navpoint_megalo_message_hostile ;This navpoint type is rendered as an additional text widget in the player's UI.
-						action navpoint_set_visible vehicle player current_player true
-						action set vehicle.team set_to attackers ;Setting the navpoint's team to attackers ensures it presents user-defined text.
-	end
+	;trigger player
+	;	condition if current_player.onVehicle == 1
+	;		condition if raceStatus == 2
+	;			condition if holeshotPlayer != none
+	;				temporary object vehicle current_player.vehicle
+	;					action NavPointSetType vehicle navpoint_megalo_message_hostile ;This navpoint type is rendered as an additional text widget in the player's UI.
+	;					action navpoint_set_visible vehicle player current_player true
+	;					action set vehicle.team set_to attackers ;Setting the navpoint's team to attackers ensures it presents user-defined text.
+	;end
 	;	# Handle navpoint widget #
 
 ;	# Handle UI #
@@ -812,9 +820,9 @@ include "strings/common_strings.txt"
 
 	;	# Make sure all players have valid checkpoints #
 	trigger player
-		condition if current_player.currentCheckpoint < firstCheckpoint.order or
-		condition if current_player.currentCheckpoint > finalCheckpoint.order
-			action set current_player.currentCheckpoint set_to firstCheckpoint.order
+		condition if current_player.currentCheckpoint < firstCheckpoint.number1 or
+		condition if current_player.currentCheckpoint > finalCheckpoint.number1
+			action set current_player.currentCheckpoint set_to firstCheckpoint.number1
 	end
 	;	# Make sure all players have valid checkpoints #
 
@@ -825,7 +833,7 @@ include "strings/common_strings.txt"
 			condition if waypointVisibility == 1
 				action for_each race_checkpoint
 					action navpoint_set_visible current_object player current_player 0
-					condition if current_object.order == current_player.currentCheckpoint
+					condition if current_object.number1 == current_player.currentCheckpoint
 						action navpoint_set_visible current_object player current_player 1
 				end
 	end
@@ -868,17 +876,17 @@ include "strings/common_strings.txt"
 					end
 
 					begin
-						condition if timing.jokeredThisLap == 1 or
-						condition if current_object.order != current_player.currentCheckpoint or
-						condition if timing.jokerCount >= requiredJokers
+						condition if timing.number3 == 1 or
+						condition if current_object.number1 != current_player.currentCheckpoint or
+						condition if timing.number4 >= requiredJokers
 							action navpoint_set_visible current_object player current_player 0
 					end
 
 					begin
 						condition if raceStatus >= 2
-							condition if timing.jokerCount < requiredJokers
-								condition if timing.jokeredThisLap == 0
-									condition if current_object.order == current_player.currentCheckpoint
+							condition if timing.number4 < requiredJokers
+								condition if timing.number3 == 0
+									condition if current_object.number1 == current_player.currentCheckpoint
 										begin
 											condition if waypointVisibility == 1
 												action navpoint_set_visible current_object player current_player 1
@@ -888,13 +896,13 @@ include "strings/common_strings.txt"
 
 					begin
 						condition if raceStatus >= 2
-							condition if timing.jokerCount < requiredJokers
-								condition if timing.jokeredThisLap == 0
-									condition if current_object.order == current_player.currentCheckpoint
+							condition if timing.number4 < requiredJokers
+								condition if timing.number3 == 0
+									condition if current_object.number1 == current_player.currentCheckpoint
 										condition object_in_area current_player current_object
-											action set timing.jokerCount add 1
-											action set timing.jokeredThisLap set_to 1
-											action hud_post_message player current_player none jokeredMessage timing.jokerCount requiredJokers
+											action set timing.number4 add 1
+											action set timing.number3 set_to 1
+											action hud_post_message player current_player none jokeredMessage timing.number4 requiredJokers
 					end
 				end
 			end
@@ -903,14 +911,14 @@ include "strings/common_strings.txt"
 
 
 			action for_each race_checkpoint
-				condition if current_object.order == current_player.currentCheckpoint
+				condition if current_object.number1 == current_player.currentCheckpoint
 					condition object_in_area current_player current_object
 
 
 						;	# Handle Sector Times #
 						begin
-							condition if timing.sectorTimeFrames != 0
-								temporary number sectorTimeFrames timing.sectorTimeFrames
+							condition if timing.number6 != 0
+								temporary number sectorTimeFrames timing.number6
 								temporary number bestOverallSector 0
 								temporary number bestPersonalSector 0
 
@@ -929,19 +937,19 @@ include "strings/common_strings.txt"
 
 
 								begin
-									condition if current_object.sector == 1
+									condition if current_object.number5 == 1
 										begin
-											condition if timing.sectorInvalidated == 0
+											condition if timing.number10 == 0
 												begin
-													condition if timing.bestSectorTimeFrames == 0 or
-													condition if timing.bestSectorTimeFrames > sectorTimeFrames
-														action set timing.bestSectorTimeFrames set_to sectorTimeFrames
+													condition if timing.number7 == 0 or
+													condition if timing.number7 > sectorTimeFrames
+														action set timing.number7 set_to sectorTimeFrames
 														action set bestPersonalSector set_to 1
 												end
 												begin
-													condition if current_object.bestSectorTimeFrames == 0 or
-													condition if current_object.bestSectorTimeFrames > sectorTimeFrames
-														action set current_object.bestSectorTimeFrames set_to sectorTimeFrames
+													condition if current_object.number7 == 0 or
+													condition if current_object.number7 > sectorTimeFrames
+														action set current_object.number7 set_to sectorTimeFrames
 														action set bestOverallSector set_to 1
 												end
 										end
@@ -964,25 +972,47 @@ include "strings/common_strings.txt"
 										end
 										;	# Send Sector Complete Notifications #
 
-										action set timing.sectorTimeFrames set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
-										action set timing.sectorInvalidated set_to 0
+										action set timing.number6 set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
+										action set timing.number10 set_to 0
+
+
+								        ;   # Display Average Lap time #
+								        begin
+									        condition if current_player.score > 2
+			                                    temporary object vehicle current_player.vehicle
+			                                    action set vehicle.number1 set_to current_player.score
+			                                    action set vehicle.number1 subtract 1
+			                                    action set vehicle.number2 set_to current_player.averageLapFrames
+										        action set vehicle.number2 divide vehicle.number1
+										        action set vehicle.number2 add 1
+										        action set vehicle.number3 set_to vehicle.number2
+								                action set vehicle.number3 divide 60
+								                action set vehicle.number4 set_to vehicle.number3
+								                action set vehicle.number4 multiply 60
+								                action set vehicle.number5 set_to vehicle.number2
+								                action set vehicle.number5 subtract vehicle.number4
+								                action set vehicle.number5 multiply 1000
+								                action set vehicle.number5 divide 60
+										        action hud_post_message player current_player none averageLapMessage vehicle.number3 vehicle.number5
+								        end
+								        ;   # Display Average Lap time #
 								end
 
 
 								begin
-									condition if current_object.sector == 2
+									condition if current_object.number5 == 2
 										begin
-											condition if timing.sectorInvalidated == 0
+											condition if timing.number10 == 0
 												begin
-													condition if timing.bestSector2TimeFrames == 0 or
-													condition if timing.bestSector2TimeFrames > sectorTimeFrames
-														action set timing.bestSector2TimeFrames set_to sectorTimeFrames
+													condition if timing.number8 == 0 or
+													condition if timing.number8 > sectorTimeFrames
+														action set timing.number8 set_to sectorTimeFrames
 														action set bestPersonalSector set_to 1
 												end
 												begin
-													condition if current_object.bestSectorTimeFrames == 0 or
-													condition if current_object.bestSectorTimeFrames > sectorTimeFrames
-														action set current_object.bestSectorTimeFrames set_to sectorTimeFrames
+													condition if current_object.number7 == 0 or
+													condition if current_object.number7 > sectorTimeFrames
+														action set current_object.number7 set_to sectorTimeFrames
 														action set bestOverallSector set_to 1
 												end
 										end
@@ -1005,25 +1035,25 @@ include "strings/common_strings.txt"
 										end
 										;	# Send Sector Complete Notifications #
 
-										action set timing.sectorTimeFrames set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
-										action set timing.sectorInvalidated set_to 0
+										action set timing.number6 set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
+										action set timing.number10 set_to 0
 								end
 
 
 								begin
-									condition if current_object.sector == 3
+									condition if current_object.number5 == 3
 										begin
-											condition if timing.sectorInvalidated == 0
+											condition if timing.number10 == 0
 												begin
-													condition if timing.bestSector3TimeFrames == 0 or
-													condition if timing.bestSector3TimeFrames > sectorTimeFrames
-														action set timing.bestSector3TimeFrames set_to sectorTimeFrames
+													condition if timing.number9 == 0 or
+													condition if timing.number9 > sectorTimeFrames
+														action set timing.number9 set_to sectorTimeFrames
 														action set bestPersonalSector set_to 1
 												end
 												begin
-													condition if current_object.bestSectorTimeFrames == 0 or
-													condition if current_object.bestSectorTimeFrames > sectorTimeFrames
-														action set current_object.bestSectorTimeFrames set_to sectorTimeFrames
+													condition if current_object.number7 == 0 or
+													condition if current_object.number7 > sectorTimeFrames
+														action set current_object.number7 set_to sectorTimeFrames
 														action set bestOverallSector set_to 1
 												end
 										end
@@ -1046,8 +1076,8 @@ include "strings/common_strings.txt"
 										end
 										;	# Send Sector Complete Notifications #
 
-										action set timing.sectorTimeFrames set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
-										action set timing.sectorInvalidated set_to 0
+										action set timing.number6 set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
+										action set timing.number10 set_to 0
 								end
 
 						end
@@ -1058,9 +1088,9 @@ include "strings/common_strings.txt"
                         begin
 
                             ;	# Calculate Lap Time #
-							temporary number framesIn timing.bestSectorTimeFrames
-                            action set framesIn add timing.bestSector2TimeFrames
-                            action set framesIn add timing.bestSector3TimeFrames
+							temporary number framesIn timing.number7
+                            action set framesIn add timing.number8
+                            action set framesIn add timing.number9
                             temporary number secondsOut framesIn
                             action set secondsOut divide 60
                             temporary number t secondsOut
@@ -1072,29 +1102,29 @@ include "strings/common_strings.txt"
                             ;	# Calculate Lap Time #
 
 
-                            temporary number oldOptimalFrames timing.optimalLapFrames
-                            action set timing.optimalLapFrames set_to framesIn
+                            temporary number oldOptimalFrames timing.number2
+                            action set timing.number2 set_to framesIn
 
 
                             begin
                                 condition if sectorCount >= 1
-                                    condition if timing.bestSectorTimeFrames == 0
-                                        action set timing.optimalLapFrames set_to 0
+                                    condition if timing.number7 == 0
+                                        action set timing.number2 set_to 0
                             end
                             begin
                                 condition if sectorCount >= 2
-                                    condition if timing.bestSectorTimeFrames == 0
-                                        action set timing.optimalLapFrames set_to 0
+                                    condition if timing.number7 == 0
+                                        action set timing.number2 set_to 0
                             end
                             begin
                                 condition if sectorCount >= 3
-                                    condition if timing.bestSectorTimeFrames == 0
-                                        action set timing.optimalLapFrames set_to 0
+                                    condition if timing.number7 == 0
+                                        action set timing.number2 set_to 0
                             end
 
 
-                            condition if timing.optimalLapFrames != 0
-                                condition if timing.optimalLapFrames != oldOptimalFrames
+                            condition if timing.number2 != 0
+                                condition if timing.number2 != oldOptimalFrames
                                     action hud_post_message player current_player none optimalLapMessage secondsOut millisecondsOut
 
 
@@ -1103,12 +1133,12 @@ include "strings/common_strings.txt"
 
 
 						;	# Find next checkpoint #
-						temporary number nextCheckpointNumber finalCheckpoint.order
+						temporary number nextCheckpointNumber finalCheckpoint.number1
 						action set nextCheckpointNumber add 1
 						action for_each race_checkpoint
-							condition if current_object.order > current_player.currentCheckpoint
-								condition if current_object.order < nextCheckpointNumber
-									action set nextCheckpointNumber set_to current_object.order
+							condition if current_object.number1 > current_player.currentCheckpoint
+								condition if current_object.number1 < nextCheckpointNumber
+									action set nextCheckpointNumber set_to current_object.number1
 						end
 						;	# Find next checkpoint #
 
@@ -1119,14 +1149,14 @@ include "strings/common_strings.txt"
 
 
 						;	# Player has completed a lap #
-						condition if current_player.currentCheckpoint > finalCheckpoint.order
+						condition if current_player.currentCheckpoint > finalCheckpoint.number1
 							condition if raceStatus == 2
 								temporary number bestPersonalLap	0
 								temporary number bestOverallLap		0
 
 
 								;	# Reset Player checkpoint counter #
-								action set current_player.currentCheckpoint set_to firstCheckpoint.order
+								action set current_player.currentCheckpoint set_to firstCheckpoint.number1
 								;	# Reset Player checkpoint counter #
 
 
@@ -1137,23 +1167,8 @@ include "strings/common_strings.txt"
 
 								;   # Update Average Lap time #
 								begin
-									condition if current_player.score > 2
-								        temporary number score current_player.score
-								        action set score subtract 1
+									condition if current_player.score > 1
 										action set current_player.averageLapFrames add current_player.lapFrames
-										temporary number averageLapFrames current_player.averageLapFrames
-										action set averageLapFrames divide score
-										action set averageLapFrames add 1
-										temporary number averageLapSeconds averageLapFrames
-								        action set averageLapSeconds divide 60
-								        temporary number t averageLapSeconds
-								        action set t multiply 60
-										temporary number averageLapMilliseconds averageLapFrames
-								        action set averageLapMilliseconds subtract t
-								        action set averageLapMilliseconds multiply 1000
-								        action set averageLapMilliseconds divide 60
-								        condition if current_player.score > 2
-											action hud_post_message player current_player none averageLapMessage averageLapSeconds averageLapMilliseconds
 								end
 								;   # Update Average Lap time #
 
@@ -1203,7 +1218,7 @@ include "strings/common_strings.txt"
 								;	# Send Lap Complete Notifications #
 
 
-								action set timing.jokeredThisLap set_to 0	; Reset joker flag
+								action set timing.number3 set_to 0	; Reset joker flag
 								action set current_player.lapFrames set_to 1	; Reset lap frame count
 						;	# Player has completed a lap #
 
@@ -1275,12 +1290,12 @@ include "strings/common_strings.txt"
 					condition if raceStatus == 2
 
 	                    ;	# Handle navpoint widget #
-	                    begin
-		                        condition if current_player.onVehicle == 1
-				                        condition if holeshotPlayer != none
-					                        temporary object vehicle current_player.vehicle
-					                        action navpoint_set_secondary_text vehicle navpointRacePos current_player.position
-	                    end
+	                    ;begin
+		                ;        condition if current_player.onVehicle == 1
+				        ;                condition if holeshotPlayer != none
+					    ;                    temporary object vehicle current_player.vehicle
+					    ;                    action navpoint_set_secondary_text vehicle navpointRacePos current_player.position
+	                    ;end
 	                    ;	# Handle navpoint widget #
 
 						begin
@@ -1320,8 +1335,8 @@ include "strings/common_strings.txt"
 									condition if localLapFrames > 15
 										condition if client.onVehicle == 1
 											action for_each race_checkpoint
-												condition if current_object.order == client.currentCheckpoint
-													condition if current_object.order == finalCheckpoint.order
+												condition if current_object.number1 == client.currentCheckpoint
+													condition if current_object.number1 == finalCheckpoint.number1
 														condition object_in_area client current_object
 															action set localLapFrames set_to 0
 								;	# Player has completed a lap #
