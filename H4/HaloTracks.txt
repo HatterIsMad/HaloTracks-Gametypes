@@ -668,6 +668,21 @@ include "strings/common_strings.txt"
 	;	# Set Stats
 	trigger player
 		temporary object timing current_player.timing
+		temporary number n 0
+
+
+		; # Set Stat 2 | Joker Count + HoleshotPosition + EndTime Minutes #
+		action set current_player.stat2 set_to 0
+
+		action set n set_to timing.jokerCount
+		action set n multiply 10000
+		action set current_player.stat2 add n
+
+		action set n set_to current_player.holeshotPosition
+		action set n multiply 100
+		action set current_player.stat2 add n
+
+		; # Set Stat 2 | Joker Count + HoleshotPosition + EndTime Minutes #
 
 
 		; # Set Stat 4 | Best Lap Time #
