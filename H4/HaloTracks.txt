@@ -668,6 +668,7 @@ include "strings/common_strings.txt"
 	;	# Set Stats
 	trigger player
 		temporary object timing current_player.timing
+		temporary object storage current_player.storage
 		temporary number n 0
 
 
@@ -683,6 +684,11 @@ include "strings/common_strings.txt"
 		action set current_player.stat2 add n
 
 		; # Set Stat 2 | Joker Count + HoleshotPosition + EndTime Minutes #
+
+
+		; # Set Stat 3 | First Lap Start Time #
+		action set current_player.stat3 set_to storage.number1
+		; # Set Stat 3 | First Lap Start Time #
 
 
 		; # Set Stat 4 | Best Lap Time #
@@ -896,6 +902,10 @@ include "strings/common_strings.txt"
 			;	# Get Player Timing #
 			temporary object timing current_player.timing
 			;	# Get Player Timing #
+
+			;	# Get Player Storage #
+			temporary object storage current_player.storage
+			;	# Get Player Storage #
 
 
 			;	# Handle Jokers #
@@ -1186,6 +1196,16 @@ include "strings/common_strings.txt"
 							condition if raceStatus == 2
 								temporary number bestPersonalLap	0
 								temporary number bestOverallLap		0
+
+
+								;   # Set Player first lap time #
+								begin
+								    condition if current_player.score == 0
+								        condition if storage.number1 == 0
+								            condition if frames < 131000
+								                action set storage.number1 set_to frames
+								end
+								;   # Set Player first lap time #
 
 
 								;	# Reset Player checkpoint counter #
