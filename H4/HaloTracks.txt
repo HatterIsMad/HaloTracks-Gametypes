@@ -42,6 +42,7 @@ include "strings/common_strings.txt"
 		widgetText2							"Lap Time: %n.0%n"
 		finalLapMessage						"Final Lap."
 		holeshotMessage						"%p got the holeshot"
+		holeshotMessage2					"You are P%n across the holeshot"
 		overallBestLapMessage				"Overall Best lap time! %n.%n"
 		overallBestLapPlayerMessage			"Lap %n %p got the fastest lap"
 		personalBestLapMessage				"Personal Best lap time! %n.%n"
@@ -256,9 +257,9 @@ include "strings/common_strings.txt"
 
 
 	variables player
-		networked	number	bestLapFrames				0
+		networked	number	holeshotPosition    		0
 		networked	number	lapFrames					0
-		networked	number	averageLapFrames			0
+		networked	number	empty2           			0
 		networked	number	currentLapSeconds			0
 		networked	number	currentLapMilliseconds		0
 		networked	number	onVehicle					0
@@ -274,13 +275,13 @@ include "strings/common_strings.txt"
 
 
 	variables object
-		networked	number	number1						0    ; Checkpoint.order
-		networked	number	number2              		0    ; Timing.optimalLapFrames
+		networked	number	number1						0    ; Timing.bestLapFrames | Checkpoint.order | Storage.firstLapTimeFrames
+		networked	number	number2              		0    ; Timing.optimalLapFrames | Storage.endTimeFrames
 		networked	number	number3     				0    ; Timing.jokeredThisLap
 		networked	number	number4 					0    ; Timing.jokerCount
 		networked	number	number5						0    ; Timing.sector
-		networked	number	number6         			0    ; Timing.sectorTimeFrames
-		networked	number	number7             		0    ; Checkpoint.bestSectorTimeFrames | Timing.bestSector1TimeFrames
+		networked	number	number6         			0    ; Timing.averageLapFrames
+		networked	number	number7             		0    ; Timing.bestSector1TimeFrames | Checkpoint.bestSectorTimeFrames
 		networked	number	number8             		0    ; Timing.bestSector2TimeFrames
 		networked	number	number9             		0    ; Timing.bestSector3TimeFrames
 		networked	number	number10        			1    ; Timing.sectorInvalidated
@@ -598,7 +599,7 @@ include "strings/common_strings.txt"
 	trigger player
 		condition if raceStatus == 2
 			temporary object timing current_player.timing
-			action set timing.number6 add 1
+			action set current_player.sectorTimeFrames add 1
 			action set current_player.lapFrames add 1
 	end
 	;	# Increment the player frame counters #
@@ -666,7 +667,12 @@ include "strings/common_strings.txt"
 
 	;	# Set Stats
 	trigger player
+		temporary object timing current_player.timing
 
+
+		; # Set Stat 4 | Best Lap Time #
+		action set current_player.stat4 set_to timing.number1
+		; # Set Stat 4 | Best Lap Time #
 	end
 	;	# Set Stats
 
@@ -842,17 +848,30 @@ include "strings/common_strings.txt"
 
 	;	# The Player has hit the checkpoint #
 	trigger player
-		condition if current_player.onVehicle == 1
-			action for_each race_holeshot
-	            condition object_in_area current_player current_object
+		condition if current_player.holeshotPosition == 0
+		    condition if current_player.onVehicle == 1
+			    action for_each race_holeshot
+	                condition object_in_area current_player current_object
+		                temporary number highestHSP 0
+		                action for_each player
+			                condition if current_player.holeshotPosition > highestHSP
+				                action set highestHSP set_to current_player.holeshotPosition
+		                end
 
-		            condition if holeshotPlayer == none
-			            action set holeshotPlayer set_to current_player
-						condition if numberOfPlayers != 1
-							action for_each player
-								action hud_post_message player current_player none holeshotMessage holeshotPlayer
-							end
-			end
+		                begin
+		                    condition not if holeshotPlayer == none
+		                        action set highestHSP add 1
+		                        action set current_player.holeshotPosition set_to highestHSP
+								action hud_post_message player current_player none holeshotMessage2 current_player.holeshotPosition
+		                end
+
+		                condition if holeshotPlayer == none
+			                action set holeshotPlayer set_to current_player
+						    condition if numberOfPlayers != 1
+							    action for_each player
+								    action hud_post_message player current_player none holeshotMessage holeshotPlayer
+							    end
+			    end
 	end
 
 
@@ -917,13 +936,12 @@ include "strings/common_strings.txt"
 
 						;	# Handle Sector Times #
 						begin
-							condition if timing.number6 != 0
-								temporary number sectorTimeFrames timing.number6
+							condition if current_player.sectorTimeFrames != 0
 								temporary number bestOverallSector 0
 								temporary number bestPersonalSector 0
 
 								;	# Calculate Lap Time #
-								temporary number framesIn sectorTimeFrames
+								temporary number framesIn current_player.sectorTimeFrames
 								temporary number secondsOut framesIn
 								action set secondsOut divide 60
 								temporary number t secondsOut
@@ -942,14 +960,14 @@ include "strings/common_strings.txt"
 											condition if timing.number10 == 0
 												begin
 													condition if timing.number7 == 0 or
-													condition if timing.number7 > sectorTimeFrames
-														action set timing.number7 set_to sectorTimeFrames
+													condition if timing.number7 > current_player.sectorTimeFrames
+														action set timing.number7 set_to current_player.sectorTimeFrames
 														action set bestPersonalSector set_to 1
 												end
 												begin
 													condition if current_object.number7 == 0 or
-													condition if current_object.number7 > sectorTimeFrames
-														action set current_object.number7 set_to sectorTimeFrames
+													condition if current_object.number7 > current_player.sectorTimeFrames
+														action set current_object.number7 set_to current_player.sectorTimeFrames
 														action set bestOverallSector set_to 1
 												end
 										end
@@ -972,7 +990,7 @@ include "strings/common_strings.txt"
 										end
 										;	# Send Sector Complete Notifications #
 
-										action set timing.number6 set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
+										action set current_player.sectorTimeFrames set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
 										action set timing.number10 set_to 0
 
 
@@ -982,7 +1000,7 @@ include "strings/common_strings.txt"
 			                                    temporary object vehicle current_player.vehicle
 			                                    action set vehicle.number1 set_to current_player.score
 			                                    action set vehicle.number1 subtract 1
-			                                    action set vehicle.number2 set_to current_player.averageLapFrames
+			                                    action set vehicle.number2 set_to timing.number6
 										        action set vehicle.number2 divide vehicle.number1
 										        action set vehicle.number2 add 1
 										        action set vehicle.number3 set_to vehicle.number2
@@ -1005,14 +1023,14 @@ include "strings/common_strings.txt"
 											condition if timing.number10 == 0
 												begin
 													condition if timing.number8 == 0 or
-													condition if timing.number8 > sectorTimeFrames
-														action set timing.number8 set_to sectorTimeFrames
+													condition if timing.number8 > current_player.sectorTimeFrames
+														action set timing.number8 set_to current_player.sectorTimeFrames
 														action set bestPersonalSector set_to 1
 												end
 												begin
 													condition if current_object.number7 == 0 or
-													condition if current_object.number7 > sectorTimeFrames
-														action set current_object.number7 set_to sectorTimeFrames
+													condition if current_object.number7 > current_player.sectorTimeFrames
+														action set current_object.number7 set_to current_player.sectorTimeFrames
 														action set bestOverallSector set_to 1
 												end
 										end
@@ -1035,7 +1053,7 @@ include "strings/common_strings.txt"
 										end
 										;	# Send Sector Complete Notifications #
 
-										action set timing.number6 set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
+										action set current_player.sectorTimeFrames set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
 										action set timing.number10 set_to 0
 								end
 
@@ -1046,14 +1064,14 @@ include "strings/common_strings.txt"
 											condition if timing.number10 == 0
 												begin
 													condition if timing.number9 == 0 or
-													condition if timing.number9 > sectorTimeFrames
-														action set timing.number9 set_to sectorTimeFrames
+													condition if timing.number9 > current_player.sectorTimeFrames
+														action set timing.number9 set_to current_player.sectorTimeFrames
 														action set bestPersonalSector set_to 1
 												end
 												begin
 													condition if current_object.number7 == 0 or
-													condition if current_object.number7 > sectorTimeFrames
-														action set current_object.number7 set_to sectorTimeFrames
+													condition if current_object.number7 > current_player.sectorTimeFrames
+														action set current_object.number7 set_to current_player.sectorTimeFrames
 														action set bestOverallSector set_to 1
 												end
 										end
@@ -1076,7 +1094,7 @@ include "strings/common_strings.txt"
 										end
 										;	# Send Sector Complete Notifications #
 
-										action set timing.number6 set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
+										action set current_player.sectorTimeFrames set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
 										action set timing.number10 set_to 0
 								end
 
@@ -1168,7 +1186,7 @@ include "strings/common_strings.txt"
 								;   # Update Average Lap time #
 								begin
 									condition if current_player.score > 1
-										action set current_player.averageLapFrames add current_player.lapFrames
+										action set timing.number6 add current_player.lapFrames
 								end
 								;   # Update Average Lap time #
 
@@ -1176,11 +1194,11 @@ include "strings/common_strings.txt"
 								;	# Set Player Best Lap #
 								begin
 									condition if current_player.score > 1
-									    condition if current_player.bestLapFrames == 0 or
-									    condition if current_player.lapFrames < current_player.bestLapFrames
+									    condition if timing.number1 == 0 or
+									    condition if current_player.lapFrames < timing.number1
 												action set bestPersonalLap set_to 1
-												action set current_player.bestLapFrames set_to current_player.lapFrames
-												action set current_player.bestLapFrames subtract 1
+												action set timing.number1 set_to current_player.lapFrames
+												action set timing.number1 subtract 1
 								end
 								;	# Set Player Best Lap #
 
