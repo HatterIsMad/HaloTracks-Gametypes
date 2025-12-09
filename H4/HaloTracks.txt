@@ -40,9 +40,9 @@ include "strings/common_strings.txt"
 		empty								""
 		widgetText							"Lap Time: %n.%n"
 		widgetText2							"Lap Time: %n.0%n"
-		finalLapMessage						"Final Lap."
+		endingOnMessage						"Ending on %n"
 		holeshotMessage						"%p got the holeshot"
-		holeshotMessage2					"You are P%n across the holeshot"
+		holeshotMessage2					"Holeshot P%n"
 		overallBestLapMessage				"Overall Best lap time! %n.%n"
 		overallBestLapPlayerMessage			"Lap %n %p got the fastest lap"
 		personalBestLapMessage				"Personal Best lap time! %n.%n"
@@ -143,8 +143,8 @@ include "strings/common_strings.txt"
 		override		respawn_time					3
 		override		suicide_respawn_penalty			3
 		lock override	score_to_win_round				500
-		override		round_count						1
-		override		round_time_limit				60
+		override		round_count						10
+		override		round_time_limit				3
 		override		early_victory_win_count			0
 		override		indestructible_vehicles			1
 		override		grenades_on_map					0
@@ -173,7 +173,7 @@ include "strings/common_strings.txt"
 						infinite_ammo					on
 		end
 
-		option	numberOfLaps	optionNameNumberOfLaps	optionDescriptionNumberOfLaps	0
+		option	numberOfLaps	optionNameNumberOfLaps	optionDescriptionNumberOfLaps	-2
 			-2	lapsPlus2			""
 			-1	lapsPlus1			""
 			0	option_disabled		""
@@ -236,6 +236,7 @@ include "strings/common_strings.txt"
 		networked	number	roundTime					0
 		networked   number  bestLapFrames               0
 		networked	number	frames						0
+		networked   number  framesOverflow              0
 		local		number	host						0
 		local		number	localCurrentLapSeconds		0
 		local		number	localCurrentLapMilliseconds	0
@@ -246,7 +247,7 @@ include "strings/common_strings.txt"
 		networked	number	checkpointCount				0
 		networked	number	sectorCount					0
 		networked	number	finalLap     				0
-		networked	number	whiteFlag     				0
+		networked	number	flag         				0
 		networked	object	firstCheckpoint				none
 		networked	object	finalCheckpoint				none
 		local		object	target						none
@@ -276,9 +277,9 @@ include "strings/common_strings.txt"
 
 	variables object
 		networked	number	number1						0    ; Timing.bestLapFrames | Checkpoint.order | Storage.firstLapTimeFrames
-		networked	number	number2              		0    ; Timing.optimalLapFrames | Storage.endTimeFrames
-		networked	number	number3     				0    ; Timing.jokeredThisLap
-		networked	number	number4 					0    ; Timing.jokerCount
+		networked	number	number2              		0    ; Timing.optimalLapFrames | Storage.firstLapTimeFramesOverflow
+		networked	number	number3     				0    ; Timing.jokeredThisLap | Storage.endTimeFrames
+		networked	number	number4 					0    ; Timing.jokerCount | Storage.endTimeFramesOverflow
 		networked	number	number5						0    ; Timing.sector
 		networked	number	number6         			0    ; Timing.averageLapFrames
 		networked	number	number7             		0    ; Timing.bestSector1TimeFrames | Checkpoint.bestSectorTimeFrames
@@ -591,6 +592,9 @@ include "strings/common_strings.txt"
 	;	# Increment the frame counter #
 	trigger general
 		action set frames add 1
+		condition if frames >= 32750
+			action set frames subtract 32750
+			action set framesOverflow add 1
 	end
 	;	# Increment the frame counter #
 
@@ -598,7 +602,6 @@ include "strings/common_strings.txt"
 	;	# Increment the player frame counters #
 	trigger player
 		condition if raceStatus == 2
-			temporary object timing current_player.timing
 			action set current_player.sectorTimeFrames add 1
 			action set current_player.lapFrames add 1
 	end
@@ -629,6 +632,9 @@ include "strings/common_strings.txt"
 									condition if numberOfLaps == -2
 										action set finalLap add 3
 								end
+                                action for_each player
+                                    action hud_post_message player current_player none endingOnMessage finalLap
+                                end
 				end
 	end
 	;	# End the round when time runs out #
@@ -643,13 +649,27 @@ include "strings/common_strings.txt"
 					action set whiteFlagLap subtract 1
 					condition if rounds == 0
 						condition if finalLap != 0
-							condition if current_player.position == 1
-							     condition if current_player.score == whiteFlagLap
-							         condition if whiteFlag == 0
-							             action set whiteFlag set_to 1
-							             action for_each player
-								             action hud_post_message player current_player none whiteFlagMessage
-								         end
+							begin
+		                        condition if current_player.score == whiteFlagLap
+		                            condition if flag == 0
+		                                action set flag set_to 1
+		                                action for_each player
+			                                action hud_post_message player current_player none whiteFlagMessage
+			                            end
+							end
+				            begin
+				                condition if flag == 1
+				                temporary number leaderFinished 0
+				                action for_each player
+				                    condition if current_player.score >= finalLap
+				                        action set leaderFinished set_to 1
+		                                action for_each player
+			                                ;action hud_post_message player current_player none leaderFinishTimeMessage frames frame
+			                            end
+				                end
+				                condition if leaderFinished == 1
+				                    action set flag set_to 2
+				            end
 				end
 	end
 	;	# End the round if anyone has met the finalLap
@@ -665,25 +685,35 @@ include "strings/common_strings.txt"
 	;	# End the round if anyone has met the numberOfLaps
 
 
-	;	# Set Stats
+	;	# Set Stats #
 	trigger player
 		temporary object timing current_player.timing
 		temporary object storage current_player.storage
 		temporary number n 0
 
 
-		; # Set Stat 2 | Joker Count + HoleshotPosition + EndTime Minutes #
+		; # Set Stat 1 | End Time Frame #
+		action set current_player.stat1 set_to storage.number3
+		; # Set Stat 1 | End Time Frame #
+
+
+		; # Set Stat 2 | HoleshotPosition + Joker Count + StartTimeFrameOverflow + EndTimeFrameOverflow #
 		action set current_player.stat2 set_to 0
 
-		action set n set_to timing.jokerCount
-		action set n multiply 10000
-		action set current_player.stat2 add n
-
-		action set n set_to current_player.holeshotPosition
+		action set n set_to timing.number4
 		action set n multiply 100
 		action set current_player.stat2 add n
 
-		; # Set Stat 2 | Joker Count + HoleshotPosition + EndTime Minutes #
+		action set n set_to current_player.holeshotPosition
+		action set n multiply 1000
+		action set current_player.stat2 add n
+
+		action set n set_to storage.number2
+		action set n multiply 10
+		action set current_player.stat2 add n
+
+		action set current_player.stat2 add storage.number4
+		; # Set Stat 2 | HoleshotPosition + Joker Count + StartTimeFrameOverflow + EndTimeFrameOverflow #
 
 
 		; # Set Stat 3 | First Lap Start Time #
@@ -695,7 +725,7 @@ include "strings/common_strings.txt"
 		action set current_player.stat4 set_to timing.number1
 		; # Set Stat 4 | Best Lap Time #
 	end
-	;	# Set Stats
+	;	# Set Stats #
 
 
 	;	# Create Objects for storage #
@@ -880,10 +910,10 @@ include "strings/common_strings.txt"
 		                end
 
 		                begin
-		                    condition not if holeshotPlayer == none
 		                        action set highestHSP add 1
 		                        action set current_player.holeshotPosition set_to highestHSP
-								action hud_post_message player current_player none holeshotMessage2 current_player.holeshotPosition
+		                        condition if highestHSP > 1
+								    action hud_post_message player current_player none holeshotMessage2 current_player.holeshotPosition
 		                end
 
 		                condition if holeshotPlayer == none
@@ -1202,10 +1232,16 @@ include "strings/common_strings.txt"
 								begin
 								    condition if current_player.score == 0
 								        condition if storage.number1 == 0
-								            condition if frames < 131000
-								                action set storage.number1 set_to frames
+							                action set storage.number1 set_to frames
+							                action set storage.number2 set_to framesOverflow
 								end
 								;   # Set Player first lap time #
+
+
+								;   # Set Time of last completed lap #
+                                action set storage.number3 set_to frames
+                                action set storage.number4 set_to framesOverflow
+								;   # Set Time of last completed lap #
 
 
 								;	# Reset Player checkpoint counter #
