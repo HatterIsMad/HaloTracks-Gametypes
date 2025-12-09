@@ -41,6 +41,7 @@ include "strings/common_strings.txt"
 		widgetText							"Lap Time: %n.%n"
 		widgetText2							"Lap Time: %n.0%n"
 		endingOnMessage						"Ending on %n"
+		finishMessage						"Finished P%n"
 		holeshotMessage						"%p got the holeshot"
 		holeshotMessage2					"Holeshot P%n"
 		overallBestLapMessage				"Overall Best lap time! %n.%n"
@@ -59,7 +60,6 @@ include "strings/common_strings.txt"
 		overallBestSector3Message			"Overall Best Sector 3 time! %n.%n"
 		personalBestSector3Message			"Personal Best Sector 3 time! %n.%n"
 		optimalLapMessage                   "New Optimal Lap: %n.%n"
-		whiteFlagMessage                    "White Flag"
 		navpointRacePos						"P%n"
 		debug								"%n"
 	end
@@ -139,6 +139,7 @@ include "strings/common_strings.txt"
 
 	game_options
 
+		lock override	ordnance_enabled				0
 		lock override	teams_enabled					0
 		override		respawn_time					3
 		override		suicide_respawn_penalty			3
@@ -516,6 +517,7 @@ include "strings/common_strings.txt"
 
 		action set raceStatus set_to 1
 		action set host set_to 1
+		action SetMedalScoring false
 	end
 
 ;	# Initialize #
@@ -654,7 +656,7 @@ include "strings/common_strings.txt"
 		                            condition if flag == 0
 		                                action set flag set_to 1
 		                                action for_each player
-			                                action hud_post_message player current_player none whiteFlagMessage
+			                                action AwardMedal player current_player flag_capture
 			                            end
 							end
 				            begin
@@ -1306,6 +1308,51 @@ include "strings/common_strings.txt"
 								;action submit_incident lap_complete player current_player player none
 								;	# Send Lap Complete Notifications #
 
+
+	                            ;	# Get Player Definite Position #
+	                            temporary player racer current_player
+	                            temporary number position 1
+
+                                ;	# Find out how many players are ahead #
+                                action for_each player
+
+                                    begin
+                                        condition if current_player.score > racer.score
+	                                        action set position add 1
+                                    end
+
+
+                                    condition if current_player.score == racer.score
+
+                                        begin
+	                                        condition if current_player.currentCheckpoint > racer.currentCheckpoint
+		                                        action set position add 1
+                                        end
+
+                                        condition if current_player.currentCheckpoint == racer.currentCheckpoint
+	                                        condition if racer.sectorTimeFrames < current_player.sectorTimeFrames
+		                                        action set position add 1
+
+                                end
+                                ;	# Find out how many players are ahead #
+	                            ;	# Get Player Definite Position #
+
+
+								;   # Send Lap Led Medal #
+								begin
+									condition if position == 1
+										action AwardMedal player current_player triple_double
+								end
+								;   # Send Lap Led Medal #
+
+
+								;   # Send Finish Message #
+								begin
+									condition not if finalLap == 0
+										condition if current_player.score == finalLap
+											action hud_post_message player current_player none finishMessage	position
+								end
+								;   # Send Finish Message #
 
 								action set timing.number3 set_to 0	; Reset joker flag
 								action set current_player.lapFrames set_to 1	; Reset lap frame count
