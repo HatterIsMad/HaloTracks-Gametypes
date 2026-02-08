@@ -184,6 +184,13 @@ include "strings/common_strings.txt"
 						infinite_ammo					on
 		end
 
+
+	    player_traits_dynamic spectator empty empty
+   		    stealthy true
+            active_camo invisible
+	    end
+
+
 		option	numberOfLaps	optionNameNumberOfLaps	optionDescriptionNumberOfLaps	0
 			-2	lapsPlus2			""
 			-1	lapsPlus1			""
@@ -867,9 +874,11 @@ include "strings/common_strings.txt"
 			action for_each player
 
 			    ; # Make Monitors Invisible #
-		       ;if current_player.biped.is_of_type(monitor) then
-                  ;current_player.apply_traits(spectatorTraits)
-               ;end
+			    begin
+                    temporary object oldBody current_player
+                    condition object_is_type oldBody "monitor"
+                        action apply_player_traits current_player spectator
+                end
 			    ; # Make Monitors Invisible #
 
 			    ; # Transform Player into Monitor #
@@ -878,6 +887,8 @@ include "strings/common_strings.txt"
 			            condition object_in_area current_player current_object
                             temporary object oldBody current_player
                             condition not object_is_type oldBody "monitor"
+                                action biped_drop_weapon current_player primary
+                                action biped_drop_weapon current_player secondary
                                 action object_detach oldBody
                                 temporary object monitor none
                                 action create_object "monitor" at current_player set monitor
@@ -904,6 +915,8 @@ include "strings/common_strings.txt"
                                 action player_set_unit current_player monitor
 				                action object_set_invincibility monitor false
                                 action delete_object oldBody
+                                action biped_give_weapon monitor "magnum" primary
+                                action biped_give_weapon monitor "sticky_grenade_launcher" secondary
                 end
 			    ; # Transform Player into Spartan #
 
