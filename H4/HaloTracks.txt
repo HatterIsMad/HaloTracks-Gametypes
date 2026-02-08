@@ -878,6 +878,8 @@ include "strings/common_strings.txt"
                     temporary object oldBody current_player
                     condition object_is_type oldBody "monitor"
                         action apply_player_traits current_player spectator
+                        action biped_drop_weapon current_player secondary
+                        action biped_drop_weapon current_player primary
                 end
 			    ; # Make Monitors Invisible #
 
@@ -887,8 +889,8 @@ include "strings/common_strings.txt"
 			            condition object_in_area current_player current_object
                             temporary object oldBody current_player
                             condition not object_is_type oldBody "monitor"
-                                action biped_drop_weapon current_player primary
-                                action biped_drop_weapon current_player secondary
+                                action biped_drop_weapon oldBody secondary
+                                action biped_drop_weapon oldBody primary
                                 action object_detach oldBody
                                 temporary object monitor none
                                 action create_object "monitor" at current_player set monitor
@@ -909,14 +911,14 @@ include "strings/common_strings.txt"
                             temporary object oldBody current_player
                             condition object_is_type oldBody "monitor"
                                 action object_detach oldBody
-                                temporary object monitor current_player.vehicle
+                                temporary object spartan current_player.vehicle
                                 action object_detach current_player.vehicle
 				                action object_set_scale current_player.vehicle 100
-                                action player_set_unit current_player monitor
-				                action object_set_invincibility monitor false
+                                action player_set_unit current_player spartan
+				                action object_set_invincibility spartan false
                                 action delete_object oldBody
-                                action biped_give_weapon monitor "magnum" primary
-                                action biped_give_weapon monitor "sticky_grenade_launcher" secondary
+                                action biped_give_weapon spartan "magnum" primary
+                                action biped_give_weapon spartan "sticky_grenade_launcher" secondary
                 end
 			    ; # Transform Player into Spartan #
 
@@ -995,8 +997,9 @@ include "strings/common_strings.txt"
 		action hud_widget_set_visibility widget current_player false
 		temporary object biped current_player
 		condition not if biped == none
-			condition if raceStatus == 2
-				action hud_widget_set_visibility widget current_player true
+            condition not object_is_type biped "monitor"
+				condition if raceStatus == 2
+					action hud_widget_set_visibility widget current_player true
 	end
 
 	;	# Handle navpoint widget #
