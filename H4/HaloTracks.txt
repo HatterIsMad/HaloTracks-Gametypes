@@ -10,9 +10,13 @@ include "strings/common_strings.txt"
 		engine_category_slayer				"Slayer"
 		title								"Race"
 		description							"Gentlemen, start your engines."
-		objective							"Hit checkpoints to complete laps.\r\n%n laps to win."
-		optionNameRounds		            "Rounds"
-		optionDescriptionRounds         	"If enabled, time expiration or lap count will start a new round or end the game"
+		objective							"HaloTracks Race Gametype v0.1"
+		objective2							"Race length %n laps"
+		objective3							"Race length %n minutes"
+		objective4							"Race length %n minutes + %n laps"
+		objectiveRounds2					"Rounds of %n laps"
+		objectiveRounds3					"Rounds of %n minutes"
+		objectiveRounds4					"Rounds of %n minutes + %n laps"
 		optionNameWaypointVisibility		"Waypoint Visibility"
 		optionDescriptionWaypointVisibility	"Show waypoints on the checkpoints"
 		optionNameRequiredJokers			"Required Jokers"
@@ -40,6 +44,7 @@ include "strings/common_strings.txt"
 		empty								""
 		widgetText							"Lap Time: %n.%n"
 		widgetText2							"Lap Time: %n.0%n"
+		widgetText3							"Lap Time: %n.000"
 		endingOnMessage						"Ending on %n"
 		finishMessage						"Finished P%n"
 		holeshotMessage						"%p got the holeshot"
@@ -60,6 +65,7 @@ include "strings/common_strings.txt"
 		overallBestSector3Message			"Overall Best Sector 3 time! %n.%n"
 		personalBestSector3Message			"Personal Best Sector 3 time! %n.%n"
 		optimalLapMessage                   "New Optimal Lap: %n.%n"
+		leaderFinishTimeMessage             "Leader Finished at %n.%n"
 		navpointRacePos						"P%n"
 		debug								"%n"
 	end
@@ -144,7 +150,7 @@ include "strings/common_strings.txt"
 		override		respawn_time					3
 		override		suicide_respawn_penalty			3
 		lock override	score_to_win_round				500
-		override		round_count						10
+		override		round_count						1
 		override		round_time_limit				3
 		override		early_victory_win_count			0
 		override		indestructible_vehicles			1
@@ -174,7 +180,7 @@ include "strings/common_strings.txt"
 						infinite_ammo					on
 		end
 
-		option	numberOfLaps	optionNameNumberOfLaps	optionDescriptionNumberOfLaps	-2
+		option	numberOfLaps	optionNameNumberOfLaps	optionDescriptionNumberOfLaps	0
 			-2	lapsPlus2			""
 			-1	lapsPlus1			""
 			0	option_disabled		""
@@ -214,11 +220,6 @@ include "strings/common_strings.txt"
 		end
 
 		option	waypointVisibility	optionNameWaypointVisibility	optionDescriptionWaypointVisibility	0
-			0	option_disabled	""
-			1	option_enabled	""
-		end
-
-		option	rounds	optionNameRounds	optionDescriptionRounds	0
 			0	option_disabled	""
 			1	option_enabled	""
 		end
@@ -528,6 +529,54 @@ include "strings/common_strings.txt"
 
 ;	# Basic Game Logic #
 
+	;	# Send round start message #
+	trigger player
+		condition if raceStatus == 1
+			condition if frames == 600
+	            action hud_post_message player current_player none objective
+				begin
+					condition if numberOfLaps > 0
+						begin
+							condition if round_count == 1
+	                            action hud_post_message player current_player none objective2 numberOfLaps
+	                    end
+						begin
+							condition if round_count > 1
+	                            action hud_post_message player current_player none objectiveRounds2 numberOfLaps
+	                    end
+	            end
+				begin
+					condition if numberOfLaps == 0
+						temporary number minutes roundTime
+						action set minutes divide 60
+						begin
+							condition if round_count == 1
+		                        action hud_post_message player current_player none objective3 minutes
+		                end
+						begin
+							condition if round_count > 1
+		                        action hud_post_message player current_player none objectiveRounds3 minutes
+	                    end
+	            end
+				begin
+					condition if numberOfLaps < 0
+						temporary number minutes roundTime
+						action set minutes divide 60
+						temporary number laps numberOfLaps
+						action set laps multiply -1
+						begin
+							condition if round_count == 1
+	                            action hud_post_message player current_player none objective4 minutes laps
+	                    end
+						begin
+							condition if round_count > 1
+	                            action hud_post_message player current_player none objectiveRounds4 minutes laps
+	                    end
+	            end
+	end
+	;	# Send round start message #
+
+
 	;	# Delete Race Gates #
 	trigger general
 		condition if raceStatus == 1
@@ -614,30 +663,30 @@ include "strings/common_strings.txt"
 	trigger general
 		condition if roundTime > 0
 			condition timer_expired round_timer
-				begin
-					condition if rounds == 1
-						action end_round
-				end
-				begin
-					condition if rounds == 0
-						condition if numberOfLaps < 0
-							condition if finalLap == 0
-								action for_each player
-									condition if current_player.score > finalLap
-										action set finalLap set_to current_player.score
-								end
-								begin
-									condition if numberOfLaps == -1
-										action set finalLap add 2
-								end
-								begin
-									condition if numberOfLaps == -2
-										action set finalLap add 3
-								end
-                                action for_each player
-                                    action hud_post_message player current_player none endingOnMessage finalLap
-                                end
-				end
+                begin
+		            condition if round_count > 1
+	                    condition if numberOfLaps >= 0
+		                    action end_round
+                end
+                begin
+                    condition if finalLap == 0
+                        action for_each player
+                            condition if current_player.score > finalLap
+                                action set finalLap set_to current_player.score
+                        end
+                        action set finalLap add 1
+                        begin
+                            condition if numberOfLaps == -1
+                                action set finalLap add 1
+                        end
+                        begin
+                            condition if numberOfLaps == -2
+                                action set finalLap add 2
+                        end
+                        action for_each player
+                            action hud_post_message player current_player none endingOnMessage finalLap
+                        end
+                end
 	end
 	;	# End the round when time runs out #
 
@@ -649,29 +698,58 @@ include "strings/common_strings.txt"
 				begin
 					temporary number whiteFlagLap finalLap
 					action set whiteFlagLap subtract 1
-					condition if rounds == 0
-						condition if finalLap != 0
-							begin
-		                        condition if current_player.score == whiteFlagLap
-		                            condition if flag == 0
-		                                action set flag set_to 1
-		                                action for_each player
-			                                action AwardMedal player current_player flag_capture
-			                            end
-							end
-				            begin
-				                condition if flag == 1
-				                temporary number leaderFinished 0
-				                action for_each player
-				                    condition if current_player.score >= finalLap
-				                        action set leaderFinished set_to 1
-		                                action for_each player
-			                                ;action hud_post_message player current_player none leaderFinishTimeMessage frames frame
-			                            end
-				                end
-				                condition if leaderFinished == 1
-				                    action set flag set_to 2
-				            end
+		            condition if finalLap != 0
+			            begin
+                            condition if current_player.score == whiteFlagLap
+                                condition if flag == 0
+                                    action set flag set_to 1
+                                    action for_each player
+                                        action AwardMedal player current_player flag_capture
+                                    end
+			            end
+                        begin
+                            condition if flag == 1
+                            temporary number leaderFinished 0
+                            action for_each player
+                                condition if current_player.score >= finalLap
+                                    action set leaderFinished set_to 1
+								    temporary number framesIn frames
+								    temporary number secondsOut framesIn
+								    action set secondsOut divide 60
+								    temporary number t secondsOut
+								    action set t multiply 60
+								    temporary number millisecondsOut framesIn
+								    action set millisecondsOut subtract t
+								    action set millisecondsOut multiply 1000
+								    action set millisecondsOut divide 60
+                                    action for_each player
+                                        action hud_post_message player current_player none leaderFinishTimeMessage secondsOut millisecondsOut
+                                    end
+
+					                condition if round_count > 1
+						                action end_round
+                            end
+                            condition if leaderFinished == 1
+                                action set flag set_to 2
+                        end
+                        begin
+                            condition if flag == 2
+                                action for_each player
+                                    condition if current_player.position == 1
+                                        condition if current_player.lapFrames == 300
+								        temporary number framesIn frames
+								        action set framesIn subtract 300
+								        temporary number secondsOut framesIn
+								        action set secondsOut divide 60
+								        temporary number t secondsOut
+								        action set t multiply 60
+								        temporary number millisecondsOut framesIn
+								        action set millisecondsOut subtract t
+								        action set millisecondsOut multiply 1000
+								        action set millisecondsOut divide 60
+                                        action hud_post_message player current_player none leaderFinishTimeMessage secondsOut millisecondsOut
+                                end
+                        end
 				end
 	end
 	;	# End the round if anyone has met the finalLap
@@ -679,7 +757,7 @@ include "strings/common_strings.txt"
 
 	;	# End the round if anyone has met the numberOfLaps
 	trigger player
-		condition if rounds == 1
+		condition if round_count == 1
 			condition if numberOfLaps > 0
 				condition if current_player.score >= numberOfLaps
 					action end_round
@@ -838,11 +916,6 @@ include "strings/common_strings.txt"
 
 	trigger player
 
-		;	# Initialize UI #
-		action player_set_objective current_player objective numberOfLaps
-		;	# Initialize UI #
-
-
 		;	# Display the players current lap time #
 		action hud_widget_set_text widget widgetText local_player.currentLapSeconds	local_player.currentLapMilliseconds
 		;	# Display the players current lap time #
@@ -901,30 +974,33 @@ include "strings/common_strings.txt"
 
 	;	# The Player has hit the checkpoint #
 	trigger player
-		condition if current_player.holeshotPosition == 0
-		    condition if current_player.onVehicle == 1
-			    action for_each race_holeshot
-	                condition object_in_area current_player current_object
-		                temporary number highestHSP 0
-		                action for_each player
-			                condition if current_player.holeshotPosition > highestHSP
-				                action set highestHSP set_to current_player.holeshotPosition
-		                end
+		condition if current_player.onVehicle == 1
+		    condition if startGate == 0 or
+		    condition if raceStatus >= 2
+		        condition if current_player.holeshotPosition == 0
+		            condition if current_player.onVehicle == 1
+			            action for_each race_holeshot
+	                        condition object_in_area current_player current_object
+		                        temporary number highestHSP 0
+		                        action for_each player
+			                        condition if current_player.holeshotPosition > highestHSP
+				                        action set highestHSP set_to current_player.holeshotPosition
+		                        end
 
-		                begin
-		                        action set highestHSP add 1
-		                        action set current_player.holeshotPosition set_to highestHSP
-		                        condition if highestHSP > 1
-								    action hud_post_message player current_player none holeshotMessage2 current_player.holeshotPosition
-		                end
+		                        begin
+		                                action set highestHSP add 1
+		                                action set current_player.holeshotPosition set_to highestHSP
+		                                condition if highestHSP > 1
+								            action hud_post_message player current_player none holeshotMessage2 current_player.holeshotPosition
+		                        end
 
-		                condition if holeshotPlayer == none
-			                action set holeshotPlayer set_to current_player
-						    condition if numberOfPlayers != 1
-							    action for_each player
-								    action hud_post_message player current_player none holeshotMessage holeshotPlayer
-							    end
-			    end
+		                        condition if holeshotPlayer == none
+			                        action set holeshotPlayer set_to current_player
+						            condition if numberOfPlayers != 1
+							            action for_each player
+								            action hud_post_message player current_player none holeshotMessage holeshotPlayer
+							            end
+			            end
 	end
 
 
@@ -1457,7 +1533,12 @@ include "strings/common_strings.txt"
 								end
 								begin
 									condition if localCurrentLapMilliseconds < 100
-										action hud_widget_set_text widget widgetText2 localCurrentLapSeconds	localCurrentLapMilliseconds
+										condition if localCurrentLapMilliseconds >= 10
+											action hud_widget_set_text widget widgetText2 localCurrentLapSeconds	localCurrentLapMilliseconds
+								end
+								begin
+									condition if localCurrentLapMilliseconds < 10
+										action hud_widget_set_text widget widgetText3 localCurrentLapSeconds
 								end
 								;	# Display the players current lap time #
 
