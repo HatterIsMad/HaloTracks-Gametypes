@@ -66,6 +66,8 @@ include "strings/common_strings.txt"
 		personalBestSector3Message			"Personal Best Sector 3 time! %n.%n"
 		optimalLapMessage                   "New Optimal Lap: %n.%n"
 		leaderFinishTimeMessage             "Leader Finished at %n.%n"
+		penaltyMessage                      "You have earned yourself a %ns penalty bud"
+		slowDownMessage                     "Slow down or you will get a penalty"
 		navpointRacePos						"P%n"
 		debug								"%n"
 	end
@@ -134,6 +136,10 @@ include "strings/common_strings.txt"
 
 	map_object Spectator
 		label "Spectator"
+	end
+
+	map_object slow_zone
+		label "slow_zone"
 	end
 
 ;	# Object Labels #
@@ -295,10 +301,10 @@ include "strings/common_strings.txt"
 		networked	number	number4 					0    ; Timing.jokerCount | Storage.endTimeFramesOverflow
 		networked	number	number5						0    ; Timing.sector
 		networked	number	number6         			0    ; Timing.averageLapFrames
-		networked	number	number7             		0    ; Timing.bestSector1TimeFrames | Checkpoint.bestSectorTimeFrames
+		networked	number	number7             		0    ; Timing.bestSector1TimeFrames | Checkpoint.bestSectorTimeFrames | Storage.penalty
 		networked	number	number8             		0    ; Timing.bestSector2TimeFrames
 		networked	number	number9             		0    ; Timing.bestSector3TimeFrames
-		networked	number	number10        			1    ; Timing.sectorInvalidated
+		networked	number	number10        			1    ; Timing.sectorInvalidated | Storage.lapInvalidated
 	end
 
 ;	# Variables #
@@ -539,6 +545,26 @@ include "strings/common_strings.txt"
 
 
 ;	# Basic Game Logic #
+
+
+	; # Configure debounces #
+	trigger general
+		temporary number debounce frames
+		temporary number temp frames
+		action set temp /= 6
+		action set temp *= 6
+		action set debounce -= temp
+		action set finalCheckpoint.number2 = debounce
+
+		action set debounce = frames
+		action set temp = frames
+		action set temp /= 20
+		action set temp *= 20
+		action set debounce -= temp
+		action set finalCheckpoint.number3 = debounce
+	end
+	; # Configure debounces #
+
 
 	;	# Send round start message #
 	trigger player
@@ -1545,6 +1571,71 @@ include "strings/common_strings.txt"
 ;	# Handle Checkpoints #
 
 
+
+
+	;	# Police Offtrack Speeding #
+	trigger player
+		condition if raceStatus >= 2
+			begin
+				condition if finalCheckpoint.number3 == 0
+					action for_each player
+                        temporary object vehicle current_player.vehicle
+                        temporary number isOffTrack 0
+           				temporary number orientation 0
+           				action object_get_orientation vehicle orientation
+
+						begin
+							condition if orientation == 1
+						         temporary object timing current_player.timing
+						         temporary object storage current_player.storage
+						         temporary number vehicleSpeedKPH 0
+                                 action object_get_velocity current_player vehicleSpeedKPH
+						         action for_each slow_zone
+							         begin
+								         condition if current_player.onVehicle == 1
+								             condition object_in_area current_player current_object
+									             action set isOffTrack = 1
+									             action set timing.number10 = 1 ; sector invalidated
+									             action set storage.number10 = 1 ; lap invalidated
+							         end
+						         end
+						         begin
+							         condition if isOffTrack == 1
+								         begin
+									         condition if vehicleSpeedKPH > 40 ; Speed Limit
+									             begin
+										             condition if vehicle.number6 >= 12 ;Max amount of warnings until penalty is applied
+											             action set storage.number7 += 300 ;timing.penalty
+											             action set vehicle.number6 = 0
+											             action hud_post_message player current_player none penaltyMessage 5
+									             end
+
+									             begin
+										             condition if vehicle.number6 < 12
+											             action set vehicle.number6 += 3
+											             action hud_post_message player current_player none slowDownMessage
+											             action play_sound player current_player respawn_tick
+									             end
+								         end
+						         end
+						end
+						begin
+			                begin
+			                    condition if vehicle.number6 > 0
+				                    action set vehicle.number6 -= 1
+			                end
+			                begin
+				                condition if vehicle.number6 <= 0
+					                action set vehicle.number6 = 0
+			                end
+						end
+						condition if current_player.onVehicle == 0
+							action set vehicle.number6 = 0
+					end
+			end
+	end
+
+	;	# Police Offtrack Speeding #
 
 
 
