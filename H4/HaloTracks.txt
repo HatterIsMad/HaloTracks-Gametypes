@@ -161,7 +161,7 @@ include "strings/common_strings.txt"
 		override		suicide_respawn_penalty			3
 		lock override	score_to_win_round				500
 		override		round_count						1
-		override		round_time_limit				3
+		override		round_time_limit				20
 		override		early_victory_win_count			0
 		override		indestructible_vehicles			1
 		override		grenades_on_map					0
@@ -695,17 +695,6 @@ include "strings/common_strings.txt"
 					action set count add 1
 				end
             end
-            condition if frames > 18000
-                condition if count <= 4
-                    condition if numberOfPlayers >= 8
-                        action for_each object
-                            action for_each object
-                                action for_each object
-                                    action for_each object
-                                    end
-                                end
-                            end
-                        end
         end
     end
 
@@ -1745,12 +1734,6 @@ include "strings/common_strings.txt"
 													    condition if current_object.number1 == finalCheckpoint.number1
 														    condition object_in_area client current_object
 															    action set localLapFrames set_to 0
-											end
-											begin
-												condition if frames > 15000
-													condition if count <= 4
-														condition if numberOfPlayers >= 8
-															action delete_object client.vehicle
 											end
 								;	# Player has completed a lap #
 
