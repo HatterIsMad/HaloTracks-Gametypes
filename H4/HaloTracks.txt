@@ -10,7 +10,7 @@ include "strings/common_strings.txt"
 		engine_category_slayer				"Slayer"
 		title								"Race"
 		description							"Gentlemen, start your engines."
-		objective							"HaloTracks Race Gametype v0.1"
+		objective							"HaloTracks Race Gametype v0.2"
 		objective2							"Race length %n laps"
 		objective3							"Race length %n minutes"
 		objective4							"Race length %n minutes + %n laps"
@@ -571,6 +571,8 @@ include "strings/common_strings.txt"
 		condition if raceStatus == 1
 			condition if frames == 600
 	            action hud_post_message player current_player none objective
+				action AwardMedal player current_player busted
+
 				begin
 					condition if numberOfLaps > 0
 						begin
