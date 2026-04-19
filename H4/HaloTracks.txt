@@ -689,18 +689,6 @@ include "strings/common_strings.txt"
 	;	# Increment the frame counter #
 
 
-	trigger general
-        begin
-            temporary number count 0
-            begin
-				action for_each race_pos
-					action set count add 1
-				end
-            end
-        end
-    end
-
-
 	;	# Increment the player frame counters #
 	trigger player
 		condition if raceStatus == 2
@@ -1728,15 +1716,11 @@ include "strings/common_strings.txt"
 								;	# Player has completed a lap #
 									condition if localLapFrames > 15
 										condition if client.onVehicle == 1
-											temporary number count 0
-											begin
-											    action for_each race_checkpoint
-								                    action set count add 1
-												    condition if current_object.number1 == client.currentCheckpoint
-													    condition if current_object.number1 == finalCheckpoint.number1
-														    condition object_in_area client current_object
-															    action set localLapFrames set_to 0
-											end
+							                action for_each race_checkpoint
+								                condition if current_object.number1 == client.currentCheckpoint
+									                condition if current_object.number1 == finalCheckpoint.number1
+										                condition object_in_area client current_object
+											                action set localLapFrames set_to 0
 								;	# Player has completed a lap #
 
 					end
