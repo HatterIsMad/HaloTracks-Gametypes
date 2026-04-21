@@ -13,7 +13,7 @@ include "strings/common_strings.txt"
 		objective							"HaloTracks Qualifying Gametype v0.2"
 		objective2							"Qualifying length %n laps"
 		objective3							"Qualifying length %n minutes"
-		objective4							"Qualifying length %n minutes + %n laps"
+		objective4							"Qualifying length %n minutes + Finish Incomplete Lap"
 		optionNameWaypointVisibility		"Waypoint Visibility"
 		optionDescriptionWaypointVisibility	"Show waypoints on the checkpoints"
 		optionNameNumberOfLaps				"Number of Laps"
@@ -34,8 +34,7 @@ include "strings/common_strings.txt"
 		optionOne							"1"
 		optionTwo							"2"
 		optionThree							"3"
-		lapsPlus1							"Time Limit + 1 Lap"
-		lapsPlus2							"Time Limit + 2 Laps"
+		lapsPlus1							"Time Limit + Finish Incomplete Lap"
 		empty								""
 		widgetText							"Lap Time: %n.%n"
 		widgetText2							"Lap Time: %n.0%n"
@@ -170,8 +169,7 @@ include "strings/common_strings.txt"
 	    end
 
 
-		option	numberOfLaps	optionNameNumberOfLaps	optionDescriptionNumberOfLaps	0
-			-2	lapsPlus2			""
+		option	numberOfLaps	optionNameNumberOfLaps	optionDescriptionNumberOfLaps	3
 			-1	lapsPlus1			""
 			0	option_disabled		""
 			1	laps_1				""
@@ -228,11 +226,8 @@ include "strings/common_strings.txt"
 		local		number	localLapFrames				0
 		networked	number	startGateFrame				0
 		networked	number	raceStatus					0
-		networked	number	numberOfPlayers				0
 		networked	number	checkpointCount				0
 		networked	number	sectorCount					0
-		networked	number	finalLap     				0
-		networked	number	flag         				0
 		networked	object	firstCheckpoint				none
 		networked	object	finalCheckpoint				none
 		local		object	target						none
@@ -244,13 +239,14 @@ include "strings/common_strings.txt"
 	variables player
 		networked	number	lapInvalidated				1
 		networked	number	lapFrames					0
-		networked	number	empty2           			0
+		networked	number	done            			0
 		networked	number	currentLapSeconds			0
 		networked	number	currentLapMilliseconds		0
 		networked	number	onVehicle					0
 		networked	number	currentCheckpoint			-1
 		networked	number	sectorTimeFrames			0
-		networked	number	empty3  					0
+		networked	number	finalLap  					-1
+		networked	number	outlapIgnored				0
 		networked	object	vehicle						none
 		local		object	local_target				none
 		networked	object	timing						none
@@ -557,7 +553,7 @@ include "strings/common_strings.txt"
 						temporary number laps numberOfLaps
 						action set laps multiply -1
 						begin
-                            action hud_post_message player current_player none objective4 minutes laps
+                            action hud_post_message player current_player none objective4 minutes
 	                    end
 	            end
 	end
@@ -576,19 +572,6 @@ include "strings/common_strings.txt"
 				action set round_timer set_to roundTime
 	end
 	;	# Delete Race Gates #
-
-
-	;	# Count number of alive players #
-	trigger general
-		action set numberOfPlayers set_to 0
-
-		action for_each player
-			temporary object biped current_player
-			condition not if biped == none
-				action set numberOfPlayers add 1
-		end
-	end
-	;	# Count number of alive players #
 
 
 	;	# Delete Objects marked as race_delete #
@@ -646,132 +629,88 @@ include "strings/common_strings.txt"
 	;	# Increment the player frame counters #
 
 
-	; # If everyone has met the number of laps, end the round #
-	trigger general
-		condition if numberOfLaps > 0
-			temporary number done 1
-			action for_each player
-				begin
-					condition if current_player.score < numberOfLaps
-						action set done set_to 0
-				end
-				begin
-					condition if current_player.score >= numberOfLaps
-						temporary object timing current_player.timing
-						action set current_player.score set_to timing.number1
-						action set current_player.score multiply -1
-
-			            ; # Transform Player into Monitor #
-			            begin
-                            temporary object oldBody current_player
-                            condition not object_is_type oldBody "monitor"
-                                action biped_drop_weapon oldBody secondary
-                                action biped_drop_weapon oldBody primary
-                                action object_detach oldBody
-                                temporary object monitor none
-                                action create_object "monitor" at current_player set monitor
-                                action player_set_unit current_player monitor
-                                action object_set_invincibility monitor true
-                                action object_attach oldBody current_player 0 0 0
-                                action set current_player.vehicle set_to oldBody
-                                action object_set_invincibility oldBody true
-                                action object_set_scale oldBody 1
-                        end
-			            ; # Transform Player into Monitor #
-				end
-			end
-
-			condition if done == 1
-				action set raceStatus set_to 3
+	;	# Send out white flags #
+	trigger player
+		condition if current_player.done == 0
+			condition if current_player.finalLap < 0
+		        condition if roundTime > 0
+			        condition timer_expired round_timer
+				        condition if numberOfLaps == -1
+	                        action AwardMedal player current_player flag_capture
+	                        action set current_player.finalLap set_to current_player.score
+	                        action set current_player.finalLap add 1
 	end
-	; # If everyone has met the number of laps, end the round #
+	;	# Send out white flags #
 
 
-	; # If the round time limit has been exceeded, end the round #
+	;	# End the round if player has met their finalLap
+	trigger player
+		condition if current_player.done == 0
+		    condition if roundTime > 0
+			    condition timer_expired round_timer
+					condition if current_player.finalLap == current_player.score
+						action set current_player.done set_to 1
+	end
+	;	# End the round if player has met their finalLap
+
+
+	;	# End the round if anyone has met the numberOfLaps
+	trigger player
+		condition if current_player.done == 0
+		    condition if numberOfLaps > 0
+			    condition if current_player.score >= numberOfLaps
+		            action set current_player.done set_to 1
+	end
+	;	# End the round if anyone has met the numberOfLaps
+
+
+	;	# End the round when time runs out #
 	trigger general
 		condition if roundTime > 0
 			condition timer_expired round_timer
-				action set raceStatus set_to 3
+				condition if numberOfLaps >= 0
+				    action for_each player
+					    action set current_player.done set_to 1
+				    end
+	end
+	;	# End the round when time runs out #
 
-				action for_each player
-						temporary object timing current_player.timing
+
+	;	# End the round for anyone who is done
+	trigger player
+		condition if current_player.done == 1
+			condition if current_player.score >= 0
+				begin
+					temporary object timing current_player.timing
 					action set current_player.score set_to timing.number1
 					action set current_player.score multiply -1
-				end
 
-	end
-	; # If the round time limit has been exceeded, end the round #
+					begin
+						condition if current_player.score == 0
+							action set current_player.score set_to -9999
+					end
 
-
-	;	# End the round when time runs out #
-	trigger general
-		condition if roundTime > 0
-			condition timer_expired round_timer
-                begin
-		            condition if round_count > 1
-	                    condition if numberOfLaps >= 0
-		                    action end_round
-                end
-                begin
-                    condition if finalLap == 0
-                        action for_each player
-                            condition if current_player.score > finalLap
-                                action set finalLap set_to current_player.score
-                        end
-                        action set finalLap add 1
-                        begin
-                            condition if numberOfLaps == -1
-                                action set finalLap add 1
-                        end
-                        begin
-                            condition if numberOfLaps == -2
-                                action set finalLap add 2
-                        end
-                end
-	end
-	;	# End the round when time runs out #
-
-
-	;	# End the round if anyone has met the finalLap
-	trigger player
-		condition if roundTime > 0
-			condition timer_expired round_timer
-				begin
-					temporary number whiteFlagLap finalLap
-					action set whiteFlagLap subtract 1
-		            condition if finalLap != 0
-			            begin
-                            condition if current_player.score == whiteFlagLap
-                                condition if flag == 0
-                                    action set flag set_to 1
-                                    action for_each player
-                                        action AwardMedal player current_player flag_capture
-                                    end
-			            end
-                        begin
-                            condition if flag == 1
-                            temporary number leaderFinished 0
-                            action for_each player
-                                condition if current_player.score >= finalLap
-					                condition if round_count > 1
-						                action end_round
-                            end
-                            condition if leaderFinished == 1
-                                action set flag set_to 2
-                        end
+                    ; # Transform Player into Monitor # 
+                    begin
+                        temporary object oldBody current_player
+                        condition not object_is_type oldBody "monitor"
+                            action delete_object current_player.vehicle
+                            action biped_drop_weapon oldBody secondary
+                            action biped_drop_weapon oldBody primary
+                            action object_detach oldBody
+                            temporary object monitor none
+                            action create_object "monitor" at current_player set monitor
+                            action player_set_unit current_player monitor
+                            action object_set_invincibility monitor true
+                            action object_attach oldBody current_player 0 0 0
+                            action set current_player.vehicle set_to oldBody
+                            action object_set_invincibility oldBody true
+                            action object_set_scale oldBody 1
+                    end
+                    ; # Transform Player into Monitor #
 				end
 	end
-	;	# End the round if anyone has met the finalLap
-
-
-	;	# End the round if anyone has met the numberOfLaps
-	trigger player
-		condition if round_count == 1
-			condition if numberOfLaps > 0
-				condition if current_player.score >= numberOfLaps
-					action end_round
-	end
-	;	# End the round if anyone has met the numberOfLaps
+	;	# End the round for anyone who is done
 
 
 	;	# Set Stats #
@@ -1210,7 +1149,10 @@ include "strings/common_strings.txt"
 
 
 								;	# Increment Player Score #
-								action set_score add 1 player current_player
+								begin
+									condition if current_player.outlapIgnored == 1
+										action set_score add 1 player current_player
+								end
 								;	# Increment Player Score #
 
 
@@ -1277,6 +1219,8 @@ include "strings/common_strings.txt"
 								action AwardMedal player current_player triple_double
 								;   # Send Lap Led Medal #
 
+
+								action set current_player.outlapIgnored set_to 1
 								action set current_player.lapInvalidated set_to 0
 								action set current_player.lapFrames set_to 1	; Reset lap frame count
 						;	# Player has completed a lap #
