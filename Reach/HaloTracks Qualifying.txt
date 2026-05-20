@@ -539,7 +539,6 @@ end
 	    if done == 1 then
 	        raceStatus = 3
 	        globalStorage.suddenDeath = 1
-	        game.sudden_death_timer.set_rate(-100%)
 	    end
 	end
 	-- # If everyone has met the number of laps, end the round #
@@ -549,8 +548,6 @@ end
 	if game.round_time_limit > 0 and globalStorage.suddenDeath == 0 then
 		if game.round_timer.is_zero() then
 			raceStatus = 3
-	        globalStorage.suddenDeath = 1
-	        game.sudden_death_timer.set_rate(-100%)
 	        for each player do
 
 		        -- # Get Player Storage Object #
@@ -577,13 +574,6 @@ end
 		end
 	end
 	-- # If the round time limit has been exceeded, end the round #
-
-
-	-- # If grace period is over, end the round #
-    if globalStorage.suddenDeath == 1 and game.sudden_death_timer.is_zero() then
-       game.end_round()
-    end
-	-- # If grace period is over, end the round #
 
 
 	-- # Set up a 5 second timer #
