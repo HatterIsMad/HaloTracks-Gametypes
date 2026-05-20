@@ -422,6 +422,7 @@ end
 	for each player do
 		if raceStatus == 1 then
 			if frames == 10 then
+				send_incident(kill_with_flag, current_player, no_player)
 				send_incident(bomb_carrier_kill, current_player, no_player)
 			end
 		end
@@ -508,9 +509,16 @@ end
 		done = 1
 
 	    for each player do
+
+		    -- # Get Player Storage Object #
+		    alias storage = allocate temporary object
+		    storage = current_player.storage
+		    -- # Get Player Storage Object #
+
 		    if current_player.score < numberOfLaps then
 		        done = 0
 		    end
+
 		    if current_player.score >= numberOfLaps and not current_player.biped.is_of_type(monitor) then
                 alias oldBody = allocate temporary object
                 oldBody = current_player.biped
@@ -544,6 +552,12 @@ end
 	        globalStorage.suddenDeath = 1
 	        game.sudden_death_timer.set_rate(-100%)
 	        for each player do
+
+		        -- # Get Player Storage Object #
+		        alias storage = allocate temporary object
+		        storage = current_player.storage
+		        -- # Get Player Storage Object #
+
 	            if not current_player.biped.is_of_type(monitor) then
 		            alias oldBody = allocate temporary object
 		            oldBody = current_player.biped
@@ -1419,6 +1433,32 @@ for each player do
 								end
 							end
 							-- # Set Player Best Lap #
+							
+
+				            --	# Set Player Laps #
+				            if storage.lapInvalidated == 0 then
+					            if timing.lapFrames < timing.lap4 or timing.lap4 == 0 then -- New time is faster than lap4
+			                        timing.lap4 = timing.lapFrames
+
+                                    if timing.lapFrames < timing.lap3 or timing.lap3 == 0 then -- New time is faster than lap3
+	                                    timing.lap4 = timing.lap3
+	                                    timing.lap3 = timing.lapFrames
+
+	                                    if timing.lapFrames < timing.lap2 or timing.lap2 == 0 then -- New time is faster than lap2
+		                                    timing.lap3 = timing.lap2
+		                                    timing.lap2 = timing.lapFrames
+
+		                                    if timing.lapFrames < timing.lap1 or timing.lap1 == 0 then -- New time is faster than lap1
+			                                    timing.lap2 = timing.lap1
+                                                timing.lap1 = timing.lapFrames
+                                                timing.lap1 -= 1
+                                                bestPersonalLap = 1
+                                            end
+                                        end
+                                    end
+					            end
+				            end
+				            --	# Set Player Laps #
 
 
 							-- # Set Fastest Laptime #
