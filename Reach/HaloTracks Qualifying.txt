@@ -1385,23 +1385,6 @@ for each player do
 							send_incident(lap_complete, current_player, no_player)
 							-- # Send Lap Complete Notifications #
 
-
-							-- # Notify everyone of the final lap #
-							do
-								alias whiteFlagLap = allocate temporary number
-								whiteFlagLap = numberOfLaps -- # Number of laps
-								whiteFlagLap -= 1
-								if current_player.score == whiteFlagLap then
-									alias scoreboardPosition = allocate temporary number
-									scoreboardPosition = 0
-									scoreboardPosition = current_player.get_scoreboard_pos()
-									if scoreboardPosition == 1 then
-										send_incident(final_lap, current_player, current_player)
-									end
-								end
-							end
-							-- # Notify everyone of the final lap #
-
 							current_player.outlapIgnored = 1
 							storage.lapInvalidated = 0
 							timing.lapFrames = 1 -- lapFrames -- Reset lap frame count
