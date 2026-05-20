@@ -210,6 +210,7 @@ alias	stat4           				= player.script_stat[3]
 	alias	checkpointCount					= object.number[4]
 	alias	pitLaneConfigured				= object.number[5]
 	alias	waitForGridSpots				= object.number[6]
+	alias	caution          				= object.number[7]
 	-- /* Global Storage Object */
 
 
@@ -657,6 +658,59 @@ end
 	-- # Set up a 5 second timer #
 
 
+    -- # Auto Caution #
+    if raceStatus >= 2 and numberOfPlayers > 2 then
+    	alias debounce1 = allocate temporary number
+		debounce1 = frames
+		debounce1 %= 60
+
+	    if debounce1 == 0 then
+            alias averageSpeed = allocate temporary number
+		    averageSpeed = 0
+            alias numberOfRacers = allocate temporary number
+            numberOfRacers = 0
+
+            for each player do
+                if current_player.onVehicle == 1 then
+                    alias inPitLane = allocate temporary number
+	                inPitLane = 0
+
+
+                    for each object with label "speed_limit" do
+                        if current_object.shape_contains( current_player.biped ) then
+                            inPitLane = 1
+                        end
+                    end
+
+                    if inPitLane == 0 then
+	                    numberOfRacers += 1
+	                    averageSpeed += current_player.vehicleSpeedKPH
+                    end
+                end
+            end
+
+            averageSpeed /= numberOfRacers
+
+			if numberOfRacers > 2 then
+                if averageSpeed <= 48 and globalStorage.caution == 0 then
+                    globalStorage.caution = 1
+                    for each player do
+		                game.show_message_to(current_player, none, "Auto Caution: ON" )
+	                end
+                end
+                if averageSpeed >= 83 and globalStorage.caution == 1 then
+                    globalStorage.caution = 0
+                    for each player do
+		                game.show_message_to(current_player, none, "Auto Caution: OFF" )
+	                end
+                end
+            end
+        end
+    end
+    -- # Auto Caution #
+
+
+
 	for each player do
 
 		-- # Create Objects for storage #
@@ -698,7 +752,6 @@ end
                 current_player.biped.remove_weapon(primary, true)
             end
         end
-
 
 		-- # Police Track Limits #
 		if cvDelete == 1 then
@@ -2403,10 +2456,13 @@ if maxFuel != -1 then
 							    fuelUsage -= 28											-- Fuel efficiency slightly better in 2nd gear
 						    end
 
+						    if globalStorage.caution == 1 and current_player.vehicleSpeedKPH < 55 then
+							    fuelUsage /= 5											 -- Caution fuel saving
+						    end
+
 						    if vehicle.startingFuelSpeed == 0 and current_player.vehicleSpeedKPH <= 5 or fuelUsage < 5 then
 							    fuelUsage = 5											-- Idle fuel usage
 						    end
-
 
 						    current_player.currentFuelLevel -= fuelUsage				-- Subtract the fuel usage calculation from the users current fuel level
 						    vehicle.startingFuelSpeed = current_player.vehicleSpeedKPH	-- Store the vehicles current speed for the next time we run this calculation
