@@ -29,7 +29,7 @@ declare	bestLapSeconds					with network priority high
 declare	bestLapMilliseconds				with network priority high
 declare	bestLapNumber					with network priority high
 declare	frames							with network priority high	= 0
-declare	framesOverflow					with network priority high	= 1
+declare	framesOverflow					with network priority high	= 0
 declare	host							with network priority local	= 0
 declare	localCurrentLapSeconds			with network priority local	= 0
 declare	localCurrentLapMilliseconds		with network priority local	= 0
@@ -64,6 +64,12 @@ alias	f1Mode							= script_option[5]
 
 
 
+-- /* SCRIPT TRAITS */
+alias spectatorTraits                   = script_traits[0]
+-- /* SCRIPT TRAITS */
+
+
+
 -- /* PLAYER VARIABLES */
 
 alias	position						= player.number[0]
@@ -94,10 +100,11 @@ alias	storage							= player.object[2]
 alias	storage2						= player.object[3]
 
 
-alias	bestLapSeconds					= player.script_stat[0]
-alias	bestLapMilliseconds				= player.script_stat[1]
-alias	bestLapNumber					= player.script_stat[2]
-alias	bestLapFrames				    = player.script_stat[3]
+
+alias	stat1					        = player.script_stat[0]
+alias	stat2				            = player.script_stat[1]
+alias	stat3			        		= player.script_stat[2]
+alias	stat4           				= player.script_stat[3]
 
 -- /* PLAYER VARIABLES */
 
@@ -107,10 +114,14 @@ alias	bestLapFrames				    = player.script_stat[3]
 
 
 	-- /* Player Timing Object */
-	alias	sectorTimeFrames				= object.number[1]
-	alias	lapFrames						= object.number[2]
-	alias	currentCheckpoint				= object.number[5]
-	alias	respawnTimers					= object.number[6]
+	alias	sectorTimeFrames				= object.number[0]
+	alias	lapFrames						= object.number[1]
+	alias	currentCheckpoint				= object.number[2]
+	alias	respawnTimers					= object.number[3]
+	alias	lap1        					= object.number[4]
+	alias	lap2		        			= object.number[5]
+	alias	lap3				        	= object.number[6]
+	alias	lap4					        = object.number[7]
 	alias	bestSector1TimeFrames			= object.timer[0]
 	alias	bestSector2TimeFrames			= object.timer[1]
 	alias	bestSector3TimeFrames			= object.timer[2]
@@ -120,6 +131,10 @@ alias	bestLapFrames				    = player.script_stat[3]
 
 
 	-- /* Player Storage Object */
+	alias	bestLapSeconds  				= object.number[0]
+	alias	bestLapMilliseconds				= object.number[1]
+	alias	bestLapNumber   				= object.number[2]
+	alias	bestLapFrames   				= object.number[3]
 	alias	optimalLapSeconds				= object.number[6]
 	alias	optimalLapMilliseconds			= object.number[7]
 	alias	sectorInvalidated				= object.timer[2]
@@ -384,6 +399,36 @@ end
 -- # Basic Game Logic #
 
 
+	--	# Set Stats #
+	for each player do
+
+		-- # Get Player Timing Object #
+		alias timing = allocate temporary object
+		timing = current_player.timing
+		-- # Get Player Timing Object #
+
+
+		current_player.stat1 = timing.lap1
+		current_player.stat2 = timing.lap2
+		current_player.stat3 = timing.lap3
+		current_player.stat4 = timing.lap4
+
+
+	end
+	--	# Set Stats #
+
+
+	--	# Send round start message #
+	for each player do
+		if raceStatus == 1 then
+			if frames == 10 then
+				send_incident(bomb_carrier_kill, current_player, no_player)
+			end
+		end
+	end
+	--	# Send round start message #
+
+
 	-- # Initial Spawn Point #
 	for each player do
 		if current_player.biped != no_object and current_player.storage2 == no_object then
@@ -478,7 +523,7 @@ end
                 mon.remove_weapon(primary, true)
                 current_player.set_biped(mon)
                 oldBody.delete()
-				current_player.score = current_player.bestLapFrames
+				current_player.score = storage.bestLapFrames
 				current_player.score *= -1
 		    end
 	    end
@@ -511,7 +556,7 @@ end
                     mon.remove_weapon(primary, true)
                     current_player.set_biped(mon)
                     oldBody.delete()
-					current_player.score = current_player.bestLapFrames
+					current_player.score = storage.bestLapFrames
 					current_player.score *= -1
                 end
             end
@@ -543,7 +588,6 @@ end
 
 
 	for each player do
-
 
 		-- # Create Objects for storage #
 		if current_player.timing == no_object then
@@ -619,10 +663,10 @@ end
 
 		-- # Find out how many players are ahead #
 		for each player do
-			alias racerTiming = allocate temporary object
-			racerTiming = current_player.timing
+			alias racerStorage = allocate temporary object
+			racerStorage = current_player.storage
 
-			if current_player.bestLapFrames < racer.bestLapFrames then
+			if storage.bestLapFrames < racerStorage.bestLapFrames then
 				position += 1
 			end
 
@@ -653,8 +697,8 @@ end
 
 	-- # Increment the frame counter #
 	frames += 1
-	if frames >= 30000 then
-		frames -= 30000
+	if frames >= 32750 then
+		frames -= 32750
 		framesOverflow += 1
 	end
 	-- # Increment the frame counter #
@@ -690,6 +734,53 @@ end
 	-- # Handle Waypoint Priority #
 
 
+
+
+
+	-- # Spectator Mode #
+	for each object with label "Spectator" do
+		for each player do
+
+			-- # Make Monitors Invisible #
+		   if current_player.biped.is_of_type(monitor) then
+              current_player.apply_traits(spectatorTraits)
+           end
+			-- # Make Monitors Invisible #
+
+			-- # Transform Player into Monitor #
+			if current_object.team == team[0] and current_object.shape_contains(current_player.biped) and not current_player.biped.is_of_type(monitor) then
+                alias oldBody = allocate temporary object
+                oldBody = current_player.biped
+                oldBody.detach()
+                current_player.vehicle.delete()
+                alias mon = allocate temporary object
+                mon = current_player.biped.place_at_me(monitor, none, never_garbage_collect, 0, 0, 5, none)
+                mon.max_health = 100
+                mon.set_invincibility(1)
+                mon.remove_weapon(primary, true)
+                current_player.set_biped(mon)
+                oldBody.delete()
+			end
+			-- # Transform Player into Monitor #
+
+
+			-- # Transform Player into Spartan #
+			if current_object.team == team[1] and current_object.shape_contains(current_player.biped) and current_player.biped.is_of_type(monitor) then
+                alias oldBody = allocate temporary object
+                oldBody = current_player.biped
+                oldBody.detach()
+                alias mon = allocate temporary object
+                mon = current_player.biped.place_at_me(spartan, none, never_garbage_collect, 0, 0, 5, none)
+                mon.max_health = 100
+                mon.remove_weapon(primary, true)
+                current_player.set_biped(mon)
+                oldBody.delete()
+			end
+			-- # Transform Player into Spartan #
+
+		end
+	end
+	-- # Spectator Mode #
 
 -- # Basic Game Logic #
 
@@ -1025,8 +1116,8 @@ for each player do
 		end
 		if dashStatus == 1 then
 			topLeftWidget.set_value_text("Fastest Lap: %p\nLap %n", bestLapPlayer, bestLapNumber)
-			current_player.widget21 = current_player.bestLapSeconds
-			current_player.widget22 = current_player.bestLapMilliseconds
+			current_player.widget21 = storage.bestLapSeconds
+			current_player.widget22 = storage.bestLapMilliseconds
 			bottomLeftWidget.set_value_text("Personal Best: %n.%n", hud_player.widget21,hud_player.widget22)
 		end
 
@@ -1302,29 +1393,29 @@ for each player do
 
 							-- # Set Player Best Lap #
 							if storage.lapInvalidated == 0 then
-								if current_player.bestLapSeconds == 0 and current_player.bestLapMilliseconds == 0 then
+								if storage.bestLapSeconds == 0 and storage.bestLapMilliseconds == 0 then
 									bestPersonalLap = 1
-									current_player.bestLapFrames = timing.lapFrames
-									current_player.bestLapFrames -= 1
-									current_player.bestLapSeconds = current_player.currentLapSeconds
-									current_player.bestLapMilliseconds = current_player.currentLapMilliseconds
-									current_player.bestLapNumber = current_player.score
+									storage.bestLapFrames = timing.lapFrames
+									storage.bestLapFrames -= 1
+									storage.bestLapSeconds = current_player.currentLapSeconds
+									storage.bestLapMilliseconds = current_player.currentLapMilliseconds
+									storage.bestLapNumber = current_player.score
 								end
-								if current_player.currentLapSeconds < current_player.bestLapSeconds then
+								if current_player.currentLapSeconds < storage.bestLapSeconds then
 									bestPersonalLap = 1
-									current_player.bestLapFrames = timing.lapFrames
-									current_player.bestLapFrames -= 1
-									current_player.bestLapSeconds = current_player.currentLapSeconds
-									current_player.bestLapMilliseconds = current_player.currentLapMilliseconds
-									current_player.bestLapNumber = current_player.score
+									storage.bestLapFrames = timing.lapFrames
+									storage.bestLapFrames -= 1
+									storage.bestLapSeconds = current_player.currentLapSeconds
+									storage.bestLapMilliseconds = current_player.currentLapMilliseconds
+									storage.bestLapNumber = current_player.score
 								end
-								if current_player.currentLapSeconds == current_player.bestLapSeconds and current_player.currentLapMilliseconds < current_player.bestLapMilliseconds then
+								if current_player.currentLapSeconds == storage.bestLapSeconds and current_player.currentLapMilliseconds < storage.bestLapMilliseconds then
 									bestPersonalLap = 1
-									current_player.bestLapFrames = timing.lapFrames
-									current_player.bestLapFrames -= 1
-									current_player.bestLapSeconds = current_player.currentLapSeconds
-									current_player.bestLapMilliseconds = current_player.currentLapMilliseconds
-									current_player.bestLapNumber = current_player.score
+									storage.bestLapFrames = timing.lapFrames
+									storage.bestLapFrames -= 1
+									storage.bestLapSeconds = current_player.currentLapSeconds
+									storage.bestLapMilliseconds = current_player.currentLapMilliseconds
+									storage.bestLapNumber = current_player.score
 								end
 							end
 							-- # Set Player Best Lap #
