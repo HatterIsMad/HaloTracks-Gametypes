@@ -2086,36 +2086,49 @@ for each player do
 							-- # Subtract from pit status -1 #
 
 
-							-- # Get Scoreboard Position #
-							alias scoreboardPosition = allocate temporary number
-							scoreboardPosition = 0
-							scoreboardPosition = current_player.get_scoreboard_pos()
-							-- # Get Scoreboard Position #
-
-
-							-- # Notify everyone of the final lap #
-							do
-								alias whiteFlagLap = allocate temporary number
-								whiteFlagLap = numberOfLaps -- # Number of laps
-								whiteFlagLap -= 1
-								if current_player.score == whiteFlagLap then
-									if scoreboardPosition == 1 then
-										send_incident(final_lap, current_player, all_players)
-										send_incident(flagcarrier_kill, current_player, all_players)
-									end
-								end
-							end
-							-- # Notify everyone of the final lap #
-
-
 							-- # Update Vehicle Cached Time Frames #
 							vehicle.bestSector1TimeFrames = timing.bestSector1TimeFrames
 							vehicle.bestSector2TimeFrames = timing.bestSector2TimeFrames
 							-- # Update Vehicle Cached Time Frames #
 
 
+                            --	# Get Player Definite Position #
+
+					        alias racer = allocate temporary player
+					        racer = current_player
+					        alias position = allocate temporary number
+					        position = 1
+
+                            --	# Find out how many players are ahead #
+                            for each player do
+	                            if current_player.score > racer.score then
+                                    position += 1
+
+                                    if current_player.score == racer.score then
+
+			                            -- # Get Player Timing Object #
+			                            alias currentPlayerTiming = allocate temporary object
+			                            currentPlayerTiming = racer.timing
+			                            -- # Get Player Timing Object #
+
+                                        if currentPlayerTiming.currentCheckpoint > racer.currentCheckpoint then
+                                            position += 1
+                                        end
+
+                                        if currentPlayerTiming.currentCheckpoint == racer.currentCheckpoint then
+                                            if racer.sectorTimeFrames < currentPlayerTiming.sectorTimeFrames then
+                                                position += 1
+                                            end
+                                        end
+                                    end
+								end
+                            end
+                            --	# Find out how many players are ahead #
+                            --	# Get Player Definite Position #
+
+
 				            -- # Send Lap Led Medal #
-				            if scoreboardPosition == 1 then
+				            if position == 1 then
 					            send_incident(kill_with_oddball, current_player, no_player)
 				            end
 				            -- # Send Lap Led Medal #
