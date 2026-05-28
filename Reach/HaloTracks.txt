@@ -106,9 +106,6 @@ alias	timing							= player.object[1]
 alias	storage							= player.object[2]
 alias	storage2						= player.object[3]
 
-alias	playerAhead						= player.player[0]
-alias	playerBehind					= player.player[1]
-
 
 alias	stat1					        = player.script_stat[0]
 alias	stat2				            = player.script_stat[1]
@@ -140,12 +137,6 @@ alias	stat4           				= player.script_stat[3]
 
 
 	-- /* Player Storage Object */
-	alias	lapsAhead						= object.number[0]
-	alias	lapsBehind						= object.number[1]
-	alias	gapAheadSeconds					= object.number[2]
-	alias	gapAheadMilliseconds			= object.number[3]
-	alias	gapBehindSeconds				= object.number[4]
-	alias	gapBehindMilliseconds			= object.number[5]
 	alias	optimalLapSeconds				= object.number[6]
 	alias	optimalLapMilliseconds			= object.number[7]
 	alias	jokeredThisLap					= object.timer[0]
@@ -659,7 +650,7 @@ end
 
 
     -- # Auto Caution #
-    if raceStatus >= 2 and numberOfPlayers > 2 then
+    if raceStatus >= 2 and frames >= 300 and numberOfPlayers > 2 then
     	alias debounce1 = allocate temporary number
 		debounce1 = frames
 		debounce1 %= 60
@@ -835,110 +826,6 @@ end
 
 		current_player.position = position
 		-- # Set Player current racing position #
-
-
-		-- # Calculate Gaps #
-		for each player do
-			alias racer = allocate temporary player
-			racer = current_player
-			alias racerStorage = allocate temporary object
-			racerStorage = racer.storage
-			alias racerTiming = allocate temporary object
-			racerTiming = current_player.timing
-			alias tempPlayer = allocate temporary player
-			tempPlayer = no_player
-			racerStorage.lapsAhead = 0
-			racerStorage.lapsBehind = 0
-
-			-- # Find Player Ahead #
-			racer.playerAhead = no_player
-			alias positionAhead = allocate temporary number
-			positionAhead = current_player.position
-			positionAhead -= 1
-			for each player do
-				if positionAhead > 0 and current_player.position == positionAhead then
-					racer.playerAhead = current_player
-					tempPlayer = current_player
-				end
-			end
-
-			if tempPlayer == no_player then
-				racerStorage.gapAheadSeconds = 0
-				racerStorage.gapAheadMilliseconds = 0
-			end
-
-			if tempPlayer != no_player then
-				alias aheadTiming = allocate temporary object
-				aheadTiming = tempPlayer.timing
-
-				-- # Find out how many laps difference the player ahead is #
-	            alias difference = allocate temporary number
-	            difference = tempPlayer.score
-	            difference -= current_player.score
-
-	            if difference > 1 then
-		            racerStorage.lapsAhead = difference
-	            end
-	            if difference == 1 then
-		            racerStorage.lapsAhead = 0
-		            if aheadTiming.currentCheckpoint > racerTiming.currentCheckpoint then
-			            racerStorage.lapsAhead = 1
-		            end
-	            end
-	            if difference <= 0 then
-		            racerStorage.lapsAhead = 0
-	            end
-				-- # Find out how many laps difference the player ahead is #
-			end
-			-- # Find Player Ahead #
-
-
-			-- # Find Player Behind #
-			tempPlayer = no_player
-			racer.playerBehind = no_player
-			alias positionBehind = allocate temporary number
-			positionBehind = current_player.position
-			positionBehind += 1
-			for each player do
-				if positionBehind > 0 and current_player.position == positionBehind then
-					racer.playerBehind = current_player
-					tempPlayer = current_player
-				end
-			end
-
-			if tempPlayer == no_player then
-				racerStorage.gapBehindSeconds = 0
-				racerStorage.gapBehindMilliseconds = 0
-			end
-
-			if tempPlayer != no_player then
-				alias behindTiming = allocate temporary object
-				behindTiming = tempPlayer.timing
-
-				-- # Find out how many laps difference the player behind is #
-	            alias difference = allocate temporary number
-	            difference = current_player.score
-	            difference -= tempPlayer.score
-
-	            if difference > 1 then
-		            racerStorage.lapsBehind = difference
-	            end
-	            if difference == 1 then
-		            racerStorage.lapsBehind = 0
-		            if racerTiming.currentCheckpoint > behindTiming.currentCheckpoint then
-			            racerStorage.lapsBehind = 1
-		            end
-	            end
-	            if difference <= 0 then
-		            racerStorage.lapsBehind = 0
-	            end
-				-- # Find out how many laps difference the player behind is #
-
-			end
-			-- # Find Player Behind #
-
-		end
-		-- # Calculate Gaps #
 
 
 		-- # Respawn Player #
@@ -1503,44 +1390,6 @@ for each player do
 			current_player.widget22 = storage2.bestLapMilliseconds
 			bottomLeftWidget.set_value_text("Personal Best: %n.%n", hud_player.widget21,hud_player.widget22)
 		end
-		if dashStatus == 2 then
-			alias playerAhead = allocate temporary player
-			playerAhead = current_player.playerAhead
-
-			if storage.lapsAhead == 0 then
-				current_player.widget11 = 0
-				current_player.widget12 = 0
-				if playerAhead != no_player then
-					current_player.widget11 = storage.gapAheadSeconds
-					current_player.widget12 = storage.gapAheadMilliseconds
-				end
-				topLeftWidget.set_value_text("Gap Ahead: %n.%n", hud_player.widget11, hud_player.widget12)
-			end
-
-			if storage.lapsAhead >= 1 then
-				current_player.widget11 = storage.lapsAhead
-				topLeftWidget.set_value_text("Gap Ahead: %n Lap(s)", hud_player.widget11)
-			end
-
-			alias playerBehind = allocate temporary player
-			playerBehind = current_player.playerBehind
-
-			if storage.lapsBehind == 0 then
-				current_player.widget21 = 0
-				current_player.widget22 = 0
-				if playerBehind != no_player then
-					current_player.widget21 = storage.gapBehindSeconds
-					current_player.widget22 = storage.gapBehindMilliseconds
-				end
-				bottomLeftWidget.set_value_text("Gap Behind: %n.%n", hud_player.widget21, hud_player.widget22)
-			end
-
-			if storage.lapsBehind >= 1 then
-				current_player.widget21 = storage.lapsBehind
-				bottomLeftWidget.set_value_text("Gap Behind: %n Lap(s)", hud_player.widget21)
-			end
-
-		end
 
 	end
 	-- # Don't display UI if race has started and the Player is on a mongoose #
@@ -1864,55 +1713,6 @@ for each player do
 					-- # Update Player Current Checkpoint #
 
 
-					-- # Calculate Gaps #
-
-					-- # If you are on the same lap as the player ahead of you #
-					alias aheadPlayer = allocate temporary player
-					aheadPlayer = current_player.playerAhead
-					alias aheadTiming = allocate temporary object
-					aheadTiming = aheadPlayer.timing
-					alias aheadStorage = allocate temporary object
-					aheadStorage = aheadPlayer.storage
-
-					if aheadPlayer != no_player and storage.lapsAhead == 0 then
-						alias sectorAhead = allocate temporary number
-						alias currentSector = allocate temporary number
-
-						for each object with label "race_flag" do
-							if current_object.order <= aheadTiming.currentCheckpoint then
-								if current_object.sector <= 3 and current_object.sector > sectorAhead then
-									sectorAhead = current_object.sector
-								end
-							end
-							if current_object.order <= timing.currentCheckpoint then
-								if current_object.sector <= 3 and current_object.sector > currentSector then
-									currentSector = current_object.sector
-								end
-							end
-						end
-
-						if currentSector == sectorAhead then
-							framesIn = aheadTiming.sectorTimeFrames
-							timeFromFrames()
-							storage.gapAheadSeconds = secondsOut
-							storage.gapAheadMilliseconds = millisecondsOut
-
-							if secondsOut < 0 then
-								secondsOut *= -1
-							end
-							if millisecondsOut < 0 then
-								millisecondsOut *= -1
-							end
-
-							aheadStorage.gapBehindSeconds = secondsOut
-							aheadStorage.gapBehindMilliseconds = millisecondsOut
-						end
-					end
-					-- # If you are on the same lap as the player ahead of you #
-
-					-- # Calculate Gaps #
-
-
 					-- # Player has completed a lap #
 					if timing.currentCheckpoint > finalCheckpoint.order then
 
@@ -1960,29 +1760,6 @@ for each player do
 
 
 						if raceStatus >= 2 then
-
-							-- # Calculate Gaps #
-
-							-- # If you are on the same lap as the player ahead of you #
-							alias aheadPlayer = allocate temporary player
-							aheadPlayer = current_player.playerAhead
-							alias aheadTiming = allocate temporary object
-							aheadTiming = aheadPlayer.timing
-							alias aheadStorage = allocate temporary object
-							aheadStorage = aheadPlayer.storage
-
-							if aheadPlayer != no_player and storage.lapsAhead == 0 then
-								framesIn = aheadTiming.lapFrames
-								timeFromFrames()
-								storage.gapAheadSeconds = secondsOut
-								storage.gapAheadMilliseconds = millisecondsOut
-								aheadStorage.gapBehindSeconds = secondsOut
-								aheadStorage.gapBehindMilliseconds = millisecondsOut
-							end
-							-- # If you are on the same lap as the player ahead of you #
-
-							-- # Calculate Gaps #
-
 
 							alias bestPersonalLap = allocate temporary number
 							bestPersonalLap = 0
@@ -2103,25 +1880,26 @@ for each player do
                             for each player do
 	                            if current_player.score > racer.score then
                                     position += 1
+                                end
 
-                                    if current_player.score == racer.score then
+                                if current_player.score == racer.score then
 
-			                            -- # Get Player Timing Object #
-			                            alias currentPlayerTiming = allocate temporary object
-			                            currentPlayerTiming = racer.timing
-			                            -- # Get Player Timing Object #
 
-                                        if currentPlayerTiming.currentCheckpoint > racer.currentCheckpoint then
+                                    -- # Get Player Timing Object #
+                                    alias currentPlayerTiming = allocate temporary object
+                                    currentPlayerTiming = current_player.timing
+                                    -- # Get Player Timing Object #
+
+                                    if currentPlayerTiming.currentCheckpoint > timing.currentCheckpoint then
+                                        position += 1
+                                    end
+
+                                    if currentPlayerTiming.currentCheckpoint == timing.currentCheckpoint then
+                                        if timing.sectorTimeFrames < currentPlayerTiming.sectorTimeFrames then
                                             position += 1
                                         end
-
-                                        if currentPlayerTiming.currentCheckpoint == racer.currentCheckpoint then
-                                            if racer.sectorTimeFrames < currentPlayerTiming.sectorTimeFrames then
-                                                position += 1
-                                            end
-                                        end
                                     end
-								end
+                                end
                             end
                             --	# Find out how many players are ahead #
                             --	# Get Player Definite Position #
