@@ -1729,6 +1729,19 @@ for each player do
                         --   # Set Time of last completed lap #
                         storage2.endTimeFrames = frames
                         storage2.endTimeFramesOverflow = framesOverflow
+
+						if timing.penalty > 0 then
+                            alias calculateOverflow = allocate temporary number
+                        	calculateOverflow = 32750
+                            calculateOverflow -= frames
+
+                            if calculateOverflow < timing.penalty then
+                                storage2.endTimeFrames -= 32750
+                                storage2.endTimeFramesOverflow += 1
+                            end
+
+							storage2.endTimeFrames += timing.penalty
+                        end
                         --   # Set Time of last completed lap #
 
 
