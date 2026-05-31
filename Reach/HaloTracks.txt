@@ -512,7 +512,7 @@ end
 		current_player.stat4 = storage2.bestLapSeconds
 		current_player.stat4 *= 60
 		n = storage2.bestLapMilliseconds
-		n*= 6
+		n*= 60
 		n/= 1000
 		current_player.stat4 += n
 		-- # Set Stat 4 | Best Lap Time #
