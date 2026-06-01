@@ -683,7 +683,7 @@ end
             averageSpeed /= numberOfRacers
 
 			if numberOfRacers > 2 then
-                if averageSpeed <= 48 and globalStorage.caution == 0 then
+                if averageSpeed <= 25 and globalStorage.caution == 0 then
                     globalStorage.caution = 1
                     for each player do
 		                game.show_message_to(current_player, none, "Auto Caution: ON" )
@@ -947,7 +947,7 @@ end
 		alias ready = allocate temporary number
 		ready = 1
 		for each player do
-			if current_player.onVehicle == 1 and current_player.biped.is_of_type(spartan) or current_player.biped.is_of_type(elite) then
+			if current_player.biped.is_of_type(spartan) or current_player.biped.is_of_type(elite) then
 			alias onABox = allocate temporary number
 			onABox = 0
 			for each object with label "grid_spot" do
@@ -1736,8 +1736,8 @@ for each player do
                             calculateOverflow -= frames
 
                             if calculateOverflow < timing.penalty then
-                                storage2.endTimeFrames -= 32750
-                                storage2.endTimeFramesOverflow += 1
+                                --storage2.endTimeFrames -= 32750
+                                --storage2.endTimeFramesOverflow += 1
                             end
 
 							storage2.endTimeFrames += timing.penalty
