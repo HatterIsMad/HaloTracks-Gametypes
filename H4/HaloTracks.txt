@@ -31,6 +31,8 @@ include "strings/common_strings.txt"
 		optionDescriptionCVDelete			"If enabled, objects with the label cv_delete will be deleted."
 		optionNameStartGate					"Start Gate"
 		optionDescriptionStartGate			"If enabled, objects with the label race_gate will disappear at the selected time."
+		optionNameAllowMissedCheckpoints	"Allow Missed Checkpoints"
+		optionDescriptionAllowMissedCheckpoints    "If enabled, racers will be able to continue their lap without going back for a misssed checkpoint."
 		optionStartGate1					"20 +/- 5"
 		optionStartGate2					"30 +/- 10"
 		optionStartGate3					"40 +/- 20"
@@ -68,8 +70,9 @@ include "strings/common_strings.txt"
 		leaderFinishTimeMessage             "Leader Finished at %n.%n"
 		penaltyMessage                      "You have earned yourself a %ns penalty bud"
 		slowDownMessage                     "Slow down or you will get a penalty"
+		missedACheckpointMessage            "This %p fucker missed a checkpoint"
 		navpointRacePos						"P%n"
-		debug								"%n"
+		debug								"%n.%n"
 	end
 
 ;	# String Tables #
@@ -140,6 +143,10 @@ include "strings/common_strings.txt"
 
 	map_object slow_zone
 		label "slow_zone"
+	end
+
+	map_object race_lap
+		label "race_lap"
 	end
 
 ;	# Object Labels #
@@ -229,14 +236,19 @@ include "strings/common_strings.txt"
 			4	optionStartGate4	""
 		end
 
-		option	requiredJokers	optionNameRequiredJokers	optionDescriptionRequiredJokers	0
+		option	requiredJokers	optionNameRequiredJokers	optionDescriptionRequiredJokers	3
 			0	option_disabled		""
 			1	optionOne	""
 			2	optionTwo	""
 			3	optionThree	""
 		end
 
-		option	waypointVisibility	optionNameWaypointVisibility	optionDescriptionWaypointVisibility	0
+		option	waypointVisibility	optionNameWaypointVisibility	optionDescriptionWaypointVisibility	1
+			0	option_disabled	""
+			1	option_enabled	""
+		end
+
+		option	allowMissedCheckpoints	optionNameAllowMissedCheckpoints	optionDescriptionAllowMissedCheckpoints	1
 			0	option_disabled	""
 			1	option_enabled	""
 		end
@@ -697,6 +709,10 @@ include "strings/common_strings.txt"
 	end
 	;	# Increment the player frame counters #
 
+	trigger player
+		temporary object storage current_player.storage
+        ;action hud_post_message player current_player none debug storage.number10
+	end
 
 	;	# End the round when time runs out #
 	trigger general
@@ -1118,48 +1134,67 @@ include "strings/common_strings.txt"
 
 			;	# Handle Jokers #
 			begin
-			 condition if requiredJokers > 0
-				action for_each joker
+                 condition if requiredJokers > 0
+                    action for_each joker
 
-					;	# Set Waypoint Visibility #
-					begin
-						condition if waypointVisibility == 1
-							action NavPointSetType current_object navpoint_regicide
-					end
+	                    ;	# Set Waypoint Visibility #
+	                    begin
+		                    condition if waypointVisibility == 1
+			                    action NavPointSetType current_object navpoint_regicide
+	                    end
 
-					begin
-						condition if timing.number3 == 1 or
-						condition if current_object.number1 != current_player.currentCheckpoint or
-						condition if timing.number4 >= requiredJokers
-							action navpoint_set_visible current_object player current_player 0
-					end
+	                    begin
+		                    condition if timing.number3 == 1 or
+		                    condition if timing.number4 >= requiredJokers
+			                    action navpoint_set_visible current_object player current_player 0
+	                    end
 
-					begin
-						condition if raceStatus >= 2
-							condition if timing.number4 < requiredJokers
-								condition if timing.number3 == 0
-									condition if current_object.number1 == current_player.currentCheckpoint
-										begin
-											condition if waypointVisibility == 1
-												action navpoint_set_visible current_object player current_player 1
-										end
-					end
-					;	# Set Waypoint Visibility #
+	                    begin
+		                    condition if raceStatus >= 2
+			                    condition if timing.number4 < requiredJokers
+				                    condition if timing.number3 == 0
+					                    condition if waypointVisibility == 1
+						                    action navpoint_set_visible current_object player current_player 1
+	                    end
+	                    ;	# Set Waypoint Visibility #
 
-					begin
-						condition if raceStatus >= 2
-							condition if timing.number4 < requiredJokers
-								condition if timing.number3 == 0
-									condition if current_object.number1 == current_player.currentCheckpoint
-										condition object_in_area current_player current_object
-											action set timing.number4 add 1
-											action set timing.number3 set_to 1
-											action hud_post_message player current_player none jokeredMessage timing.number4 requiredJokers
-					end
-				end
+	                    begin
+		                    condition if raceStatus >= 2
+			                    condition if timing.number4 < requiredJokers
+				                    condition if timing.number3 == 0
+		                                condition object_in_area current_player current_object
+			                                action set timing.number4 add 1
+			                                action set timing.number3 set_to 1
+                                            action set timing.number10 = 1 ; sector invalidated
+                                            action set storage.number10 = 1 ; lap invalidated
+			                                action hud_post_message player current_player none jokeredMessage timing.number4 requiredJokers
+	                    end
+                    end
 			end
 			;	# Handle Jokers #
 
+
+            ;	# Handle Missed Checkpoints #
+            begin
+                condition if allowMissedCheckpoints == 1
+			        action for_each race_checkpoint
+				        condition if current_object.number1 > current_player.currentCheckpoint
+					        condition object_in_area current_player current_object
+                                condition if current_object.number1 != finalCheckpoint.number1
+                                    action set timing.number10 = 1
+                                    action set storage.number10 = 1
+                                    temporary player playa current_player
+                                    begin
+	                                    condition if current_player.currentCheckpoint != 0 or
+	                                    condition if current_player.score != 0
+                                            action for_each player
+                                                action hud_post_message player current_player none missedACheckpointMessage playa
+                                            end
+                                    end
+                                    action set current_player.currentCheckpoint = current_object.number1
+                    end
+            end
+            ;	# Handle Missed Checkpoints #
 
 
 			action for_each race_checkpoint
@@ -1184,7 +1219,6 @@ include "strings/common_strings.txt"
 								action set millisecondsOut multiply 1000
 								action set millisecondsOut divide 60
 								;	# Calculate Lap Time #
-
 
 
 								begin
@@ -1442,24 +1476,26 @@ include "strings/common_strings.txt"
 
 								;	# Set Player Best Lap #
 								begin
-									condition if current_player.score > 1
-									    condition if timing.number1 == 0 or
-									    condition if current_player.lapFrames < timing.number1
-												action set bestPersonalLap set_to 1
-												action set timing.number1 set_to current_player.lapFrames
-												action set timing.number1 subtract 1
+									condition if storage.number10 == 0
+									    condition if current_player.score > 1
+									        condition if timing.number1 == 0 or
+									        condition if current_player.lapFrames < timing.number1
+												    action set bestPersonalLap set_to 1
+												    action set timing.number1 set_to current_player.lapFrames
+												    action set timing.number1 subtract 1
 								end
 								;	# Set Player Best Lap #
 
 
 								;	# Set Fastest Laptime #
 								begin
-									condition if current_player.score > 1
-									    condition if bestLapFrames == 0 or
-									    condition if current_player.lapFrames < bestLapFrames
-											action set bestOverallLap set_to 1
-											action set bestLapFrames set_to current_player.lapFrames
-											action set bestLapPlayer set_to current_player
+									condition if storage.number10 == 0
+									    condition if current_player.score > 1
+									        condition if bestLapFrames == 0 or
+									        condition if current_player.lapFrames < bestLapFrames
+											    action set bestOverallLap set_to 1
+											    action set bestLapFrames set_to current_player.lapFrames
+											    action set bestLapPlayer set_to current_player
 								end
 								;	# Set Fastest Laptime #
 
@@ -1530,6 +1566,7 @@ include "strings/common_strings.txt"
 								end
 								;   # Send Finish Message #
 
+								action set storage.number10 = 0 ; lap invalidated
 								action set timing.number3 set_to 0	; Reset joker flag
 								action set current_player.lapFrames set_to 1	; Reset lap frame count
 						;	# Player has completed a lap #
