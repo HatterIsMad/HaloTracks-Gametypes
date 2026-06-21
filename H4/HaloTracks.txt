@@ -1009,133 +1009,84 @@ include "strings/common_strings.txt"
 		action set current_player.onVehicle set_to 0
 
 
-		condition if not current_player.biped.is_of_type(monitor) then
+		begin
+			temporary object biped current_player
+			condition not if biped == none
+	            condition not object_is_type biped "monitor"
 
-	    -- # Check if Player is on vehicle #
-	    if vehicle != no_object then
-		    current_player.onVehicle = 1
-	    end
-	    -- # Check if Player is on vehicle #
-
-
-
-		;	# Check if Player is on vehicle #
-		action set current_player.onVehicle set_to 0
-		condition if vehicle != none
-			action set current_player.onVehicle set_to 1
-		;	# Check if Player is on vehicle #
-
-	end
+					;	# Check if Player is on vehicle #
+					begin
+						condition if vehicle != none
+							action set current_player.onVehicle set_to 1
+					end
+					;	# Check if Player is on vehicle #
 
 
-	;	# Spawn player in vehicle #
-	trigger player
+		            ; # Handle the Player not being on a Vehicle #
+		            begin
+						condition if current_player.onVehicle == 0
 
-		condition if current_player.vehicle == none
-			temporary object vehicle none
-			begin
-				condition if defaultVehicle == 0
-					action create_object "mongoose" at current_player set vehicle label race_pos "vehicle"
-			end
-			begin
-				condition if defaultVehicle == 1
-					action create_object "warthog" at current_player set vehicle label race_pos "vehicle"
-			end
+			                ; # Vehicle Respawn Timer has hit 0 #
+			                condition timer_expired current_player.vehicleRespawnTimer
+			                    begin
+				                    condition if current_player.vehicle != none
+				                        action set vehicle = current_player.vehicle
 
-			action set current_player.vehicle = vehicle
-			action set vehicle.team = current_player.team
-
-			condition not if client == none
-				action player_set_vehicle current_player current_player.vehicle
-
-	end
-	;	# Spawn player in vehicle #
-
-;	# Handle Vehicles #
-
-for each player do
+									    condition if vehicle.player[0] == current_player or vehicle.player[0] == no_player
+											action delete_object current_player.vehicle
+							                action set current_player.vehicle = none
+							                action set vehicle = none
+				                end
+				                action timer_set_rate current_player.vehicleRespawnTimer 100
+			                end
+			                ; # Vehicle Respawn Timer has hit 0 #
 
 
-    if not current_player.biped.is_of_type(monitor) then
+						    ; # If the Player doesn't have a vehicle, Put them in one #
+						    begin
+							    condition if current_player.vehicle == no_object
+							        begin
+									    condition if defaultVehicle == 0
+											action create_object "mongoose" at current_player set vehicle label race_pos "vehicle"
+								    end
+							        begin
+									    condition if defaultVehicle == 1
+											action create_object "warthog" at current_player set vehicle label race_pos "vehicle"
+								    end
 
-	    -- # Check if Player is on vehicle #
-	    if vehicle != no_object then
-		    current_player.onVehicle = 1
-	    end
-	    -- # Check if Player is on vehicle #
-
-
-
-	    -- # Handle the Player not being on a Vehicle #
-	    if current_player.onVehicle == 0 then
-		    if maxFuel == -1 or current_player.currentFuelLevel > 0 or current_player.currentFuelLevel == -30000 then
-
-		    -- # Vehicle Respawn Timer has hit 0 #
-		    if current_player.vehicleRespawnTimer.is_zero() then
-			    if current_player.vehicle != no_object then
-				    vehicle = current_player.vehicle
-				    if vehicle.player[0] == current_player or vehicle.player[0] == no_player then
-					    current_player.vehicle.delete()
-					    current_player.vehicle = no_object
-					    vehicle = no_object
-				    end
-			    end
-			    current_player.vehicleRespawnTimer.reset()
-		    end
-		    -- # Vehicle Respawn Timer has hit 0 #
+									action set vehicle.player[0] = current_player
+									action set current_player.vehicle = vehicle
+									action player_set_vehicle current_player current_player.vehicle
+									action set current_player.onVehicle = 1
+							    end
+						    ; # If the Player doesn't have a vehicle, Put them in one #
 
 
-		    -- # If the Player doesn't have a vehicle, Put them in one #
-		    if current_player.vehicle == no_object then
-			    if defaultVehicle == 0 then
-				    vehicle = current_player.biped.place_at_me(mongoose, "Vehicle", none, 0, 0, 0, none)
-			    end
-			    if defaultVehicle == 1 then
-				    vehicle = current_player.biped.place_at_me(warthog, "Vehicle", none, 0, 0, 0, none)
-			    end
-			    if defaultVehicle == 2 then
-				    vehicle = current_player.biped.place_at_me(warthog, "Vehicle", none, 0, 0, 0, troop)
-			    end
-			    if defaultVehicle == 3 then
-				    vehicle = current_player.biped.place_at_me(pickup_truck, "Vehicle", none, 0, 0, 0, none)
-			    end
-			    vehicle.player[0] = current_player
-			    current_player.vehicle = vehicle
-			    current_player.force_into_vehicle(current_player.vehicle)
-			    current_player.onVehicle = 1
-		    end
-		    -- # If the Player doesn't have a vehicle, Put them in one #
+						    ; # If the Player still doesn't have a vehicle, start the Vehicle respawn timer #
+				            action timer_set_rate current_player.vehicleRespawnTimer 100
+						    ; # If the Player still doesn't have a vehicle, start the Vehicle respawn timer #
 
 
-		    -- # If the Player still doesn't have a vehicle, start the Vehicle respawn timer #
-		    current_player.vehicleRespawnTimer.set_rate(-100%)
-		    -- # If the Player still doesn't have a vehicle, start the Vehicle respawn timer #
+						    ; # Handle Abandoned Vehicles #
+						    trigger Vehicle
+							    condition if current_object.player[0] == no_player
 
+								    ; # If the abandoned vehicle is near the Player, pair them #
+								    condition if current_player.vehicle == none
+		                                temporary number distance 0
+									    distance = current_object.get_distance_to(current_player.biped)
 
-		    -- # Handle Abandoned Vehicles #
-		    for each object with label "Vehicle" do
-			    if current_object.player[0] == no_player then
+									    condition if distance <= 100
+										    action set current_object.player[0] = current_player
+										    action set current_player.vehicle = current_object
+								    ; # If the abandoned vehicle is near the Player, pair them #
 
-				    -- # If the abandoned vehicle is near the Player, pair them #
-				    if current_player.vehicle == no_object then
-					    alias distance = allocate temporary number
-					    distance = 0
-					    distance = current_object.get_distance_to(current_player.biped)
-
-					    if distance <= 100 then
-						    current_object.player[0] = current_player
-						    current_player.vehicle = current_object
-					    end
-				    end
-				    -- # If the abandoned vehicle is near the Player, pair them #
+						    end
+						    ; # Handle Abandoned Vehicles #
 
 			    end
 		    end
-		    -- # Handle Abandoned Vehicles #
-
-		    end
-	    end
-	    -- # Handle the Player not being on a Vehicle #
+		    -- # Handle the Player not being on a Vehicle #
 
 
 	    -- # Handle the Player being on a Vehicle #
@@ -1250,6 +1201,14 @@ for each object with label "Vehicle" do
 	end
 end
 -- # Delete all unclaimed abandoned Vehicles #
+
+
+
+		end
+
+
+
+	end
 
 ;	# Handle Vehicles #
 
