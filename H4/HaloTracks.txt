@@ -10,7 +10,7 @@ include "strings/common_strings.txt"
 		engine_category_slayer				"Slayer"
 		title								"Race"
 		description							"Gentlemen, start your engines."
-		objective							"HaloTracks Race Gametype v0.2"
+		objective							"HaloTracks Race Gametype v0.4"
 		objective2							"Race length %n laps"
 		objective3							"Race length %n minutes"
 		objective4							"Race length %n minutes + %n laps"
@@ -989,6 +989,36 @@ include "strings/common_strings.txt"
 		;	# Get players current Vehicle #
 
 
+	    ; # Remove the Players Vehicle if they die or quit #
+	    ;action player_death_get_killing_player current_player killer
+	    ;
+	    ; if current_player.killer_type_is(guardians | suicide | kill | betrayal | quit) then
+	    ; 	if current_player.vehicle != no_object then
+	    ; 		vehicle = current_player.vehicle
+	    ; 		if vehicle.player[0] == current_player or vehicle.player[0] == no_player then
+	    ; 			current_player.vehicle.delete()
+	    ; 			current_player.vehicle = no_object
+	    ; 			vehicle.delete()
+	    ; 			vehicle = no_object
+	    ; 		end
+	    ; 	end
+	    ; end
+	    ; # Remove the Players Vehicle if they die or quit #
+
+
+		action set current_player.onVehicle set_to 0
+
+
+		condition if not current_player.biped.is_of_type(monitor) then
+
+	    -- # Check if Player is on vehicle #
+	    if vehicle != no_object then
+		    current_player.onVehicle = 1
+	    end
+	    -- # Check if Player is on vehicle #
+
+
+
 		;	# Check if Player is on vehicle #
 		action set current_player.onVehicle set_to 0
 		condition if vehicle != none
@@ -1020,6 +1050,206 @@ include "strings/common_strings.txt"
 
 	end
 	;	# Spawn player in vehicle #
+
+;	# Handle Vehicles #
+
+for each player do
+
+
+    if not current_player.biped.is_of_type(monitor) then
+
+	    -- # Check if Player is on vehicle #
+	    if vehicle != no_object then
+		    current_player.onVehicle = 1
+	    end
+	    -- # Check if Player is on vehicle #
+
+
+
+	    -- # Handle the Player not being on a Vehicle #
+	    if current_player.onVehicle == 0 then
+		    if maxFuel == -1 or current_player.currentFuelLevel > 0 or current_player.currentFuelLevel == -30000 then
+
+		    -- # Vehicle Respawn Timer has hit 0 #
+		    if current_player.vehicleRespawnTimer.is_zero() then
+			    if current_player.vehicle != no_object then
+				    vehicle = current_player.vehicle
+				    if vehicle.player[0] == current_player or vehicle.player[0] == no_player then
+					    current_player.vehicle.delete()
+					    current_player.vehicle = no_object
+					    vehicle = no_object
+				    end
+			    end
+			    current_player.vehicleRespawnTimer.reset()
+		    end
+		    -- # Vehicle Respawn Timer has hit 0 #
+
+
+		    -- # If the Player doesn't have a vehicle, Put them in one #
+		    if current_player.vehicle == no_object then
+			    if defaultVehicle == 0 then
+				    vehicle = current_player.biped.place_at_me(mongoose, "Vehicle", none, 0, 0, 0, none)
+			    end
+			    if defaultVehicle == 1 then
+				    vehicle = current_player.biped.place_at_me(warthog, "Vehicle", none, 0, 0, 0, none)
+			    end
+			    if defaultVehicle == 2 then
+				    vehicle = current_player.biped.place_at_me(warthog, "Vehicle", none, 0, 0, 0, troop)
+			    end
+			    if defaultVehicle == 3 then
+				    vehicle = current_player.biped.place_at_me(pickup_truck, "Vehicle", none, 0, 0, 0, none)
+			    end
+			    vehicle.player[0] = current_player
+			    current_player.vehicle = vehicle
+			    current_player.force_into_vehicle(current_player.vehicle)
+			    current_player.onVehicle = 1
+		    end
+		    -- # If the Player doesn't have a vehicle, Put them in one #
+
+
+		    -- # If the Player still doesn't have a vehicle, start the Vehicle respawn timer #
+		    current_player.vehicleRespawnTimer.set_rate(-100%)
+		    -- # If the Player still doesn't have a vehicle, start the Vehicle respawn timer #
+
+
+		    -- # Handle Abandoned Vehicles #
+		    for each object with label "Vehicle" do
+			    if current_object.player[0] == no_player then
+
+				    -- # If the abandoned vehicle is near the Player, pair them #
+				    if current_player.vehicle == no_object then
+					    alias distance = allocate temporary number
+					    distance = 0
+					    distance = current_object.get_distance_to(current_player.biped)
+
+					    if distance <= 100 then
+						    current_object.player[0] = current_player
+						    current_player.vehicle = current_object
+					    end
+				    end
+				    -- # If the abandoned vehicle is near the Player, pair them #
+
+			    end
+		    end
+		    -- # Handle Abandoned Vehicles #
+
+		    end
+	    end
+	    -- # Handle the Player not being on a Vehicle #
+
+
+	    -- # Handle the Player being on a Vehicle #
+	    if current_player.onVehicle == 1 and vehicle.has_forge_label("Vehicle") then
+
+		    -- # Reset Vehicle Respawn Timer #
+		    current_player.vehicleRespawnTimer.reset()
+		    -- # Reset Vehicle Respawn Timer #
+
+
+		    -- # Player is on a new Vehicle #
+		    if current_player.vehicle != vehicle then
+			    current_player.vehicle = vehicle
+			    alias oldPlayer = allocate temporary player
+			    oldPlayer = vehicle.player[0]
+			    oldPlayer.vehicle = no_object
+			    vehicle.player[0] = current_player
+		    end
+		    -- # Player is on a new Vehicle #
+
+
+		    -- # Ensure Player is only associated with one Vehicle #
+		    for each object with label "Vehicle" do
+			    if current_object != vehicle and current_object.player[0] == current_player then
+				    current_object.player[0] = no_player
+			    end
+		    end
+		    -- # Ensure Player is only associated with one Vehicle #
+
+
+		    -- # Update Vehicle Speed #
+		    current_player.vehicleSpeedKPH = 0
+		    if current_player.biped != no_object then
+			    current_player.vehicleSpeedKPH = current_player.biped.get_speed()
+			    current_player.vehicleSpeedKPH *= 109 -- Convert from Feet Per Second to KMH
+			    current_player.vehicleSpeedKPH /= 100 -- Convert from Feet Per Second to KMH
+
+			    if current_player.vehicleSpeedKPH < 0 then
+				    current_player.vehicleSpeedKPH = 0
+			    end
+			    if current_player.vehicleSpeedKPH > 200 then
+				    current_player.vehicleSpeedKPH = 200
+			    end
+		    end
+		    -- # Update Vehicle Speed #
+
+	    end
+
+	end
+	-- # Handle the Player being on a Vehicle #
+
+
+	-- # Set Player/Vehicle to Invincible if enabled in game options #
+	if invincibility == 1 then
+		current_player.biped.set_invincibility(1)
+		current_player.vehicle.set_invincibility(1)
+		for each object do
+			if current_object.is_of_type(kill_boundary) or current_object.is_of_type(soft_kill_boundary) then
+				for each player do
+					if current_object.shape_contains(current_player.biped) and not current_player.biped.is_of_type(monitor) then
+						current_player.biped.set_invincibility(0)
+						current_player.vehicle.set_invincibility(0)
+					end
+				end
+			end
+		end
+	end
+	-- # Set Player/Vehicle to Invincible if enabled in game options #
+
+
+	-- # Kill balls should kill players #
+	for each object do
+		if current_object.is_of_type(kill_ball) then
+			for each player do
+            	alias distance = allocate temporary number
+            	distance = 0
+            	distance = current_object.get_distance_to(current_player.biped)
+				if distance < 25 then
+					current_player.biped.set_invincibility(0)
+					current_player.vehicle.set_invincibility(0)
+					current_player.biped.kill(false)
+					current_player.vehicle.kill(true)
+				end
+			end
+		end
+	end
+	-- # Kill balls should kill players #
+
+end
+
+
+-- # Delete all unclaimed abandoned Vehicles #
+for each object with label "Vehicle" do
+	if current_object.player[0] == no_player then
+		current_object.delete()
+	end
+	if current_object.player[0] != no_player then
+		alias racer = allocate temporary player
+		racer = current_object.player[0]
+
+		if racer.biped == no_object then
+			current_object.delete()
+		end
+
+		alias distance = allocate temporary number
+		distance = 0
+		distance = current_object.get_distance_to(racer.biped)
+
+		if distance >= 200 then
+			current_object.delete()
+		end
+	end
+end
+-- # Delete all unclaimed abandoned Vehicles #
 
 ;	# Handle Vehicles #
 

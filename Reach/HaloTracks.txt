@@ -525,10 +525,64 @@ end
 		if raceStatus == 1 then
 			if frames == 10 then
 				send_incident(bomb_carrier_kill, current_player, no_player)
+				action AwardMedal player current_player busted
 			end
 		end
 	end
 	--	# Send round start message #
+
+
+
+
+
+	;	# Send round start message #
+	trigger player
+		condition if raceStatus == 1
+			condition if frames == 600
+	            action hud_post_message player current_player none objective
+				action AwardMedal player current_player busted
+
+				begin
+					condition if numberOfLaps > 0
+						begin
+							condition if round_count == 1
+	                            action hud_post_message player current_player none objective2 numberOfLaps
+	                    end
+						begin
+							condition if round_count > 1
+	                            action hud_post_message player current_player none objectiveRounds2 numberOfLaps
+	                    end
+	            end
+				begin
+					condition if numberOfLaps == 0
+						temporary number minutes roundTime
+						action set minutes divide 60
+						begin
+							condition if round_count == 1
+		                        action hud_post_message player current_player none objective3 minutes
+		                end
+						begin
+							condition if round_count > 1
+		                        action hud_post_message player current_player none objectiveRounds3 minutes
+	                    end
+	            end
+				begin
+					condition if numberOfLaps < 0
+						temporary number minutes roundTime
+						action set minutes divide 60
+						temporary number laps numberOfLaps
+						action set laps multiply -1
+						begin
+							condition if round_count == 1
+	                            action hud_post_message player current_player none objective4 minutes laps
+	                    end
+						begin
+							condition if round_count > 1
+	                            action hud_post_message player current_player none objectiveRounds4 minutes laps
+	                    end
+	            end
+	end
+	;	# Send round start message #
 
 
 	-- # Initial Spawn Point #
@@ -1505,8 +1559,10 @@ for each player do
 	                        alias highestHSP = allocate temporary number
 
 		                    for each player do
-			                    if storage2.holeshotPosition > highestHSP then
-				                    highestHSP = storage2.holeshotPosition
+		                        alias playerStorage2 = allocate temporary object
+		                        playerStorage2 = current_player.storage2
+			                    if playerStorage2.holeshotPosition > highestHSP then
+				                    highestHSP = playerStorage2.holeshotPosition
 		                        end
 		                    end
 
