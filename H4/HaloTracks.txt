@@ -248,7 +248,7 @@ include "strings/common_strings.txt"
 			1	option_enabled	""
 		end
 
-		option	allowMissedCheckpoints	optionNameAllowMissedCheckpoints	optionDescriptionAllowMissedCheckpoints	1
+		option	allowMissedCheckpoints	optionNameAllowMissedCheckpoints	optionDescriptionAllowMissedCheckpoints	0
 			0	option_disabled	""
 			1	option_enabled	""
 		end
@@ -291,7 +291,7 @@ include "strings/common_strings.txt"
 	variables player
 		networked	number	holeshotPosition    		0
 		networked	number	lapFrames					0
-		networked	number	empty2           			0
+		networked	number	vehicleSpeedKPH    			0
 		networked	number	currentLapSeconds			0
 		networked	number	currentLapMilliseconds		0
 		networked	number	onVehicle					0
@@ -303,6 +303,7 @@ include "strings/common_strings.txt"
 		networked	object	timing						none
 		networked	object	storage						none
 		networked	timer	delay						2
+		networked	timer	vehicleRespawnTimer			7
 	end
 
 
@@ -311,12 +312,14 @@ include "strings/common_strings.txt"
 		networked	number	number2              		0    ; Timing.optimalLapFrames | Storage.firstLapTimeFramesOverflow
 		networked	number	number3     				0    ; Timing.jokeredThisLap | Storage.endTimeFrames
 		networked	number	number4 					0    ; Timing.jokerCount | Storage.endTimeFramesOverflow
-		networked	number	number5						0    ; Timing.sector
+		networked	number	number5						0    ; Timing.sector | Storage.respawnTimer
 		networked	number	number6         			0    ; Timing.averageLapFrames
 		networked	number	number7             		0    ; Timing.bestSector1TimeFrames | Checkpoint.bestSectorTimeFrames | Storage.penalty
 		networked	number	number8             		0    ; Timing.bestSector2TimeFrames
 		networked	number	number9             		0    ; Timing.bestSector3TimeFrames
 		networked	number	number10        			1    ; Timing.sectorInvalidated | Storage.lapInvalidated
+		networked   player  player1                     none ; Vehicle.player0
+		networked   object  object1                     none ; Timing.respawnObject
 	end
 
 ;	# Variables #
@@ -677,6 +680,16 @@ include "strings/common_strings.txt"
 	;	# Hide Invisible Race Objects #
 
 
+	trigger player
+		temporary object storage current_player.storage
+		temporary number health 0
+		action object_get_health current_player health
+		condition if health < 1
+		    action set storage.number5 add 1
+		    action delete_object current_player.vehicle
+	end
+
+
 	;	# Set Current Lap time #
 	trigger player
 		action set current_player.currentLapSeconds set_to current_player.lapFrames
@@ -912,6 +925,24 @@ include "strings/common_strings.txt"
 	;	# Set Player current racing position #
 
 
+	; # Respawn Player #
+	trigger player
+		temporary object storage current_player.storage
+		temporary object timing current_player.timing
+		begin
+            temporary number health 0
+            action object_get_health current_player health
+            condition if health > 0
+			    condition if storage.number5 > 1
+                    action object_attach current_player timing.object1 0 0 2
+                    action object_detach current_player
+                    action object_set_orientation current_player timing.object1
+       	            action set storage.number5 = 0
+        end
+	end
+	; # Respawn Player #
+
+
 	; # Spectator Mode #
 	trigger general
 		action for_each Spectator
@@ -979,7 +1010,6 @@ include "strings/common_strings.txt"
 
 
 ;	# Handle Vehicles #
-
 	trigger player
 
 
@@ -992,14 +1022,14 @@ include "strings/common_strings.txt"
 	    ; # Remove the Players Vehicle if they die or quit #
 	    ;action player_death_get_killing_player current_player killer
 	    ;
-	    ; if current_player.killer_type_is(guardians | suicide | kill | betrayal | quit) then
-	    ; 	if current_player.vehicle != no_object then
+	    ; if current_player.killer_type_is(guardians | suicide | kill | betrayal | quit)
+	    ; 	if current_player.vehicle != none
 	    ; 		vehicle = current_player.vehicle
-	    ; 		if vehicle.player[0] == current_player or vehicle.player[0] == no_player then
+	    ; 		if vehicle.player1 == current_player or vehicle.player1 == none
 	    ; 			current_player.vehicle.delete()
-	    ; 			current_player.vehicle = no_object
+	    ; 			current_player.vehicle = none
 	    ; 			vehicle.delete()
-	    ; 			vehicle = no_object
+	    ; 			vehicle = none
 	    ; 		end
 	    ; 	end
 	    ; end
@@ -1027,24 +1057,26 @@ include "strings/common_strings.txt"
 						condition if current_player.onVehicle == 0
 
 			                ; # Vehicle Respawn Timer has hit 0 #
-			                condition timer_expired current_player.vehicleRespawnTimer
-			                    begin
-				                    condition if current_player.vehicle != none
-				                        action set vehicle = current_player.vehicle
+			                begin
+				                condition timer_expired current_player.vehicleRespawnTimer
+				                    begin
+	                                    condition if current_player.vehicle != none
+	                                        action set vehicle = current_player.vehicle
 
-									    condition if vehicle.player[0] == current_player or vehicle.player[0] == no_player
-											action delete_object current_player.vehicle
-							                action set current_player.vehicle = none
-							                action set vehicle = none
-				                end
-				                action timer_set_rate current_player.vehicleRespawnTimer 100
-			                end
+						                    condition if vehicle.player1 == current_player or
+						                    condition if vehicle.player1 == none
+								                action delete_object current_player.vehicle
+				                                action set current_player.vehicle = none
+			                                    action set vehicle = none
+			                        end
+				                    action timer_reset current_player.vehicleRespawnTimer
+				            end
 			                ; # Vehicle Respawn Timer has hit 0 #
 
 
 						    ; # If the Player doesn't have a vehicle, Put them in one #
 						    begin
-							    condition if current_player.vehicle == no_object
+							    condition if current_player.vehicle == none
 							        begin
 									    condition if defaultVehicle == 0
 											action create_object "mongoose" at current_player set vehicle label race_pos "vehicle"
@@ -1054,162 +1086,157 @@ include "strings/common_strings.txt"
 											action create_object "warthog" at current_player set vehicle label race_pos "vehicle"
 								    end
 
-									action set vehicle.player[0] = current_player
+									action set vehicle.player1 = current_player
 									action set current_player.vehicle = vehicle
 									action player_set_vehicle current_player current_player.vehicle
 									action set current_player.onVehicle = 1
-							    end
+							end
 						    ; # If the Player doesn't have a vehicle, Put them in one #
 
 
 						    ; # If the Player still doesn't have a vehicle, start the Vehicle respawn timer #
-				            action timer_set_rate current_player.vehicleRespawnTimer 100
+				            action timer_set_rate current_player.vehicleRespawnTimer 1
 						    ; # If the Player still doesn't have a vehicle, start the Vehicle respawn timer #
 
 
 						    ; # Handle Abandoned Vehicles #
-						    trigger Vehicle
-							    condition if current_object.player[0] == no_player
+						    action for_each vehicle
+							    condition if current_object.player1 == none
 
 								    ; # If the abandoned vehicle is near the Player, pair them #
 								    condition if current_player.vehicle == none
 		                                temporary number distance 0
-									    distance = current_object.get_distance_to(current_player.biped)
+									    action object_get_distance current_object current_player distance
 
 									    condition if distance <= 100
-										    action set current_object.player[0] = current_player
+										    action set current_object.player1 = current_player
 										    action set current_player.vehicle = current_object
 								    ; # If the abandoned vehicle is near the Player, pair them #
 
 						    end
 						    ; # Handle Abandoned Vehicles #
 
-			    end
-		    end
-		    -- # Handle the Player not being on a Vehicle #
+			        end
+				    ; # Handle the Player not being on a Vehicle #
 
 
-	    -- # Handle the Player being on a Vehicle #
-	    if current_player.onVehicle == 1 and vehicle.has_forge_label("Vehicle") then
+		            ; # Handle the Player being on a Vehicle #
+		            begin
+			            condition if current_player.onVehicle == 1
 
-		    -- # Reset Vehicle Respawn Timer #
-		    current_player.vehicleRespawnTimer.reset()
-		    -- # Reset Vehicle Respawn Timer #
-
-
-		    -- # Player is on a new Vehicle #
-		    if current_player.vehicle != vehicle then
-			    current_player.vehicle = vehicle
-			    alias oldPlayer = allocate temporary player
-			    oldPlayer = vehicle.player[0]
-			    oldPlayer.vehicle = no_object
-			    vehicle.player[0] = current_player
-		    end
-		    -- # Player is on a new Vehicle #
+		                    ; # Reset Vehicle Respawn Timer #
+				            action timer_reset current_player.vehicleRespawnTimer
+		                    ; # Reset Vehicle Respawn Timer #
 
 
-		    -- # Ensure Player is only associated with one Vehicle #
-		    for each object with label "Vehicle" do
-			    if current_object != vehicle and current_object.player[0] == current_player then
-				    current_object.player[0] = no_player
-			    end
-		    end
-		    -- # Ensure Player is only associated with one Vehicle #
+		                    ; # Player is on a new Vehicle #
+		                    begin
+		                        condition if current_player.vehicle != vehicle
+			                        action set current_player.vehicle = vehicle
+			                        temporary player oldPlayer vehicle.player1
+			                        action set oldPlayer.vehicle = none
+			                        action set vehicle.player1 = current_player
+		                    end
+		                    ; # Player is on a new Vehicle #
 
 
-		    -- # Update Vehicle Speed #
-		    current_player.vehicleSpeedKPH = 0
-		    if current_player.biped != no_object then
-			    current_player.vehicleSpeedKPH = current_player.biped.get_speed()
-			    current_player.vehicleSpeedKPH *= 109 -- Convert from Feet Per Second to KMH
-			    current_player.vehicleSpeedKPH /= 100 -- Convert from Feet Per Second to KMH
-
-			    if current_player.vehicleSpeedKPH < 0 then
-				    current_player.vehicleSpeedKPH = 0
-			    end
-			    if current_player.vehicleSpeedKPH > 200 then
-				    current_player.vehicleSpeedKPH = 200
-			    end
-		    end
-		    -- # Update Vehicle Speed #
-
-	    end
-
-	end
-	-- # Handle the Player being on a Vehicle #
+		                    ; # Ensure Player is only associated with one Vehicle #
+						    action for_each vehicle
+			                    condition if current_object != vehicle
+			                        condition if current_object.player1 == current_player
+				                        action set current_object.player1 = none
+		                    end
+		                    ; # Ensure Player is only associated with one Vehicle #
 
 
-	-- # Set Player/Vehicle to Invincible if enabled in game options #
-	if invincibility == 1 then
-		current_player.biped.set_invincibility(1)
-		current_player.vehicle.set_invincibility(1)
-		for each object do
-			if current_object.is_of_type(kill_boundary) or current_object.is_of_type(soft_kill_boundary) then
-				for each player do
-					if current_object.shape_contains(current_player.biped) and not current_player.biped.is_of_type(monitor) then
-						current_player.biped.set_invincibility(0)
-						current_player.vehicle.set_invincibility(0)
-					end
-				end
-			end
+		                    ; # Update Vehicle Speed #
+		                    action set current_player.vehicleSpeedKPH = 0
+		                    begin
+                                temporary number health 0
+                                action object_get_health current_player health
+                                condition if health < 1
+						            temporary number vehicleSpeedKPH 0
+                                    action object_get_velocity current_player vehicleSpeedKPH
+
+                                    begin
+			                            condition if current_player.vehicleSpeedKPH < 0
+				                            action set current_player.vehicleSpeedKPH = 0
+			                        end
+			                        begin
+			                            condition if current_player.vehicleSpeedKPH > 200
+				                            action set current_player.vehicleSpeedKPH = 200
+			                        end
+		                    end
+		                    ; # Update Vehicle Speed #
+
+                    end
+                    ; # Handle the Player being on a Vehicle #
+
+
+	                ; # Set Player/Vehicle to Invincible if enabled in game options #
+	                ; if invincibility == 1
+		            ;    current_player.biped.set_invincibility(1)
+		            ;    current_player.vehicle.set_invincibility(1)
+		            ;    for each object do
+			        ;        if current_object.is_of_type(kill_boundary) or current_object.is_of_type(soft_kill_boundary)
+				    ;            for each player do
+					;                if current_object.shape_contains(current_player.biped) and not current_player.biped.is_of_type(monitor)
+					;	                current_player.biped.set_invincibility(0)
+					;	                current_player.vehicle.set_invincibility(0)
+					;               end
+				    ;            end
+			        ;        end
+		            ;    end
+	                ; end
+	                ; # Set Player/Vehicle to Invincible if enabled in game options #
+
+
+	                ; # Kill balls should kill players #
+	                ; for each object do
+		            ;    if current_object.is_of_type(kill_ball)
+			        ;         for each player do
+                    ;             alias distance = allocate temporary number
+                    ;             distance = 0
+                    ;             distance = current_object.get_distance_to(current_player.biped)
+				    ;             if distance < 25
+					;                 current_player.biped.set_invincibility(0)
+					;                 current_player.vehicle.set_invincibility(0)
+					;                 current_player.biped.kill(false)
+					;                 current_player.vehicle.kill(true)
+				    ;             end
+			        ;         end
+		            ;     end
+	                ; end
+	                ; # Kill balls should kill players #
+
+
+                    ; # Delete all unclaimed abandoned Vehicles #
+                    action for_each vehicle
+                        begin
+	                        condition if current_object.player1 == none
+								action delete_object current_object
+	                    end
+	                    begin
+	                        condition if current_object.player1 != none
+		                        temporary player racer current_object.player1
+
+								begin
+		                            condition if racer == none
+										action delete_object current_object
+		                        end
+
+                                temporary number distance 0
+							    action object_get_distance current_object racer distance
+								begin
+		                            condition if distance >= 200
+										action delete_object current_object
+		                        end
+	                    end
+                    end
+                    ; # Delete all unclaimed abandoned Vehicles #
+
 		end
 	end
-	-- # Set Player/Vehicle to Invincible if enabled in game options #
-
-
-	-- # Kill balls should kill players #
-	for each object do
-		if current_object.is_of_type(kill_ball) then
-			for each player do
-            	alias distance = allocate temporary number
-            	distance = 0
-            	distance = current_object.get_distance_to(current_player.biped)
-				if distance < 25 then
-					current_player.biped.set_invincibility(0)
-					current_player.vehicle.set_invincibility(0)
-					current_player.biped.kill(false)
-					current_player.vehicle.kill(true)
-				end
-			end
-		end
-	end
-	-- # Kill balls should kill players #
-
-end
-
-
--- # Delete all unclaimed abandoned Vehicles #
-for each object with label "Vehicle" do
-	if current_object.player[0] == no_player then
-		current_object.delete()
-	end
-	if current_object.player[0] != no_player then
-		alias racer = allocate temporary player
-		racer = current_object.player[0]
-
-		if racer.biped == no_object then
-			current_object.delete()
-		end
-
-		alias distance = allocate temporary number
-		distance = 0
-		distance = current_object.get_distance_to(racer.biped)
-
-		if distance >= 200 then
-			current_object.delete()
-		end
-	end
-end
--- # Delete all unclaimed abandoned Vehicles #
-
-
-
-		end
-
-
-
-	end
-
 ;	# Handle Vehicles #
 
 
@@ -1389,6 +1416,11 @@ end
 			action for_each race_checkpoint
 				condition if current_object.number1 == current_player.currentCheckpoint
 					condition object_in_area current_player current_object
+
+
+				        ; # Player should spawn at this checkpoint after hitting it #
+				        action set timing.object1 = current_object
+				        ; # Player should spawn at this checkpoint after hitting it #
 
 
 						;	# Handle Sector Times #
