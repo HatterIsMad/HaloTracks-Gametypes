@@ -59,7 +59,6 @@ alias	numberOfLaps					= script_option[0]
 alias	maxFuel							= script_option[1]
 alias	refuelRate						= script_option[2]
 alias	invincibility					= script_option[3]
-alias	cvDelete						= script_option[4]
 alias	requiredJokers					= script_option[5]
 alias	waypointVisibility				= script_option[6]
 alias	startGate						= script_option[7]
@@ -419,15 +418,6 @@ on init: do
 	-- # Hide Invisible Race Objects #
 
 
-	-- # Delete Competitive Version Objects #
-	if cvDelete == 1 then
-		for each object with label "cv_delete" do
-			current_object.delete()
-		end
-	end
-	-- # Delete Competitive Version Objects #
-
-
 	-- # Set Start Gate Frame #
 	if startGate == 1 then -- 20 +/- 5
 		globalStorage.startGateFrame = rand( 601 )
@@ -525,64 +515,51 @@ end
 		if raceStatus == 1 then
 			if frames == 10 then
 				send_incident(bomb_carrier_kill, current_player, no_player)
-				action AwardMedal player current_player busted
+
+				if numberOfLaps > 0 then
+					if game.round_limit == 1 then
+						game.show_message_to(current_player, none, "Race length %n laps", numberOfLaps )
+					end
+					if game.round_limit > 1 then
+						game.show_message_to(current_player, none, "Rounds of %n laps", numberOfLaps )
+					end
+				end
+
+				if numberOfLaps == 0 and game.round_time_limit > 0 then
+					alias minutes = allocate temporary number
+					minutes = game.round_time_limit
+					minutes /= 60
+
+					if game.round_limit == 1 then
+						game.show_message_to(current_player, none, "Race length %n minutes", minutes )
+					end
+					if game.round_limit > 1 then
+						game.show_message_to(current_player, none, "Rounds of %n minutes", minutes )
+					end
+				end
+
+				if numberOfLaps < 0 then
+					alias minutes = allocate temporary number
+					minutes = game.round_time_limit
+					minutes /= 60
+
+					alias laps = allocate temporary number
+					laps = numberOfLaps
+					laps *= -1
+
+					if game.round_limit == 1 then
+						game.show_message_to(current_player, none, "Race length %n minutes + %n laps", minutes, laps )
+					end
+					if game.round_limit > 1 then
+						game.show_message_to(current_player, none, "Rounds of %n minutes + %n laps", minutes, laps )
+					end
+				end
+
 			end
 		end
 	end
 	--	# Send round start message #
 
-
-
-
-
-	;	# Send round start message #
-	trigger player
-		condition if raceStatus == 1
-			condition if frames == 600
-	            action hud_post_message player current_player none objective
-				action AwardMedal player current_player busted
-
-				begin
-					condition if numberOfLaps > 0
-						begin
-							condition if round_count == 1
-	                            action hud_post_message player current_player none objective2 numberOfLaps
-	                    end
-						begin
-							condition if round_count > 1
-	                            action hud_post_message player current_player none objectiveRounds2 numberOfLaps
-	                    end
-	            end
-				begin
-					condition if numberOfLaps == 0
-						temporary number minutes roundTime
-						action set minutes divide 60
-						begin
-							condition if round_count == 1
-		                        action hud_post_message player current_player none objective3 minutes
-		                end
-						begin
-							condition if round_count > 1
-		                        action hud_post_message player current_player none objectiveRounds3 minutes
-	                    end
-	            end
-				begin
-					condition if numberOfLaps < 0
-						temporary number minutes roundTime
-						action set minutes divide 60
-						temporary number laps numberOfLaps
-						action set laps multiply -1
-						begin
-							condition if round_count == 1
-	                            action hud_post_message player current_player none objective4 minutes laps
-	                    end
-						begin
-							condition if round_count > 1
-	                            action hud_post_message player current_player none objectiveRounds4 minutes laps
-	                    end
-	            end
-	end
-	;	# Send round start message #
 
 
 	-- # Initial Spawn Point #
@@ -669,7 +646,7 @@ end
 
 
 	-- # If someone has met the number of laps, end the round #
-	if numberOfLaps != 0 then
+	if numberOfLaps > 0 then
 		for each player do
 			if not current_player.score < numberOfLaps then
 				raceStatus = 3
@@ -799,37 +776,35 @@ end
         end
 
 		-- # Police Track Limits #
-		if cvDelete == 1 then
-			for each object with label "track_limits" do
-				if current_player.onVehicle == 1 and current_object.shape_contains(current_player.biped) and current_player.offTrackDebounce > 420 then
-					timing.offTrackCount += 1
-					alias penaltyLimit = allocate temporary number
-					penaltyLimit = timing.offTrackCount
-					penaltyLimit /= 5
-					penaltyLimit += 1
-					penaltyLimit *= 5
-					alias penalty = allocate temporary number
-					penalty = timing.offTrackCount
-					penalty /= 5
-					penalty *= 5
+        for each object with label "track_limits" do
+            if current_player.onVehicle == 1 and current_object.shape_contains(current_player.biped) and current_player.offTrackDebounce > 420 then
+	            timing.offTrackCount += 1
+	            alias penaltyLimit = allocate temporary number
+	            penaltyLimit = timing.offTrackCount
+	            penaltyLimit /= 5
+	            penaltyLimit += 1
+	            penaltyLimit *= 5
+	            alias penalty = allocate temporary number
+	            penalty = timing.offTrackCount
+	            penalty /= 5
+	            penalty *= 5
 
-					if penalty == timing.offTrackCount then
-						if timing.penalty < 0 then
-							timing.penalty = 0
-						end
-						timing.penalty += 300
-						game.show_message_to(current_player, none, "You have earned yourself a 5s penalty bud" )
-					end
-					if penalty != timing.offTrackCount then
-						game.show_message_to(current_player, none, "You have exceeded track limits %n/%n times", timing.offTrackCount, penaltyLimit )
-					end
-					storage.sectorInvalidated = 1
-					storage.lapInvalidated = 1
-					current_player.offTrackDebounce = 0
-				end
-			end
-			current_player.offTrackDebounce += 1
-		end
+	            if penalty == timing.offTrackCount then
+		            if timing.penalty < 0 then
+			            timing.penalty = 0
+		            end
+		            timing.penalty += 300
+		            game.show_message_to(current_player, none, "You have earned yourself a 5s penalty bud" )
+	            end
+	            if penalty != timing.offTrackCount then
+		            game.show_message_to(current_player, none, "You have exceeded track limits %n/%n times", timing.offTrackCount, penaltyLimit )
+	            end
+	            storage.sectorInvalidated = 1
+	            storage.lapInvalidated = 1
+	            current_player.offTrackDebounce = 0
+            end
+        end
+        current_player.offTrackDebounce += 1
 		-- # Police Track Limits #
 
 
