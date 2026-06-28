@@ -720,10 +720,6 @@ include "strings/common_strings.txt"
 	end
 	;	# Increment the player frame counters #
 
-	trigger player
-		temporary object storage current_player.storage
-        ;action hud_post_message player current_player none debug storage.number10
-	end
 
 	;	# End the round when time runs out #
 	trigger general
