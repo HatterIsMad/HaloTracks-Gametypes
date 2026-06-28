@@ -10,7 +10,7 @@ include "strings/common_strings.txt"
 		engine_category_slayer				"Slayer"
 		title								"Race"
 		description							"Gentlemen, start your engines."
-		objective							"HaloTracks Race Gametype v0.4"
+		objective							"HaloTracks Race Gametype v1.0"
 		objective2							"Race length %n laps"
 		objective3							"Race length %n minutes"
 		objective4							"Race length %n minutes + %n laps"
@@ -19,6 +19,8 @@ include "strings/common_strings.txt"
 		objectiveRounds4					"Rounds of %n minutes + %n laps"
 		optionNameWaypointVisibility		"Waypoint Visibility"
 		optionDescriptionWaypointVisibility	"Show waypoints on the checkpoints"
+		optionNameInvincibility     		"Invincibility"
+		optionDescriptionInvincibility  	"Players will be invincible"
 		optionNameRequiredJokers			"Required Jokers"
 		optionDescriptionRequiredJokers		"The number of jokers players must complete"
 		optionNameNumberOfLaps				"Number of Laps"
@@ -27,8 +29,6 @@ include "strings/common_strings.txt"
 		optionDescriptionVehicle			"Determines what vehicle players will use in this race."
 		optionVehicleMongoose				"Mongoose"
 		optionVehicleWarthog				"Warthog"
-		optionNameCVDelete					"Competitive"
-		optionDescriptionCVDelete			"If enabled, objects with the label cv_delete will be deleted."
 		optionNameStartGate					"Start Gate"
 		optionDescriptionStartGate			"If enabled, objects with the label race_gate will disappear at the selected time."
 		optionNameAllowMissedCheckpoints	"Allow Missed Checkpoints"
@@ -67,12 +67,10 @@ include "strings/common_strings.txt"
 		overallBestSector3Message			"Overall Best Sector 3 time! %n.%n"
 		personalBestSector3Message			"Personal Best Sector 3 time! %n.%n"
 		optimalLapMessage                   "New Optimal Lap: %n.%n"
-		leaderFinishTimeMessage             "Leader Finished at %n.%n"
 		penaltyMessage                      "You have earned yourself a %ns penalty bud"
 		slowDownMessage                     "Slow down or you will get a penalty"
 		missedACheckpointMessage            "This %p fucker missed a checkpoint"
-		navpointRacePos						"P%n"
-		debug								"%n.%n"
+		debug								"%n"
 	end
 
 ;	# String Tables #
@@ -133,10 +131,6 @@ include "strings/common_strings.txt"
 		label "joker"
 	end
 
-	map_object race_pos
-		label "race_pos"
-	end
-
 	map_object Spectator
 		label "Spectator"
 	end
@@ -168,7 +162,7 @@ include "strings/common_strings.txt"
 		override		suicide_respawn_penalty			3
 		lock override	score_to_win_round				500
 		override		round_count						1
-		override		round_time_limit				20
+		override		round_time_limit				0
 		override		early_victory_win_count			0
 		override		indestructible_vehicles			1
 		override		grenades_on_map					0
@@ -184,7 +178,7 @@ include "strings/common_strings.txt"
 
 		override		base_player_traits
 						damage_multiplier				0
-						initial_secondary_weapon		sticky_grenade_launcher
+						initial_secondary_weapon		none
 						initial_primary_weapon			magnum
 						melee_damage_multiplier			0
 						initial_grenade_count			none
@@ -218,14 +212,9 @@ include "strings/common_strings.txt"
 			100	laps_100			""
 		end
 
-		option	cvDelete		optionNameCVDelete	optionDescriptionCVDelete	0
-			0	option_disabled	""
-			1	option_enabled	""
-		end
-
 		option	defaultVehicle	optionNameVehicle	optionDescriptionVehicle	0
-			0	optionVehicleMongoose	""
-			1	optionVehicleWarthog	""
+			0	optionVehicleMongoose	    ""
+			1	optionVehicleWarthog	    ""
 		end
 
 		option	startGate		optionNameStartGate	optionDescriptionStartGate	1
@@ -243,12 +232,19 @@ include "strings/common_strings.txt"
 			3	optionThree	""
 		end
 
-		option	waypointVisibility	optionNameWaypointVisibility	optionDescriptionWaypointVisibility	1
+		option	waypointVisibility	optionNameWaypointVisibility	optionDescriptionWaypointVisibility	2
+			0	option_disabled	""
+			1	optionOne	""
+			2	optionTwo	""
+			2	optionThree	""
+		end
+
+		option	allowMissedCheckpoints	optionNameAllowMissedCheckpoints	optionDescriptionAllowMissedCheckpoints	0
 			0	option_disabled	""
 			1	option_enabled	""
 		end
 
-		option	allowMissedCheckpoints	optionNameAllowMissedCheckpoints	optionDescriptionAllowMissedCheckpoints	0
+		option	invincibility	optionNameInvincibility	optionDescriptionInvincibility	0
 			0	option_disabled	""
 			1	option_enabled	""
 		end
@@ -371,8 +367,13 @@ include "strings/common_strings.txt"
 
 				;	# Set Waypoint Type #
 				begin
-					condition if waypointVisibility == 1
+					condition if waypointVisibility >= 1
 						action NavPointSetType current_object navpoint_regicide
+				end
+				;	# Set Waypoint Type #
+				begin
+					condition if waypointVisibility >= 2
+						action navpoint_set_priority current_object high
 				end
 				;	# Set Waypoint Type #
 
@@ -503,14 +504,6 @@ include "strings/common_strings.txt"
 		;	# Figure out Checkpoint Sectors #
 
 
-		;	# Delete Competitive Version Objects #
-			action for_each cv_delete
-				condition if cvDelete == 1
-					action delete_object current_object
-			end
-		;	# Delete Competitive Version Objects #
-
-
 		;	# Hide Invisible Race Objects #
 			action for_each race_hide
 				action hide_object current_object true
@@ -605,11 +598,13 @@ include "strings/common_strings.txt"
 						action set minutes divide 60
 						begin
 							condition if round_count == 1
-		                        action hud_post_message player current_player none objective3 minutes
+								condition if roundTime > 0
+			                        action hud_post_message player current_player none objective3 minutes
 		                end
 						begin
 							condition if round_count > 1
-		                        action hud_post_message player current_player none objectiveRounds3 minutes
+								condition if roundTime > 0
+			                        action hud_post_message player current_player none objectiveRounds3 minutes
 	                    end
 	            end
 				begin
@@ -665,14 +660,6 @@ include "strings/common_strings.txt"
 	;	# Delete Objects marked as race_delete #
 
 
-	;	# Delete Competitive Version Objects #
-		trigger cv_delete
-			condition if cvDelete == 1
-				action delete_object current_object
-		end
-	;	# Delete Competitive Version Objects #
-
-
 	;	# Hide Invisible Race Objects #
 		trigger race_hide
 			action hide_object current_object true
@@ -684,9 +671,20 @@ include "strings/common_strings.txt"
 		temporary object storage current_player.storage
 		temporary number health 0
 		action object_get_health current_player health
-		condition if health < 1
-		    action set storage.number5 add 1
-		    action delete_object current_player.vehicle
+		begin
+		    condition if health < 1
+		        action set storage.number5 add 1
+			    action object_set_invincibility current_player.vehicle false
+		        action delete_object current_player.vehicle
+		end
+		action object_set_invincibility current_player.vehicle true
+
+		;condition if current_player.onVehicle == 0
+		;	temporary object weapon none
+        ;    action player_get_weapon current_player primary weapon
+        ;    condition if weapon != none
+        ;        condition if frames > 650
+	    ;            action biped_drop_weapon current_player primary
 	end
 
 
@@ -780,43 +778,11 @@ include "strings/common_strings.txt"
                             temporary number leaderFinished 0
                             action for_each player
                                 condition if current_player.score >= finalLap
-                                    action set leaderFinished set_to 1
-								    temporary number framesIn frames
-								    temporary number secondsOut framesIn
-								    action set secondsOut divide 60
-								    temporary number t secondsOut
-								    action set t multiply 60
-								    temporary number millisecondsOut framesIn
-								    action set millisecondsOut subtract t
-								    action set millisecondsOut multiply 1000
-								    action set millisecondsOut divide 60
-                                    action for_each player
-                                        action hud_post_message player current_player none leaderFinishTimeMessage secondsOut millisecondsOut
-                                    end
-
 					                condition if round_count > 1
 						                action end_round
                             end
                             condition if leaderFinished == 1
                                 action set flag set_to 2
-                        end
-                        begin
-                            condition if flag == 2
-                                action for_each player
-                                    condition if current_player.position == 1
-                                        condition if current_player.lapFrames == 300
-								        temporary number framesIn frames
-								        action set framesIn subtract 300
-								        temporary number secondsOut framesIn
-								        action set secondsOut divide 60
-								        temporary number t secondsOut
-								        action set t multiply 60
-								        temporary number millisecondsOut framesIn
-								        action set millisecondsOut subtract t
-								        action set millisecondsOut multiply 1000
-								        action set millisecondsOut divide 60
-                                        action hud_post_message player current_player none leaderFinishTimeMessage secondsOut millisecondsOut
-                                end
                         end
 				end
 	end
@@ -1019,6 +985,24 @@ include "strings/common_strings.txt"
 		;	# Get players current Vehicle #
 
 
+
+		; # Cause Problems #
+        ;action for_each player
+		;    temporary object veh none
+		;    action player_get_vehicle current_player veh
+        ;    temporary number distance 0
+        ;    action object_get_distance vehicle veh distance
+
+		;		condition if distance >= 1
+        ;            condition if distance <= 6
+        ;                action object_bounce veh
+        ;                action object_bounce vehicle
+        ;end
+		; # Cause Problems #
+
+
+
+
 	    ; # Remove the Players Vehicle if they die or quit #
 	    ;action player_death_get_killing_player current_player killer
 	    ;
@@ -1058,6 +1042,8 @@ include "strings/common_strings.txt"
 
 			                ; # Vehicle Respawn Timer has hit 0 #
 			                begin
+
+					condition if raceStatus >= 2
 				                condition timer_expired current_player.vehicleRespawnTimer
 				                    begin
 	                                    condition if current_player.vehicle != none
@@ -1076,14 +1062,16 @@ include "strings/common_strings.txt"
 
 						    ; # If the Player doesn't have a vehicle, Put them in one #
 						    begin
+					condition if raceStatus >= 2 or
+					condition if frames < 650
 							    condition if current_player.vehicle == none
 							        begin
 									    condition if defaultVehicle == 0
-											action create_object "mongoose" at current_player set vehicle label race_pos "vehicle"
+											action create_object "mongoose" at current_player set vehicle label vehicle
 								    end
 							        begin
 									    condition if defaultVehicle == 1
-											action create_object "warthog" at current_player set vehicle label race_pos "vehicle"
+											action create_object "warthog" at current_player set vehicle label vehicle
 								    end
 
 									action set vehicle.player1 = current_player
@@ -1174,65 +1162,38 @@ include "strings/common_strings.txt"
 
 
 	                ; # Set Player/Vehicle to Invincible if enabled in game options #
-	                ; if invincibility == 1
-		            ;    current_player.biped.set_invincibility(1)
-		            ;    current_player.vehicle.set_invincibility(1)
-		            ;    for each object do
-			        ;        if current_object.is_of_type(kill_boundary) or current_object.is_of_type(soft_kill_boundary)
-				    ;            for each player do
-					;                if current_object.shape_contains(current_player.biped) and not current_player.biped.is_of_type(monitor)
-					;	                current_player.biped.set_invincibility(0)
-					;	                current_player.vehicle.set_invincibility(0)
-					;               end
-				    ;            end
-			        ;        end
-		            ;    end
-	                ; end
+	                begin
+		                condition if invincibility == 1
+	           			    action object_set_invincibility current_player true
+	           			    action object_set_invincibility current_player.vehicle true
+	                end
 	                ; # Set Player/Vehicle to Invincible if enabled in game options #
 
 
-	                ; # Kill balls should kill players #
-	                ; for each object do
-		            ;    if current_object.is_of_type(kill_ball)
-			        ;         for each player do
-                    ;             alias distance = allocate temporary number
-                    ;             distance = 0
-                    ;             distance = current_object.get_distance_to(current_player.biped)
-				    ;             if distance < 25
-					;                 current_player.biped.set_invincibility(0)
-					;                 current_player.vehicle.set_invincibility(0)
-					;                 current_player.biped.kill(false)
-					;                 current_player.vehicle.kill(true)
-				    ;             end
-			        ;         end
-		            ;     end
-	                ; end
-	                ; # Kill balls should kill players #
-
-
                     ; # Delete all unclaimed abandoned Vehicles #
-                    action for_each vehicle
-                        begin
-	                        condition if current_object.player1 == none
-								action delete_object current_object
-	                    end
-	                    begin
-	                        condition if current_object.player1 != none
-		                        temporary player racer current_object.player1
+					condition if raceStatus >= 2
+                        action for_each vehicle
+                            begin
+	                            condition if current_object.player1 == none
+								    action delete_object current_object
+	                        end
+	                        begin
+	                            condition if current_object.player1 != none
+		                            temporary player racer current_object.player1
 
-								begin
-		                            condition if racer == none
-										action delete_object current_object
-		                        end
+								    begin
+		                                condition if racer == none
+										    action delete_object current_object
+		                            end
 
-                                temporary number distance 0
-							    action object_get_distance current_object racer distance
-								begin
-		                            condition if distance >= 200
-										action delete_object current_object
-		                        end
-	                    end
-                    end
+                                    temporary number distance 0
+							        action object_get_distance current_object racer distance
+								    begin
+		                                condition if distance >= 200
+										    action delete_object current_object
+		                            end
+	                        end
+                        end
                     ; # Delete all unclaimed abandoned Vehicles #
 
 		end
@@ -1262,18 +1223,6 @@ include "strings/common_strings.txt"
 					action hud_widget_set_visibility widget current_player true
 	end
 
-	;	# Handle navpoint widget #
-	;trigger player
-	;	condition if current_player.onVehicle == 1
-	;		condition if raceStatus == 2
-	;			condition if holeshotPlayer != none
-	;				temporary object vehicle current_player.vehicle
-	;					action NavPointSetType vehicle navpoint_megalo_message_hostile ;This navpoint type is rendered as an additional text widget in the player's UI.
-	;					action navpoint_set_visible vehicle player current_player true
-	;					action set vehicle.team set_to attackers ;Setting the navpoint's team to attackers ensures it presents user-defined text.
-	;end
-	;	# Handle navpoint widget #
-
 ;	# Handle UI #
 
 
@@ -1294,7 +1243,7 @@ include "strings/common_strings.txt"
 	;	# Set Checkpoint Visibility #
 	trigger player
 		condition if current_player.onVehicle == 1
-			condition if waypointVisibility == 1
+			condition if waypointVisibility >= 1
 				action for_each race_checkpoint
 					action navpoint_set_visible current_object player current_player 0
 					condition if current_object.number1 == current_player.currentCheckpoint
@@ -1355,7 +1304,7 @@ include "strings/common_strings.txt"
 
 	                    ;	# Set Waypoint Visibility #
 	                    begin
-		                    condition if waypointVisibility == 1
+		                    condition if waypointVisibility >= 1
 			                    action NavPointSetType current_object navpoint_regicide
 	                    end
 
@@ -1369,8 +1318,14 @@ include "strings/common_strings.txt"
 		                    condition if raceStatus >= 2
 			                    condition if timing.number4 < requiredJokers
 				                    condition if timing.number3 == 0
-					                    condition if waypointVisibility == 1
-						                    action navpoint_set_visible current_object player current_player 1
+				                        begin
+					                        condition if waypointVisibility >= 1
+							                    action navpoint_set_visible current_object player current_player 1
+						                end
+				                        begin
+					                        condition if waypointVisibility >= 2
+						                        action navpoint_set_priority current_object high
+				                        end
 	                    end
 	                    ;	# Set Waypoint Visibility #
 
@@ -1915,6 +1870,18 @@ include "strings/common_strings.txt"
 			begin
 				condition if client equal_to current_player
 
+
+	                ;	# Set Checkpoint Visibility #
+		                condition if client.onVehicle == 1
+			                condition if waypointVisibility >= 3
+				                action for_each race_checkpoint
+					                action boundary_set_visible current_object no_one
+					                condition if current_object.number1 == current_player.currentCheckpoint
+						                action boundary_set_visible current_object everyone
+				                end
+	                ;	# Set Checkpoint Visibility #
+
+
 					;	# Hide Invisible Race Objects #
 						action for_each race_hide
 							action hide_object current_object true
@@ -1923,15 +1890,6 @@ include "strings/common_strings.txt"
 
 
 					condition if raceStatus == 2
-
-	                    ;	# Handle navpoint widget #
-	                    ;begin
-		                ;        condition if current_player.onVehicle == 1
-				        ;                condition if holeshotPlayer != none
-					    ;                    temporary object vehicle current_player.vehicle
-					    ;                    action navpoint_set_secondary_text vehicle navpointRacePos current_player.position
-	                    ;end
-	                    ;	# Handle navpoint widget #
 
 						begin
 							condition if host == 0
