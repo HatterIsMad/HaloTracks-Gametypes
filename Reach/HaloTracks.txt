@@ -59,11 +59,11 @@ alias	numberOfLaps					= script_option[0]
 alias	maxFuel							= script_option[1]
 alias	refuelRate						= script_option[2]
 alias	invincibility					= script_option[3]
-alias	requiredJokers					= script_option[5]
-alias	waypointVisibility				= script_option[6]
-alias	startGate						= script_option[7]
-alias	defaultVehicle					= script_option[8]
-alias	draft							= script_option[9]
+alias	requiredJokers					= script_option[4]
+alias	waypointVisibility				= script_option[5]
+alias	startGate						= script_option[6]
+alias	defaultVehicle					= script_option[7]
+alias	draft							= script_option[8]
 
 -- /* SCRIPT OPTIONS */
 
@@ -174,6 +174,8 @@ alias	stat4           				= player.script_stat[3]
 	alias	order							= object.number[0]
 	alias	sector							= object.number[1]
 	alias	bestSectorTimeFrames			= object.number[2]
+	alias   flag                            = object.number[3]
+	alias   finalLap                        = object.number[4]
 	-- /* Checkpoint Object */
 
 
@@ -513,8 +515,11 @@ end
 	--	# Send round start message #
 	for each player do
 		if raceStatus == 1 then
-			if frames == 10 then
+			if frames == 30 then
+                game.show_message_to(current_player, none, "HaloTracks Race Gametype v1.9" )
 				send_incident(bomb_carrier_kill, current_player, no_player)
+				finalCheckpoint.finalLap = 0
+				finalCheckpoint.flag = 0
 
 				if numberOfLaps > 0 then
 					if game.round_limit == 1 then
@@ -645,24 +650,84 @@ end
 	-- # Count number of alive players #
 
 
-	-- # If someone has met the number of laps, end the round #
-	if numberOfLaps > 0 then
-		for each player do
-			if not current_player.score < numberOfLaps then
-				raceStatus = 3
-				game.end_round()
-			end
-		end
-	end
-	-- # If someone has met the number of laps, end the round #
+	--	# End the round when time runs out #
+    if game.round_time_limit > 0 and game.round_timer.is_zero() then
+        if game.round_limit > 1 and numberOfLaps >= 0 then
+            game.end_round()
+        end
+
+        if finalCheckpoint.finalLap == 0 then
+            for each player do
+                if current_player.score > finalCheckpoint.finalLap then
+                    finalCheckpoint.finalLap = current_player.score
+                end
+            end
+
+            finalCheckpoint.finalLap += 1
+
+            if numberOfLaps == -1 then
+                finalCheckpoint.finalLap += 1
+            end
+
+            if numberOfLaps == -2 then
+                finalCheckpoint.finalLap += 2
+            end
+
+            for each player do
+				game.show_message_to(current_player, none, "Ending on %n", finalCheckpoint.finalLap )
+            end
+        end
+    end
+	-- # End the round when time runs out #
 
 
-	-- # If the round time limit has been exceeded, end the round #
-	if game.round_time_limit > 0 and game.round_timer.is_zero() then
-		raceStatus = 3
-		game.end_round()
+	--	# End the round if anyone has met the finalLap
+	for each player do
+		if game.round_time_limit > 0 and game.round_timer.is_zero() then
+			alias whiteFlagLap = allocate temporary number
+			whiteFlagLap = finalCheckpoint.finalLap
+			whiteFlagLap -= 1
+
+		    if finalCheckpoint.finalLap != 0 then
+				if current_player.score == whiteFlagLap then
+					if finalCheckpoint.flag == 0 then
+						finalCheckpoint.flag = 1
+                        for each player do
+                            --action AwardMedal player current_player flag_capture
+                        end
+		            end
+		        end
+		        if finalCheckpoint.flag == 1 then
+			        alias leaderFinished = allocate temporary number
+			        leaderFinished = 0
+                    for each player do
+                        if current_player.score >= finalCheckpoint.finalLap then
+                            if game.round_limit > 1 then
+								game.end_round()
+                            end
+                        end
+                    end
+                    if leaderFinished == 1 then
+                        finalCheckpoint.flag = 2
+                    end
+                end
+            end
+        end
 	end
-	-- # If the round time limit has been exceeded, end the round #
+	--	# End the round if anyone has met the finalLap
+
+
+	--	# End the round if anyone has met the numberOfLaps
+	for each player do
+		if game.round_limit == 1 then
+			if numberOfLaps > 0 then
+				if current_player.score >= numberOfLaps then
+                    game.end_round()
+                end
+            end
+        end
+	end
+	--	# End the round if anyone has met the numberOfLaps
 
 
 	-- # Set up a 5 second timer #
@@ -1324,15 +1389,6 @@ end
 
 
 for each player do
-
-	-- # Initialize UI #
-	if numberOfLaps != 0 then
-		current_player.set_objective_text("Hit checkpoints to complete laps.\r\n%n laps to win.", numberOfLaps)
-	end
-	if numberOfLaps == 0 then
-		current_player.set_objective_text("Hit checkpoints to complete laps.")
-	end
-	-- # Initialize UI #
 
 
 	-- # Don't display UI if race hasn't started or the Player is not on a mongoose #
