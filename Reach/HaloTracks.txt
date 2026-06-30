@@ -48,6 +48,7 @@ declare holeshotPlayer					with network priority local
 alias	finalCheckpoint					= global.object[0]
 alias	firstCheckpoint					= global.object[1]
 alias	globalStorage					= global.object[2]
+alias	velocity      					= global.object[3]
 
 -- /* GLOBAL VARIABLES */
 
@@ -165,6 +166,7 @@ alias	stat4           				= player.script_stat[3]
 	alias	fuelTaken						= object.number[4]
 	alias	draftBonus						= object.number[5]
 	alias	speedWarnings					= object.number[6]
+	alias	draftDistance					= object.number[7]
 	alias	bestSector1TimeFrames			= object.timer[0]
 	alias	bestSector2TimeFrames			= object.timer[1]
 	-- /* Vehicle Object */
@@ -190,7 +192,7 @@ alias	stat4           				= player.script_stat[3]
 
 
 	-- /* Light Object */
-	alias	warnings							= object.number[0]
+	alias	warnings						= object.number[0]
 	-- /* Light Object */
 
 
@@ -204,6 +206,14 @@ alias	stat4           				= player.script_stat[3]
 	alias	waitForGridSpots				= object.number[6]
 	alias	caution          				= object.number[7]
 	-- /* Global Storage Object */
+
+
+	-- /* Velocity Object */
+	alias	recursive   					= object.number[0]
+	alias	rotation						= object.object[0]
+	alias	pusher   						= object.object[1]
+	alias	push    						= object.object[2]
+	-- /* Velocity Object */
 
 
 -- /* OBJECT VARIABLES */
@@ -222,6 +232,28 @@ alias	bottomLeftWidget				= script_widget[3]
 
 
 -- # Functions #
+
+
+
+
+function applyVelocity()
+    velocity.recursive -= 1
+    if velocity.pusher == no_object then
+        velocity.pusher = velocity.push.place_at_me(sound_emitter_alarm_2, none, suppress_effect, 0, 0, 0, none)
+    end
+    velocity.pusher.copy_rotation_from(velocity.rotation, true)
+    velocity.pusher.attach_to(velocity.push, 0, 0, 0, relative)
+    velocity.pusher.detach()
+    velocity.rotation.attach_to(velocity.pusher, -1, 0, 0, relative)
+    velocity.pusher.attach_to(velocity.rotation, 0, 0, 0, relative)
+    velocity.rotation.detach()
+    velocity.push.attach_to(velocity.pusher, 1, 0, 0, relative)
+    velocity.push.detach()
+    if velocity.recursive > 0 then
+        ApplyVelocity()
+    end
+    velocity.pusher.delete()
+end
 
 
 alias framesIn = allocate temporary number
@@ -312,6 +344,13 @@ on init: do
 	-- # Create Object for storage #
 	globalStorage = finalCheckpoint.place_at_me( hill_marker, none, never_garbage_collect, 0, 0, 0, none )
 	-- # Create Object for storage #
+
+
+	-- # Set up Object for ApplyVelocity script #
+    if velocity == no_object then
+        velocity = finalCheckpoint.place_at_me(hill_marker, none, suppress_effect, 0, 0, 0, none)
+    end
+	-- # Set up Object for ApplyVelocity script #
 
 
 	-- # Check to see if we have a pit lane configured #
@@ -2204,6 +2243,8 @@ if maxFuel != -1 then
 									vehicle = no_object
 									vehicle = current_player.get_vehicle()
 
+									vehicle.draftDistance = distance2
+
 									if distance2 < 150 then
 										vehicle.draftBonus = 150
 										vehicle.draftBonus -= distance2
@@ -2219,6 +2260,13 @@ if maxFuel != -1 then
 
 										vehicle.draftBonus *= current_player.vehicleSpeedKPH
 										vehicle.draftBonus /= 100
+
+
+	                                    ;if originalPlayer.vehicleSpeedKPH > 90 and distance2 < 150 and current_player.vehicleSpeedKPH > 90 then
+	                                    ;    velocity.rotation = vehicle
+	                                    ;    velocity.push = vehicle
+	                                    ;    applyVelocity()
+	                                    ;end
 									end
 								end
 							end
@@ -2556,6 +2604,26 @@ on local: do
 				end
 			end
 			-- # Update Vehicle Speed #
+
+
+
+            ;if vehicle.draftDistance < 150 and client.vehicleSpeedKPH <= 95 and client.vehicleSpeedKPH > 90 then
+
+             ;   alias debounce = allocate temporary number
+             ;   alias temp = allocate temporary number
+             ;   temp = frames
+             ;   temp /= 75
+             ;   temp *= 75
+             ;   debounce = frames
+             ;   debounce -= temp
+
+             ;   if debounce == 0 and vehicle.draftBonus > 0 then
+             ;       velocity.rotation = vehicle
+             ;       velocity.push = vehicle
+             ;       applyVelocity()
+             ;   end
+
+            ;end
 
 		end
 
