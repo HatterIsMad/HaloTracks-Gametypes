@@ -73,6 +73,16 @@ include "strings/common_strings.txt"
 
 
 
+;	# Map Permissions #
+
+    map_permissions
+	    default true
+    end
+
+;	# Map Permissions #
+
+
+
 
 
 ;	# Object Labels #
@@ -690,7 +700,7 @@ include "strings/common_strings.txt"
 							action set current_player.score set_to -9999
 					end
 
-                    ; # Transform Player into Monitor # 
+                    ; # Transform Player into Monitor #
                     begin
                         temporary object oldBody current_player
                         condition not object_is_type oldBody "monitor"

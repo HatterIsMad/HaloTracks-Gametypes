@@ -10,7 +10,7 @@ include "strings/common_strings.txt"
 		engine_category_slayer				"Slayer"
 		title								"Race"
 		description							"Gentlemen, start your engines."
-		objective							"HaloTracks Race Gametype v1.0"
+		objective							"HaloTracks Race Gametype v1.1"
 		objective2							"Race length %n laps"
 		objective3							"Race length %n minutes"
 		objective4							"Race length %n minutes + %n laps"
@@ -89,6 +89,14 @@ include "strings/common_strings.txt"
 ;	# Engine Config #
 
 
+
+;	# Map Permissions #
+
+    map_permissions
+	    default true
+    end
+
+;	# Map Permissions #
 
 
 
