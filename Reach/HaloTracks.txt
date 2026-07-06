@@ -472,6 +472,10 @@ on init: do
 		globalStorage.startGateFrame = rand( 2401 )
 		globalStorage.startGateFrame += 1200
 	end
+	if startGate == 4 then -- 55 +/- 5
+		globalStorage.startGateFrame = rand( 601 )
+		globalStorage.startGateFrame += 3000
+	end
 	-- # Set Start Gate Frame #
 
 
@@ -555,7 +559,7 @@ end
 	for each player do
 		if raceStatus == 1 then
 			if frames == 30 then
-                game.show_message_to(current_player, none, "HaloTracks Race Gametype v1.9" )
+                game.show_message_to(current_player, none, "HaloTracks Race Gametype v2.0" )
 				send_incident(bomb_carrier_kill, current_player, no_player)
 				finalCheckpoint.finalLap = 0
 				finalCheckpoint.flag = 0
@@ -2262,11 +2266,11 @@ if maxFuel != -1 then
 										vehicle.draftBonus /= 100
 
 
-	                                    ;if originalPlayer.vehicleSpeedKPH > 90 and distance2 < 150 and current_player.vehicleSpeedKPH > 90 then
-	                                    ;    velocity.rotation = vehicle
-	                                    ;    velocity.push = vehicle
-	                                    ;    applyVelocity()
-	                                    ;end
+	                                    --if originalPlayer.vehicleSpeedKPH > 90 and distance2 < 150 and current_player.vehicleSpeedKPH > 90 then
+	                                    --    velocity.rotation = vehicle
+	                                    --    velocity.push = vehicle
+	                                    --    applyVelocity()
+	                                    --end
 									end
 								end
 							end
@@ -2607,23 +2611,23 @@ on local: do
 
 
 
-            ;if vehicle.draftDistance < 150 and client.vehicleSpeedKPH <= 95 and client.vehicleSpeedKPH > 90 then
+            --if vehicle.draftDistance < 150 and client.vehicleSpeedKPH <= 95 and client.vehicleSpeedKPH > 90 then
 
-             ;   alias debounce = allocate temporary number
-             ;   alias temp = allocate temporary number
-             ;   temp = frames
-             ;   temp /= 75
-             ;   temp *= 75
-             ;   debounce = frames
-             ;   debounce -= temp
+             --   alias debounce = allocate temporary number
+             --   alias temp = allocate temporary number
+             --   temp = frames
+             --   temp /= 75
+             --   temp *= 75
+             --   debounce = frames
+             --   debounce -= temp
 
-             ;   if debounce == 0 and vehicle.draftBonus > 0 then
-             ;       velocity.rotation = vehicle
-             ;       velocity.push = vehicle
-             ;       applyVelocity()
-             ;   end
+             --   if debounce == 0 and vehicle.draftBonus > 0 then
+             --       velocity.rotation = vehicle
+             --       velocity.push = vehicle
+             --       applyVelocity()
+             --   end
 
-            ;end
+            --end
 
 		end
 
