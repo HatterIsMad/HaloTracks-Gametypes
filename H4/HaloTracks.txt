@@ -33,10 +33,16 @@ include "strings/common_strings.txt"
 		optionDescriptionStartGate			"If enabled, objects with the label race_gate will disappear at the selected time."
 		optionNameAllowMissedCheckpoints	"Allow Missed Checkpoints"
 		optionDescriptionAllowMissedCheckpoints    "If enabled, racers will be able to continue their lap without going back for a misssed checkpoint."
+		optionNameRespawnTime               "Vehicle Respawn Time"
+		optionDescriptionRespawnTime        "If enabled, you will be placed on a vehicle after the allotted time"
 		optionStartGate1					"20 +/- 5"
 		optionStartGate2					"30 +/- 10"
 		optionStartGate3					"40 +/- 20"
 		optionStartGate4					"55 +/- 5"
+		optionInstant						"Instant"
+		optionThreeSeconds					"3s"
+		optionFiveSeconds					"5s"
+		optionSevenSeconds					"7s"
 		optionZero							"0"
 		optionOne							"1"
 		optionTwo							"2"
@@ -240,11 +246,11 @@ include "strings/common_strings.txt"
 			3	optionThree	""
 		end
 
-		option	waypointVisibility	optionNameWaypointVisibility	optionDescriptionWaypointVisibility	2
+		option	waypointVisibility	optionNameWaypointVisibility	optionDescriptionWaypointVisibility	3
 			0	option_disabled	""
 			1	optionOne	""
 			2	optionTwo	""
-			2	optionThree	""
+			3	optionThree	""
 		end
 
 		option	allowMissedCheckpoints	optionNameAllowMissedCheckpoints	optionDescriptionAllowMissedCheckpoints	0
@@ -255,6 +261,14 @@ include "strings/common_strings.txt"
 		option	invincibility	optionNameInvincibility	optionDescriptionInvincibility	0
 			0	option_disabled	""
 			1	option_enabled	""
+		end
+
+		option	respawnTime	optionNameRespawnTime	optionDescriptionRespawnTime	5
+			-1	option_disabled	   ""
+			0	optionInstant	   ""
+            3   optionThreeSeconds ""
+            5   optionFiveSeconds  ""
+            7   optionSevenSeconds ""
 		end
 
 	end
@@ -1047,41 +1061,41 @@ include "strings/common_strings.txt"
 			                ; # Vehicle Respawn Timer has hit 0 #
 			                begin
 
-					condition if raceStatus >= 2
-				                condition timer_expired current_player.vehicleRespawnTimer
-				                    begin
-	                                    condition if current_player.vehicle != none
-	                                        action set vehicle = current_player.vehicle
+								condition if raceStatus >= 2
+				                    condition timer_expired current_player.vehicleRespawnTimer
+				                        begin
+	                                        condition if current_player.vehicle != none
+	                                            action set vehicle = current_player.vehicle
 
-						                    condition if vehicle.player1 == current_player or
-						                    condition if vehicle.player1 == none
-								                action delete_object current_player.vehicle
-				                                action set current_player.vehicle = none
-			                                    action set vehicle = none
-			                        end
-				                    action timer_reset current_player.vehicleRespawnTimer
+						                        condition if vehicle.player1 == current_player or
+						                        condition if vehicle.player1 == none
+								                    action delete_object current_player.vehicle
+				                                    action set current_player.vehicle = none
+			                                        action set vehicle = none
+			                            end
+				                        action timer_reset current_player.vehicleRespawnTimer
 				            end
 			                ; # Vehicle Respawn Timer has hit 0 #
 
 
 						    ; # If the Player doesn't have a vehicle, Put them in one #
 						    begin
-					condition if raceStatus >= 2 or
-					condition if frames < 650
-							    condition if current_player.vehicle == none
-							        begin
-									    condition if defaultVehicle == 0
-											action create_object "mongoose" at current_player set vehicle label vehicle
-								    end
-							        begin
-									    condition if defaultVehicle == 1
-											action create_object "warthog" at current_player set vehicle label vehicle
-								    end
+					            condition if raceStatus >= 2 or
+					            condition if frames < 650
+							        condition if current_player.vehicle == none
+							            begin
+									        condition if defaultVehicle == 0
+											    action create_object "mongoose" at current_player set vehicle label vehicle
+								        end
+							            begin
+									        condition if defaultVehicle == 1
+											    action create_object "warthog" at current_player set vehicle label vehicle
+								        end
 
-									action set vehicle.player1 = current_player
-									action set current_player.vehicle = vehicle
-									action player_set_vehicle current_player current_player.vehicle
-									action set current_player.onVehicle = 1
+									    action set vehicle.player1 = current_player
+									    action set current_player.vehicle = vehicle
+									    action player_set_vehicle current_player current_player.vehicle
+									    action set current_player.onVehicle = 1
 							end
 						    ; # If the Player doesn't have a vehicle, Put them in one #
 
@@ -1876,13 +1890,15 @@ include "strings/common_strings.txt"
 
 
 	                ;	# Set Checkpoint Visibility #
-		                condition if client.onVehicle == 1
-			                condition if waypointVisibility >= 3
-				                action for_each race_checkpoint
-					                action boundary_set_visible current_object no_one
-					                condition if current_object.number1 == current_player.currentCheckpoint
-						                action boundary_set_visible current_object everyone
-				                end
+	                    begin
+		                    condition if client.onVehicle == 1
+			                    condition if waypointVisibility >= 3
+				                    action for_each race_checkpoint
+					                    action boundary_set_visible current_object no_one
+					                    condition if current_object.number1 == current_player.currentCheckpoint
+					                        action boundary_set_visible current_object everyone
+				                    end
+				        end
 	                ;	# Set Checkpoint Visibility #
 
 
