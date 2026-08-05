@@ -76,7 +76,7 @@ include "strings/common_strings.txt"
 		penaltyMessage                      "You have earned yourself a %ns penalty bud"
 		slowDownMessage                     "Slow down or you will get a penalty"
 		missedACheckpointMessage            "This %p fucker missed a checkpoint"
-		debug								"%n"
+		debug								"%t"
 	end
 
 ;	# String Tables #
@@ -263,7 +263,7 @@ include "strings/common_strings.txt"
 			1	option_enabled	""
 		end
 
-		option	respawnTime	optionNameRespawnTime	optionDescriptionRespawnTime	5
+		option	respawnTime	optionNameRespawnTime	optionDescriptionRespawnTime	0
 			-1	option_disabled	   ""
 			0	optionInstant	   ""
             3   optionThreeSeconds ""
@@ -321,7 +321,7 @@ include "strings/common_strings.txt"
 		networked	object	timing						none
 		networked	object	storage						none
 		networked	timer	delay						2
-		networked	timer	vehicleRespawnTimer			7
+		networked	timer	vehicleRespawnTimer			respawnTime
 	end
 
 
@@ -566,6 +566,13 @@ include "strings/common_strings.txt"
 		action set raceStatus set_to 1
 		action set host set_to 1
 		action SetMedalScoring false
+
+
+	    action for_each player
+            ;action set current_player.vehicleRespawnTimer set_to respawnTime
+            ;action timer_reset current_player.vehicleRespawnTimer
+	    end
+
 	end
 
 ;	# Initialize #
@@ -690,6 +697,7 @@ include "strings/common_strings.txt"
 
 
 	trigger player
+
 		temporary object storage current_player.storage
 		temporary number health 0
 		action object_get_health current_player health
@@ -1060,7 +1068,6 @@ include "strings/common_strings.txt"
 
 			                ; # Vehicle Respawn Timer has hit 0 #
 			                begin
-
 								condition if raceStatus >= 2
 				                    condition timer_expired current_player.vehicleRespawnTimer
 				                        begin
