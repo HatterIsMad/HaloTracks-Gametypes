@@ -282,44 +282,44 @@ include "strings/common_strings.txt"
 ;	# Variables #
 
 	variables global
-		networked	number	roundTime					0
-		networked   number  bestLapFrames               0
-		networked	number	frames						0
-		networked   number  framesOverflow              0
+		local	number	roundTime					0
+		local   number  bestLapFrames               0
+		local	number	frames						0
+		local   number  framesOverflow              0
 		local		number	host						0
 		local		number	localCurrentLapSeconds		0
 		local		number	localCurrentLapMilliseconds	0
 		local		number	localLapFrames				0
-		networked	number	startGateFrame				0
+		local	number	startGateFrame				0
 		networked	number	raceStatus					0
-		networked	number	numberOfPlayers				0
-		networked	number	checkpointCount				0
-		networked	number	sectorCount					0
-		networked	number	finalLap     				0
-		networked	number	flag         				0
-		networked	object	firstCheckpoint				none
+		local	number	numberOfPlayers				0
+		local	number	checkpointCount				0
+		local	number	sectorCount					0
+		local	number	finalLap     				0
+		local	number	flag         				0
+		local	object	firstCheckpoint				none
 		networked	object	finalCheckpoint				none
 		local		object	target						none
-		networked	player	holeshotPlayer				none
-		networked	player	bestLapPlayer				none
+		local	player	holeshotPlayer				none
+		local	player	bestLapPlayer				none
 		local		player	client						none
 	end
 
 
 	variables player
-		networked	number	holeshotPosition    		0
-		networked	number	lapFrames					0
-		networked	number	vehicleSpeedKPH    			0
-		networked	number	currentLapSeconds			0
-		networked	number	currentLapMilliseconds		0
+		local	number	holeshotPosition    		0
+		local	number	lapFrames					0
+		local	number	vehicleSpeedKPH    			0
+		local	number	currentLapSeconds			0
+		local	number	currentLapMilliseconds		0
 		networked	number	onVehicle					0
 		networked	number	currentCheckpoint			-1
-		networked	number	sectorTimeFrames			0
-		networked	number	position					1
+		local	number	sectorTimeFrames			0
+		local	number	position					1
 		networked	object	vehicle						none
 		local		object	local_target				none
-		networked	object	timing						none
-		networked	object	storage						none
+		local	object	timing						none
+		local	object	storage						none
 		networked	timer	delay						2
 		networked	timer	vehicleRespawnTimer			respawnTime
 	end
@@ -327,17 +327,17 @@ include "strings/common_strings.txt"
 
 	variables object
 		networked	number	number1						0    ; Timing.bestLapFrames | Checkpoint.order | Storage.firstLapTimeFrames
-		networked	number	number2              		0    ; Timing.optimalLapFrames | Storage.firstLapTimeFramesOverflow
-		networked	number	number3     				0    ; Timing.jokeredThisLap | Storage.endTimeFrames
-		networked	number	number4 					0    ; Timing.jokerCount | Storage.endTimeFramesOverflow
-		networked	number	number5						0    ; Timing.sector | Storage.respawnTimer
-		networked	number	number6         			0    ; Timing.averageLapFrames
-		networked	number	number7             		0    ; Timing.bestSector1TimeFrames | Checkpoint.bestSectorTimeFrames | Storage.penalty
-		networked	number	number8             		0    ; Timing.bestSector2TimeFrames
-		networked	number	number9             		0    ; Timing.bestSector3TimeFrames
-		networked	number	number10        			1    ; Timing.sectorInvalidated | Storage.lapInvalidated
-		networked   player  player1                     none ; Vehicle.player0
-		networked   object  object1                     none ; Timing.respawnObject
+		local	number	number2              		0    ; Timing.optimalLapFrames | Storage.firstLapTimeFramesOverflow
+		local	number	number3     				0    ; Timing.jokeredThisLap | Storage.endTimeFrames
+		local	number	number4 					0    ; Timing.jokerCount | Storage.endTimeFramesOverflow
+		local	number	number5						0    ; Timing.sector | Storage.respawnTimer
+		local	number	number6         			0    ; Timing.averageLapFrames
+		local	number	number7             		0    ; Timing.bestSector1TimeFrames | Checkpoint.bestSectorTimeFrames | Storage.penalty
+		local	number	number8             		0    ; Timing.bestSector2TimeFrames
+		local	number	number9             		0    ; Timing.bestSector3TimeFrames
+		local	number	number10        			1    ; Timing.sectorInvalidated | Storage.lapInvalidated
+		local   player  player1                     none ; Vehicle.player0
+		local   object  object1                     none ; Timing.respawnObject
 	end
 
 ;	# Variables #
