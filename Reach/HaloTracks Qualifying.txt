@@ -34,7 +34,7 @@ declare	host							with network priority local	= 0
 declare	localCurrentLapSeconds			with network priority local	= 0
 declare	localCurrentLapMilliseconds		with network priority local	= 0
 declare	dashStatus						with network priority local	= 0
-declare	raceStatus						with network priority high	= 0
+declare	raceStatus						with network priority high	= 1
 
 
 alias	bestLapPlayer					= global.player[0]
@@ -150,8 +150,6 @@ alias	stat4           				= player.script_stat[3]
 
 
 	-- /* Global Storage Object */
-	alias	startGateFrame					= object.number[1]
-	alias	startGateDropped				= object.number[2]
 	alias	sectorCount						= object.number[3]
 	alias	checkpointCount					= object.number[4]
 	alias	suddenDeath 					= object.number[5]
@@ -372,24 +370,8 @@ on init: do
 	-- # Delete Competitive Version Objects #
 
 
-	-- # Set Start Gate Frame #
-	if startGate == 1 then -- 20 +/- 5
-		globalStorage.startGateFrame = rand( 601 )
-		globalStorage.startGateFrame += 900
-	end
-	if startGate == 2 then -- 30 +/- 10
-		globalStorage.startGateFrame = rand( 1201 )
-		globalStorage.startGateFrame += 1200
-	end
-	if startGate == 3 then -- 40 +/- 20
-		globalStorage.startGateFrame = rand( 2401 )
-		globalStorage.startGateFrame += 1200
-	end
-	-- # Set Start Gate Frame #
-
-
-	raceStatus = 1
 	host = 1
+    -- # Delete Race Gates #
 end
 
 -- # Initialize #
@@ -424,6 +406,11 @@ end
 			if frames == 10 then
 				send_incident(kill_with_flag, current_player, no_player)
 				send_incident(bomb_carrier_kill, current_player, no_player)
+				raceStatus = 2
+	            frames = 0
+		        for each object with label "race_gate" do
+			        current_object.delete()
+		        end
 			end
 		end
 	end
@@ -479,18 +466,6 @@ end
 		end
 	end
 	-- # Initial Spawn Point #
-
-
-	-- # Delete Race Gates #
-	if startGate != 0 and raceStatus == 1 and globalStorage.startGateDropped == 0 and frames > globalStorage.startGateFrame then
-		for each object with label "race_gate" do
-			current_object.delete()
-		end
-		raceStatus = 2
-		frames = 0
-		globalStorage.startGateDropped = 1
-	end
-	-- # Delete Race Gates #
 
 
 	-- # Count number of alive players #
@@ -1545,20 +1520,6 @@ on local: do
 			current_object.set_hidden(true)
 		end
 		--	# Hide Invisible Race Objects #
-
-
-		-- # Hide Race Gates #
-		if startGate != 0 then
-			alias localStartGateFrame = allocate temporary number
-			localStartGateFrame = globalStorage.startGateFrame
-			localStartGateFrame -= 6 -- How much earlier should the gates visually disappear before they physically disappear
-			if raceStatus == 1 and globalStorage.startGateDropped == 0 and frames > localStartGateFrame then
-				for each object with label "race_gate" do
-					current_object.set_hidden(true)
-				end
-			end
-		end
-		-- # Hide Race Gates #
 
 
 		-- # Detect Client Player --
