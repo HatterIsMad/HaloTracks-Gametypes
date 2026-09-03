@@ -179,10 +179,11 @@ include "strings/common_strings.txt"
 	    end
 
 
-		option	numberOfLaps	optionNameNumberOfLaps	optionDescriptionNumberOfLaps	3
+		option	numberOfLaps	optionNameNumberOfLaps	optionDescriptionNumberOfLaps	2
 			-1	lapsPlus1			""
 			0	option_disabled		""
 			1	laps_1				""
+			2	laps_2  			""
 			3	laps_3				""
 			5	laps_5				""
 			10	laps_10				""
