@@ -125,7 +125,7 @@ alias	stat4           				= player.script_stat[3]
 	alias	offTrackCount					= object.number[2]
 	alias	penalty							= object.number[3]
 	alias	currentCheckpoint				= object.number[4]
-	alias	respawnTimers					= object.number[5]
+	alias	holeshotPosition				= object.number[5]
 	alias	optimalLapSeconds				= object.number[6]
 	alias	optimalLapMilliseconds			= object.number[7]
 	alias	bestSector1TimeFrames			= object.timer[0]
@@ -146,7 +146,6 @@ alias	stat4           				= player.script_stat[3]
 	alias	startTimeframes    				= object.number[6]
 	alias	startTimeFramesOverflow			= object.number[7]
 	alias	jokeredThisLap					= object.timer[0]
-	alias	holeshotPosition				= object.timer[1]
 	alias	sectorInvalidated				= object.timer[2]
 	alias	lapInvalidated					= object.timer[3]
 	-- /* Player storage Object */
@@ -513,7 +512,7 @@ end
 		n *= 100
 		current_player.stat2 += n
 
-		n = storage.holeshotPosition
+		n = timing.holeshotPosition
 		n *= 1000
 		current_player.stat2 += n
 
@@ -1608,21 +1607,21 @@ for each player do
 
 					-- # Holeshot Marker #
 		            if startGate == 0 or raceStatus >= 2 then
-		                if storage.holeshotPosition == 0 then
+		                if timing.holeshotPosition == 0 then
 	                        alias highestHSP = allocate temporary number
 
 		                    for each player do
 		                        alias playerstorage = allocate temporary object
 		                        playerstorage = current_player.storage
-			                    if playerstorage.holeshotPosition > highestHSP then
-				                    highestHSP = playerstorage.holeshotPosition
+			                    if playertiming.holeshotPosition > highestHSP then
+				                    highestHSP = playertiming.holeshotPosition
 		                        end
 		                    end
 
 		                    highestHSP += 1
-		                    storage.holeshotPosition = highestHSP
+		                    timing.holeshotPosition = highestHSP
 		                    if highestHSP > 1 then
-								game.show_message_to(current_player, none, "Holeshot P%n", storage.holeshotPosition )
+								game.show_message_to(current_player, none, "Holeshot P%n", timing.holeshotPosition )
 		                    end
 
 					        if holeshotPlayer == no_player then
