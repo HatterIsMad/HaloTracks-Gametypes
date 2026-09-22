@@ -10,7 +10,7 @@ include "strings/common_strings.txt"
 		engine_category_slayer				"Slayer"
 		title								"Race"
 		description							"Gentlemen, start your engines."
-		objective							"HaloTracks Qualifying Gametype v0.2"
+		objective							"HaloTracks Qualifying Gametype v0.3"
 		objective2							"Qualifying length %n laps"
 		objective3							"Qualifying length %n minutes"
 		objective4							"Qualifying length %n minutes + Finish Incomplete Lap"
@@ -701,6 +701,7 @@ include "strings/common_strings.txt"
                         temporary object oldBody current_player
                         condition not object_is_type oldBody "monitor"
                             action delete_object current_player.vehicle
+							action object_detach current_player.vehicle
                             action biped_drop_weapon oldBody secondary
                             action biped_drop_weapon oldBody primary
                             action object_detach oldBody
@@ -757,6 +758,7 @@ include "strings/common_strings.txt"
                         action apply_player_traits current_player spectator
                         action biped_drop_weapon current_player secondary
                         action biped_drop_weapon current_player primary
+				        action object_attach current_player.vehicle current_player 0 0 0
                 end
 			end
 		end
@@ -1265,6 +1267,13 @@ include "strings/common_strings.txt"
 
 		;	# Detect Client Player #
 		action for_each player
+            begin
+                temporary object oldBody current_player
+                condition object_is_type oldBody "monitor"
+                    action apply_player_traits current_player spectator
+                    action object_attach current_player.vehicle current_player 0 0 0
+            end
+
 			begin
 				condition timer_expired current_player.delay
 					action for_each Target
