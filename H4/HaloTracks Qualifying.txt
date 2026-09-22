@@ -696,11 +696,6 @@ include "strings/common_strings.txt"
 					action set current_player.score set_to timing.number1
 					action set current_player.score multiply -1
 
-					begin
-						condition if current_player.score == 0
-							action set current_player.score set_to -9999
-					end
-
                     ; # Transform Player into Monitor #
                     begin
                         temporary object oldBody current_player
