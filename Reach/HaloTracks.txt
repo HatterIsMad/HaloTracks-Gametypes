@@ -72,6 +72,7 @@ alias	scale							= script_option[9]
 
 -- /* SCRIPT TRAITS */
 alias spectatorTraits                   = script_traits[0]
+alias draftTraits                   = script_traits[1]
 -- /* SCRIPT TRAITS */
 
 
@@ -545,7 +546,7 @@ end
 	for each player do
 		if raceStatus == 1 then
 			if frames == 30 then
-                game.show_message_to(current_player, none, "HaloTracks Race Gametype v2.1" )
+                game.show_message_to(current_player, none, "HaloTracks Race Gametype v2.2" )
 				send_incident(bomb_carrier_kill, current_player, no_player)
 				finalCheckpoint.finalLap = 0
 				finalCheckpoint.flag = 0
@@ -869,36 +870,39 @@ end
             end
         end
 
-		-- # Police Track Limits #
-        for each object with label "track_limits" do
-            if current_player.onVehicle == 1 and current_object.shape_contains(current_player.biped) and current_player.offTrackDebounce > 420 then
-	            timing.offTrackCount += 1
-	            alias penaltyLimit = allocate temporary number
-	            penaltyLimit = timing.offTrackCount
-	            penaltyLimit /= 5
-	            penaltyLimit += 1
-	            penaltyLimit *= 5
-	            alias penalty = allocate temporary number
-	            penalty = timing.offTrackCount
-	            penalty /= 5
-	            penalty *= 5
 
-	            if penalty == timing.offTrackCount then
-		            if timing.penalty < 0 then
-			            timing.penalty = 0
-		            end
-		            timing.penalty += 300
-		            game.show_message_to(current_player, none, "You have earned yourself a 5s penalty bud" )
-	            end
-	            if penalty != timing.offTrackCount then
-		            game.show_message_to(current_player, none, "You have exceeded track limits %n/%n times", timing.offTrackCount, penaltyLimit )
-	            end
-	            storage.sectorInvalidated = 1
-	            storage.lapInvalidated = 1
-	            current_player.offTrackDebounce = 0
+		-- # Police Track Limits #
+		if raceStatus >= 2 then
+            for each object with label "track_limits" do
+                if current_player.onVehicle == 1 and current_object.shape_contains(current_player.biped) and current_player.offTrackDebounce > 420 then
+	                timing.offTrackCount += 1
+	                alias penaltyLimit = allocate temporary number
+	                penaltyLimit = timing.offTrackCount
+	                penaltyLimit /= 5
+	                penaltyLimit += 1
+	                penaltyLimit *= 5
+	                alias penalty = allocate temporary number
+	                penalty = timing.offTrackCount
+	                penalty /= 5
+	                penalty *= 5
+
+	                if penalty == timing.offTrackCount then
+		                if timing.penalty < 0 then
+			                timing.penalty = 0
+		                end
+		                timing.penalty += 300
+		                game.show_message_to(current_player, none, "You have earned yourself a 5s penalty bud" )
+	                end
+	                if penalty != timing.offTrackCount then
+		                game.show_message_to(current_player, none, "You have exceeded track limits %n/%n times", timing.offTrackCount, penaltyLimit )
+	                end
+	                storage.sectorInvalidated = 1
+	                storage.lapInvalidated = 1
+	                current_player.offTrackDebounce = 0
+                end
             end
+            current_player.offTrackDebounce += 1
         end
-        current_player.offTrackDebounce += 1
 		-- # Police Track Limits #
 
 
@@ -1148,6 +1152,21 @@ end
 		end
 	end
 	-- # Spectator Mode #
+
+
+	-- # Handle Flags #
+        for each object with label "flagStatus" do
+                current_object.set_hidden(true)
+            if raceStatus >= 2 then
+                if globalStorage.caution == 1 then
+                        current_object.set_hidden(false)
+                end
+                if globalStorage.caution == 0 then
+                        current_object.set_hidden(true)
+                end
+            end
+        end
+    -- # Handle Flags #
 
 
 -- # Basic Game Logic #
@@ -1611,10 +1630,10 @@ for each player do
 	                        alias highestHSP = allocate temporary number
 
 		                    for each player do
-		                        alias playerstorage = allocate temporary object
-		                        playerstorage = current_player.storage
-			                    if playertiming.holeshotPosition > highestHSP then
-				                    highestHSP = playertiming.holeshotPosition
+		                        alias playerStorage = allocate temporary object
+		                        playerStorage = current_player.storage
+			                    if playerStorage.holeshotPosition > highestHSP then
+				                    highestHSP = playerStorage.holeshotPosition
 		                        end
 		                    end
 
@@ -2238,6 +2257,8 @@ if maxFuel != -1 then
 
 										vehicle.draftBonus *= current_player.vehicleSpeedKPH
 										vehicle.draftBonus /= 100
+
+                                        current_player.apply_traits( draftTraits )
 									end
 								end
 							end
@@ -2576,6 +2597,21 @@ on local: do
 			-- # Update Vehicle Speed #
 
 		end
+
+
+	    -- # Handle Flags #
+            for each object with label "flagStatus" do
+                    current_object.set_hidden(true)
+                if raceStatus >= 2 then
+                    if globalStorage.caution == 1 then
+                            current_object.set_hidden(false)
+                    end
+                    if globalStorage.caution == 0 then
+                            current_object.set_hidden(true)
+                    end
+                end
+            end
+        -- # Handle Flags #
 
 
 	end
