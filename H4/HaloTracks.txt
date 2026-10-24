@@ -410,15 +410,6 @@ include "strings/common_strings.txt"
 				end
 				;	# Set finalCheckpoint #
 
-
-				;	# Set firstCheckpoint #
-				begin
-					condition if firstCheckpoint == none or
-					condition if current_object.number1 < firstCheckpoint.number1
-						action set firstCheckpoint = current_object
-				end
-				;	# Set firstCheckpoint #
-
 			end
 		;	# Initialize Checkpoints
 
