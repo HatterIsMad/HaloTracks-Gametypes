@@ -1,0 +1,2005 @@
+include "strings/common_strings.txt"
+include "engine_icons.txt"
+include "strings/engine_category_strings.txt"
+
+
+
+
+
+;	# String Tables #
+
+	string_table english
+		title								"Race"
+		description							"Gentlemen, start your engines."
+		objective							"HaloTracks Race Gametype v0.1"
+		objective2							"Race length %n laps"
+		objective3							"Race length %n minutes"
+		objective4							"Race length %n minutes + %n laps"
+		objectiveRounds2					"Rounds of %n laps"
+		objectiveRounds3					"Rounds of %n minutes"
+		objectiveRounds4					"Rounds of %n minutes + %n laps"
+		optionNameWaypointVisibility		"Waypoint Visibility"
+		optionDescriptionWaypointVisibility	"Show waypoints on the checkpoints"
+		optionNameInvincibility     		"Invincibility"
+		optionDescriptionInvincibility  	"Players will be invincible"
+		optionNameRequiredJokers			"Required Jokers"
+		optionDescriptionRequiredJokers		"The number of jokers players must complete"
+		optionNameNumberOfLaps				"Number of Laps"
+		optionDescriptionNumberOfLaps		"The number of laps players must complete to win the race."
+		optionNameVehicle					"Vehicle"
+		optionDescriptionVehicle			"Determines what vehicle players will use in this race."
+		optionVehicleMongoose				"Mongoose"
+		optionVehicleWarthog				"Warthog"
+		optionNameStartGate					"Start Gate"
+		optionDescriptionStartGate			"If enabled, objects with the label race_gate will disappear at the selected time."
+		optionNameAllowMissedCheckpoints	"Allow Missed Checkpoints"
+		optionDescriptionAllowMissedCheckpoints    "If enabled, racers will be able to continue their lap without going back for a misssed checkpoint."
+		optionNameRespawnTime               "Vehicle Respawn Time"
+		optionDescriptionRespawnTime        "If enabled, you will be placed on a vehicle after the allotted time"
+		optionStartGate1					"20 +/- 5"
+		optionStartGate2					"30 +/- 10"
+		optionStartGate3					"40 +/- 20"
+		optionStartGate4					"55 +/- 5"
+		optionInstant						"Instant"
+		optionThreeSeconds					"3s"
+		optionFiveSeconds					"5s"
+		optionSevenSeconds					"7s"
+		optionZero							"0"
+		optionOne							"1"
+		optionTwo							"2"
+		optionThree							"3"
+		lapsPlus1							"Time Limit + 1 Lap"
+		lapsPlus2							"Time Limit + 2 Laps"
+		empty								""
+		widgetText							"Lap Time: %n.%n"
+		widgetText2							"Lap Time: %n.0%n"
+		widgetText3							"Lap Time: %n.000"
+		endingOnMessage						"Ending on %n"
+		finishMessage						"Finished P%n"
+		holeshotMessage						"%p got the holeshot"
+		holeshotMessage2					"Holeshot P%n"
+		overallBestLapMessage				"Overall Best lap time! %n.%n"
+		overallBestLapPlayerMessage			"Lap %n %p got the fastest lap"
+		personalBestLapMessage				"Personal Best lap time! %n.%n"
+		lapCompleteMessage					"Lap Complete: %n.%n"
+		averageLapMessage               	"Average Lap: %n.%n"
+		jokeredMessage						"You have completed %n/%n jokers"
+		sector1Message						"Sector 1: %n.%n"
+		overallBestSector1Message			"Overall Best Sector 1 time! %n.%n"
+		personalBestSector1Message			"Personal Best Sector 1 time! %n.%n"
+		sector2Message						"Sector 2: %n.%n"
+		overallBestSector2Message			"Overall Best Sector 2 time! %n.%n"
+		personalBestSector2Message			"Personal Best Sector 2 time! %n.%n"
+		sector3Message						"Sector 3: %n.%n"
+		overallBestSector3Message			"Overall Best Sector 3 time! %n.%n"
+		personalBestSector3Message			"Personal Best Sector 3 time! %n.%n"
+		optimalLapMessage                   "New Optimal Lap: %n.%n"
+		penaltyMessage                      "You have earned yourself a %ns penalty bud"
+		slowDownMessage                     "Slow down or you will get a penalty"
+		missedACheckpointMessage            "This %p fucker missed a checkpoint"
+		debug								"%n"
+	end
+
+;	# String Tables #
+
+
+
+;	# Engine Config #
+
+	engine_data
+		name title
+		description description
+	    icon k_engine_icon_race
+	    category regicide
+	end
+
+;	# Engine Config #
+
+
+
+;	# Map Permissions #
+
+    map_permissions
+	    default true
+    end
+
+;	# Map Permissions #
+
+
+
+;	# Object Labels #
+
+	map_object race_checkpoint
+		label "race_checkpoint"
+		min 1
+	end
+
+	map_object race_delete
+		label "race_delete"
+	end
+
+	map_object race_holeshot
+		label "race_holeshot"
+	end
+
+	map_object race_hide
+		label "race_hide"
+	end
+
+	map_object race_gate
+		label "race_gate"
+	end
+
+	map_object vehicle
+		label "vehicle"
+	end
+
+	map_object Target
+		label "Target"
+	end
+
+	map_object joker
+		label "joker"
+	end
+
+	map_object Spectator
+		label "Spectator"
+	end
+
+	map_object slow_zone
+		label "slow_zone"
+	end
+
+	map_object race_lap
+		label "race_lap"
+	end
+
+;	# Object Labels #
+
+
+
+
+
+;	# Game Options #
+
+	loadout_palette empty_palette
+	end
+
+	game_options
+
+		lock override	ordnance_enabled				0
+		lock override	teams_enabled					0
+		override		respawn_time					3
+		override		suicide_respawn_penalty			3
+		lock override	score_to_win_round				500
+		override		round_count						1
+		override		round_time_limit				0
+		override		early_victory_win_count			0
+		override		indestructible_vehicles			1
+		override		vehicle_set						no_vehicles
+
+		override		loadout_selection_time			0
+		override		loadout_palette spartan_tier1	empty_palette
+		override		loadout_palette spartan_tier2	empty_palette
+		override		loadout_palette spartan_tier3	empty_palette
+		override		loadout_palette elite_tier1		empty_palette
+		override		loadout_palette elite_tier2		empty_palette
+		override		loadout_palette elite_tier3		empty_palette
+
+		override		base_player_traits
+						damage_multiplier				0
+						initial_secondary_weapon		none
+						initial_primary_weapon			magnum
+						melee_damage_multiplier			0
+						initial_grenade_count			none
+						shield_hud						false
+						assassination_immunity			true
+						headshot_immunity				true
+						damage_resistance				true
+						vehicle_usage					not_passenger
+						infinite_ammo					on
+		end
+
+
+	    player_traits_dynamic spectator empty empty
+   		    stealthy true
+            active_camo invisible
+	    end
+
+
+		option	numberOfLaps	optionNameNumberOfLaps	optionDescriptionNumberOfLaps	0
+			-2	lapsPlus2			""
+			-1	lapsPlus1			""
+			0	option_disabled		""
+			1	laps_1				""
+			3	laps_3				""
+			5	laps_5				""
+			10	laps_10				""
+			15	laps_15				""
+			20	laps_20				""
+			50	laps_50				""
+			100	laps_100			""
+		end
+
+		option	defaultVehicle	optionNameVehicle	optionDescriptionVehicle	0
+			0	optionVehicleMongoose	    ""
+			1	optionVehicleWarthog	    ""
+		end
+
+		option	startGate		optionNameStartGate	optionDescriptionStartGate	1
+			0	option_disabled		""
+			1	optionStartGate1	""
+			2	optionStartGate2	""
+			3	optionStartGate3	""
+			4	optionStartGate4	""
+		end
+
+		option	requiredJokers	optionNameRequiredJokers	optionDescriptionRequiredJokers	3
+			0	option_disabled		""
+			1	optionOne	""
+			2	optionTwo	""
+			3	optionThree	""
+		end
+
+		option	waypointVisibility	optionNameWaypointVisibility	optionDescriptionWaypointVisibility	3
+			0	option_disabled	""
+			1	optionOne	""
+			2	optionTwo	""
+			3	optionThree	""
+		end
+
+		option	allowMissedCheckpoints	optionNameAllowMissedCheckpoints	optionDescriptionAllowMissedCheckpoints	0
+			0	option_disabled	""
+			1	option_enabled	""
+		end
+
+		option	invincibility	optionNameInvincibility	optionDescriptionInvincibility	0
+			0	option_disabled	""
+			1	option_enabled	""
+		end
+
+		option	respawnTime	optionNameRespawnTime	optionDescriptionRespawnTime	7
+			-1	option_disabled	   ""
+			0	optionInstant	   ""
+            3   optionThreeSeconds ""
+            5   optionFiveSeconds  ""
+            7   optionSevenSeconds ""
+		end
+
+	end
+
+;	# Game Options #
+
+
+
+
+
+;	# Variables #
+
+	variables global
+		local		number	roundTime						0
+		local   	number  bestLapFrames               	0
+		local		number	frames							0
+		local   	number  framesOverflow              	0
+		local		number	host							0
+		local		number	localCurrentLapSeconds			0
+		local		number	localCurrentLapMilliseconds		0
+		local		number	localLapFrames					0
+		local		number	startGateFrame					0
+		networked	number	raceStatus						0
+		local		number	numberOfPlayers					0
+		local		number	checkpointCount					0
+		local		number	sectorCount						0
+		local		number	finalLap     					0
+		local		number	flag         					0
+		local		object	firstCheckpoint					none
+		networked	object	finalCheckpoint					none
+		local		object	target							none
+		local		player	holeshotPlayer					none
+		local		player	bestLapPlayer					none
+		local		player	client							none
+	end
+
+
+	variables player
+		local		number	holeshotPosition    		0
+		local		number	lapFrames					0
+		local		number	vehicleSpeedKPH    			0
+		local		number	currentLapSeconds			0
+		local		number	currentLapMilliseconds		0
+		networked	number	onVehicle					0
+		networked	number	currentCheckpoint			-1
+		local		number	sectorTimeFrames			0
+		local		number	position					1
+		networked	object	vehicle						none
+		local		object	local_target				none
+		local		object	timing						none
+		local		object	storage						none
+		networked	timer	delay						2
+		networked	timer	vehicleRespawnTimer			respawnTime
+	end
+
+
+	variables object
+		networked	number	number1						0    ; Timing.bestLapFrames | Checkpoint.order | Storage.firstLapTimeFrames
+		local		number	number2              		0    ; Timing.optimalLapFrames | Checkpoint.debounce1 | Storage.firstLapTimeFramesOverflow
+		local		number	number3     				0    ; Timing.jokeredThisLap | Checkpoint.debounce2 | Storage.endTimeFrames
+		local		number	number4 					0    ; Timing.jokerCount | Storage.endTimeFramesOverflow
+		local		number	number5						0    ; Timing.sector | Checkpoint.raceLapUsed | Storage.respawnTimer
+		local		number	number6         			0    ; Timing.averageLapFrames
+		local		number	number7             		0    ; Timing.bestSector1TimeFrames | Checkpoint.bestSectorTimeFrames | Storage.penalty
+		local		number	number8             		0    ; Timing.bestSector2TimeFrames
+		local		number	number9             		0    ; Timing.bestSector3TimeFrames
+		local		number	number10        			1    ; Timing.sectorInvalidated | Storage.lapInvalidated
+		local   	player  player1                     none ; Vehicle.player0
+		local   	object  object1                     none ; Timing.respawnObject
+	end
+
+;	# Variables #
+
+
+
+
+
+;	# Widgets #
+
+	hud_widgets
+		widget	bottom_left
+	end
+
+;	# Widgets #
+
+
+
+
+
+;	# Stats #
+
+	game_stats
+		stat1		number	empty	none	0	0	0
+		stat2		number	empty	none	0	0	0
+		stat3		number	empty	none	0	0	0
+		stat4		number	empty	none	0	0	0
+	end
+
+;	# Stats #
+
+
+
+
+
+;	# Initialize #
+
+	trigger initialization
+
+
+		;	# Initialize Checkpoints
+			action for_each race_checkpoint
+				action set current_object.number1 set_to current_object.user_data
+				action set current_object.number5 set_to 0
+				action set current_object.team set_to neutral
+				action object_set_invincibility current_object true
+				action navpoint_set_visible current_object no_one
+			end
+			action for_each race_checkpoint
+
+				;	# Set Waypoint Type #
+				begin
+					condition if waypointVisibility >= 1
+						action NavPointSetType current_object navpoint_regicide
+				end
+				;	# Set Waypoint Type #
+				begin
+					condition if waypointVisibility >= 2
+						action navpoint_set_priority current_object high
+				end
+				;	# Set Waypoint Type #
+
+
+				;	# Set finalCheckpoint #
+				begin
+					condition if finalCheckpoint == none or
+					condition if current_object.number1 == 1
+					    action set finalCheckpoint = current_object
+				end
+				;	# Set finalCheckpoint #
+
+			end
+		;	# Initialize Checkpoints
+
+
+		;	# Reorder Checkpoints #
+		begin
+		    action for_each race_checkpoint
+		        condition if current_object.number1 == 1
+			        action set current_object.number1 add 100
+	        end
+		    temporary number count 1
+		    action for_each race_checkpoint
+		        temporary number nextCheckpointOrder -1
+
+                ;	# Find Next Checkpoint #
+                begin
+		            action for_each race_checkpoint
+		                begin
+                            condition if nextCheckpointOrder < 0
+                                condition if current_object.number1 >= count
+	                                action set nextCheckpointOrder = current_object.number1
+                        end
+                        begin
+                            condition if current_object.number1 >= count
+                                condition if current_object.number1 < nextCheckpointOrder
+                                    action set nextCheckpointOrder = current_object.number1
+                        end
+                    end
+                end
+                ;	# Find Next Checkpoint #
+
+                ;	# Change the order value on all checkpoints with that value #
+		        action for_each race_checkpoint
+                    condition if nextCheckpointOrder >= 0
+                        condition if nextCheckpointOrder == current_object.number1
+                            action set current_object.number1 = count
+                end
+                ;	# Change the order value on all checkpoints with that value #
+
+                action set count add 1
+            end
+        end
+        ;    # Reorder Checkpoints #
+
+
+		;	# Set firstCheckpoint #
+			action for_each race_checkpoint
+				begin
+					condition if firstCheckpoint == none or
+					condition if current_object.number1 < firstCheckpoint.number1
+						action set firstCheckpoint = current_object
+				end
+			end
+		;	# Set firstCheckpoint #
+
+
+		;	# Count Distinct Checkpoints #
+		begin
+			action for_each race_checkpoint
+				action for_each race_checkpoint
+					condition if current_object.number1 == checkpointCount
+						action set checkpointCount add 1
+				end
+			end
+		end
+		;	# Count Distinct Checkpoints #
+
+
+		;	# Figure out Checkpoint Sectors #
+		begin
+			temporary object sector1 none
+			temporary object sector2 none
+			temporary object sector3 none
+
+			begin
+				condition if checkpointCount <= 3
+					action for_each race_checkpoint
+						begin
+							condition if current_object.number1 == 0
+								action set sector1 set_to current_object
+						end
+						begin
+							condition if current_object.number1 == 1
+								action set sector2 set_to current_object
+						end
+						begin
+							condition if current_object.number1 == 2
+								action set sector3 set_to current_object
+						end
+					end
+			end
+
+
+			temporary number spacing checkpointCount
+			action set spacing divide 3
+			temporary number order checkpointCount
+			action set order subtract 1
+			action set order subtract spacing
+
+			begin
+				condition if checkpointCount > 3
+					action set sector3 set_to finalCheckpoint
+
+					action for_each race_checkpoint
+						condition if current_object.number1 == order
+							action set sector2 set_to current_object
+					end
+
+					action set order subtract spacing
+
+					action for_each race_checkpoint
+						condition if current_object.number1 == order
+							action set sector1 set_to current_object
+					end
+			end
+
+			begin
+				condition not if sector1 == none
+					action set sectorCount set_to 1
+			end
+
+			begin
+				condition not if sector2 == none
+					action set sectorCount set_to 2
+			end
+
+			begin
+				condition not if sector3 == none
+					action set sectorCount set_to 3
+			end
+
+
+			begin
+				action for_each race_checkpoint
+					action set current_object.number5 set_to 4
+
+					begin
+						condition not if sector1 == none
+							condition if current_object.number1 == sector1.number1
+								action set current_object.number5 set_to 1
+					end
+
+					begin
+						condition not if sector2 == none
+							condition if current_object.number1 == sector2.number1
+								action set current_object.number5 set_to 2
+					end
+
+					begin
+						condition not if sector3 == none
+							condition if current_object.number1 == sector3.number1
+								action set current_object.number5 set_to 3
+					end
+				end
+			end
+
+		end
+		;	# Figure out Checkpoint Sectors #
+
+
+		;	# Hide Invisible Race Objects #
+			action for_each race_hide
+				action hide_object current_object true
+			end
+		;	# Hide Invisible Race Objects #
+
+
+		;	# Set Start Gate Frame #
+		begin
+			condition if startGate == 1 ; 20 +/- 5
+				action random 571 startGateFrame
+				action set startGateFrame add 900
+		end
+		begin
+			condition if startGate == 2 ; 30 +/- 10
+				action random 1171 startGateFrame
+				action set startGateFrame add 1200
+		end
+		begin
+			condition if startGate == 3 ; 40 +/- 20
+				action random 2371 startGateFrame
+				action set startGateFrame add 1200
+		end
+		begin
+			condition if startGate == 4 ; 55 +/- 5
+				action random 571 startGateFrame
+				action set startGateFrame add 3000
+		end
+		action set startGateFrame add 600 ; Add 10s for the initial H4 spawn
+		;	# Set Start Gate Frame #
+
+
+		;	# Cache the Initial Round Time Length #
+		action set roundTime set_to round_timer
+		;	# Cache the Initial Round Time Length #
+
+
+		action set raceStatus set_to 1
+		action set host set_to 1
+		action SetMedalScoring false
+	end
+
+;	# Initialize #
+
+
+
+
+
+;	# Basic Game Logic #
+
+
+	; # Configure debounces #
+	trigger general
+		temporary number debounce frames
+		temporary number temp frames
+		action set temp /= 6
+		action set temp *= 6
+		action set debounce -= temp
+		action set finalCheckpoint.number2 = debounce
+
+		action set debounce = frames
+		action set temp = frames
+		action set temp /= 20
+		action set temp *= 20
+		action set debounce -= temp
+		action set finalCheckpoint.number3 = debounce
+	end
+	; # Configure debounces #
+
+
+	;	# Send round start message #
+	trigger player
+		condition if raceStatus == 1
+			condition if frames == 600
+	            action hud_post_message player current_player none objective
+				action AwardMedal player current_player busted
+
+				begin
+					condition if numberOfLaps > 0
+						begin
+							condition if round_count == 1
+	                            action hud_post_message player current_player none objective2 numberOfLaps
+	                    end
+						begin
+							condition if round_count > 1
+	                            action hud_post_message player current_player none objectiveRounds2 numberOfLaps
+	                    end
+	            end
+				begin
+					condition if numberOfLaps == 0
+						temporary number minutes roundTime
+						action set minutes divide 60
+						begin
+							condition if round_count == 1
+								condition if roundTime > 0
+			                        action hud_post_message player current_player none objective3 minutes
+		                end
+						begin
+							condition if round_count > 1
+								condition if roundTime > 0
+			                        action hud_post_message player current_player none objectiveRounds3 minutes
+	                    end
+	            end
+				begin
+					condition if numberOfLaps < 0
+						temporary number minutes roundTime
+						action set minutes divide 60
+						temporary number laps numberOfLaps
+						action set laps multiply -1
+						begin
+							condition if round_count == 1
+	                            action hud_post_message player current_player none objective4 minutes laps
+	                    end
+						begin
+							condition if round_count > 1
+	                            action hud_post_message player current_player none objectiveRounds4 minutes laps
+	                    end
+	            end
+	end
+	;	# Send round start message #
+
+
+	;	# Delete Race Gates #
+	trigger general
+		condition if raceStatus == 1
+		    condition if frames > startGateFrame
+				action for_each race_gate
+					action delete_object current_object
+				end
+				action set raceStatus set_to 2
+				action set frames set_to 0
+				action set round_timer set_to roundTime
+	end
+	;	# Delete Race Gates #
+
+
+	;	# Count number of alive players #
+	trigger general
+		action set numberOfPlayers set_to 0
+
+		action for_each player
+			temporary object biped current_player
+			condition not if biped == none
+				action set numberOfPlayers add 1
+		end
+	end
+	;	# Count number of alive players #
+
+
+	;	# Delete Objects marked as race_delete #
+		trigger race_delete
+			action delete_object current_object
+		end
+	;	# Delete Objects marked as race_delete #
+
+
+	;	# Hide Invisible Race Objects #
+		trigger race_hide
+			action hide_object current_object true
+		end
+	;	# Hide Invisible Race Objects #
+
+
+	trigger player
+
+		temporary object storage current_player.storage
+		temporary number health 0
+		action object_get_health current_player health
+		begin
+		    condition if health < 1
+		        action set storage.number5 add 1
+			    action object_set_invincibility current_player.vehicle false
+		        action delete_object current_player.vehicle
+		end
+		action object_set_invincibility current_player.vehicle true
+
+		;condition if current_player.onVehicle == 0
+		;	temporary object weapon none
+        ;    action player_get_weapon current_player primary weapon
+        ;    condition if weapon != none
+        ;        condition if frames > 650
+	    ;            action biped_drop_weapon current_player primary
+	end
+
+
+	;	# Set Current Lap time #
+	trigger player
+		action set current_player.currentLapSeconds set_to current_player.lapFrames
+		action set current_player.currentLapSeconds divide 60
+		temporary number t current_player.currentLapSeconds
+		action set t multiply 60
+		action set current_player.currentLapMilliseconds set_to current_player.lapFrames
+		action set current_player.currentLapMilliseconds subtract t
+		action set current_player.currentLapMilliseconds multiply 1000
+		action set current_player.currentLapMilliseconds divide 60
+	end
+	;	# Set Current Lap time #
+
+
+	;	# Increment the frame counter #
+	trigger general
+		action set frames add 1
+		condition if frames >= 32750
+			action set frames subtract 32750
+			action set framesOverflow add 1
+	end
+	;	# Increment the frame counter #
+
+
+	;	# Increment the player frame counters #
+	trigger player
+		condition if raceStatus == 2
+			action set current_player.sectorTimeFrames add 1
+			action set current_player.lapFrames add 1
+	end
+	;	# Increment the player frame counters #
+
+
+	;	# End the round when time runs out #
+	trigger general
+		condition if roundTime > 0
+			condition timer_expired round_timer
+                begin
+		            condition if round_count > 1
+	                    condition if numberOfLaps >= 0
+		                    action end_round
+                end
+                begin
+                    condition if finalLap == 0
+                        action for_each player
+                            condition if current_player.score > finalLap
+                                action set finalLap set_to current_player.score
+                        end
+                        action set finalLap add 1
+                        begin
+                            condition if numberOfLaps == -1
+                                action set finalLap add 1
+                        end
+                        begin
+                            condition if numberOfLaps == -2
+                                action set finalLap add 2
+                        end
+                        action for_each player
+                            action hud_post_message player current_player none endingOnMessage finalLap
+                        end
+                end
+	end
+	;	# End the round when time runs out #
+
+
+	;	# End the round if anyone has met the finalLap
+	trigger player
+		condition if roundTime > 0
+			condition timer_expired round_timer
+				begin
+					temporary number whiteFlagLap finalLap
+					action set whiteFlagLap subtract 1
+		            condition if finalLap != 0
+			            begin
+                            condition if current_player.score == whiteFlagLap
+                                condition if flag == 0
+                                    action set flag set_to 1
+                                    action for_each player
+                                        action AwardMedal player current_player flag_capture
+                                    end
+			            end
+                        begin
+                            condition if flag == 1
+                            temporary number leaderFinished 0
+                            action for_each player
+                                condition if current_player.score >= finalLap
+					                condition if round_count > 1
+						                action end_round
+                            end
+                            condition if leaderFinished == 1
+                                action set flag set_to 2
+                        end
+				end
+	end
+	;	# End the round if anyone has met the finalLap
+
+
+	;	# End the round if anyone has met the numberOfLaps
+	trigger player
+		condition if round_count == 1
+			condition if numberOfLaps > 0
+				condition if current_player.score >= numberOfLaps
+					action end_round
+	end
+	;	# End the round if anyone has met the numberOfLaps
+
+
+	;	# Set Stats #
+	trigger player
+		temporary object timing current_player.timing
+		temporary object storage current_player.storage
+		temporary number n 0
+
+
+		; # Set Stat 1 | End Time Frame #
+		action set current_player.stat1 set_to storage.number3
+		; # Set Stat 1 | End Time Frame #
+
+
+		; # Set Stat 2 | HoleshotPosition + Joker Count + StartTimeFrameOverflow + EndTimeFrameOverflow #
+		action set current_player.stat2 set_to 0
+
+		action set n set_to timing.number4
+		action set n multiply 100
+		action set current_player.stat2 add n
+
+		action set n set_to current_player.holeshotPosition
+		action set n multiply 1000
+		action set current_player.stat2 add n
+
+		action set n set_to storage.number2
+		action set n multiply 10
+		action set current_player.stat2 add n
+
+		action set current_player.stat2 add storage.number4
+		; # Set Stat 2 | HoleshotPosition + Joker Count + StartTimeFrameOverflow + EndTimeFrameOverflow #
+
+
+		; # Set Stat 3 | First Lap Start Time #
+		action set current_player.stat3 set_to storage.number1
+		; # Set Stat 3 | First Lap Start Time #
+
+
+		; # Set Stat 4 | Best Lap Time #
+		action set current_player.stat4 set_to timing.number1
+		; # Set Stat 4 | Best Lap Time #
+	end
+	;	# Set Stats #
+
+
+	;	# Create Objects for storage #
+	trigger player
+		begin
+		    condition if current_player.timing == none
+			    action create_object "flag" at finalCheckpoint set current_player.timing label race_hide
+			    action hide_object current_player.timing true
+		end
+		begin
+		    condition if current_player.storage == none
+			    action create_object "flag" at finalCheckpoint set current_player.storage label race_hide
+			    action hide_object current_player.storage true
+		end
+	end
+	;	# Create Objects for storage #
+
+
+	;	# Set Player current racing position #
+	trigger player
+		temporary player racer current_player
+		temporary number position 1
+
+		;	# Find out how many players are ahead #
+		action for_each player
+
+			begin
+				condition if current_player.score > racer.score
+					action set position add 1
+			end
+
+
+			condition if current_player.score == racer.score
+
+				begin
+					condition if current_player.currentCheckpoint > racer.currentCheckpoint
+						action set position add 1
+				end
+
+				condition if current_player.currentCheckpoint == racer.currentCheckpoint
+					condition if racer.sectorTimeFrames < current_player.sectorTimeFrames
+						action set position add 1
+
+		end
+		;	# Find out how many players are ahead #
+
+		action set current_player.position set_to position
+	end
+	;	# Set Player current racing position #
+
+
+	; # Respawn Player #
+	trigger player
+		temporary object storage current_player.storage
+		temporary object timing current_player.timing
+		begin
+            temporary number health 0
+            action object_get_health current_player health
+            condition if health > 0
+			    condition if storage.number5 > 1
+                    action object_attach current_player timing.object1 0 0 2
+                    action object_detach current_player
+                    action object_set_orientation current_player timing.object1
+       	            action set storage.number5 = 0
+        end
+	end
+	; # Respawn Player #
+
+
+	; # Spectator Mode #
+	trigger general
+		action for_each Spectator
+			action for_each player
+
+			    ; # Make Monitors Invisible #
+			    begin
+                    temporary object oldBody current_player
+                    condition object_is_type oldBody "monitor"
+                        action apply_player_traits current_player spectator
+                        action biped_drop_weapon current_player secondary
+                        action biped_drop_weapon current_player primary
+                end
+			    ; # Make Monitors Invisible #
+
+			    ; # Transform Player into Monitor #
+			    begin
+			        condition if current_object.team == attackers
+			            condition object_in_area current_player current_object
+                            temporary object oldBody current_player
+                            condition not object_is_type oldBody "monitor"
+                                action biped_drop_weapon oldBody secondary
+                                action biped_drop_weapon oldBody primary
+                                action object_detach oldBody
+                                temporary object monitor none
+                                action create_object "monitor" at current_player set monitor
+                                action player_set_unit current_player monitor
+				                action object_set_invincibility monitor true
+				                action object_attach oldBody current_player 0 0 0
+				                action set current_player.vehicle set_to oldBody
+				                action object_set_invincibility oldBody true
+				                action object_set_scale oldBody 1
+                end
+			    ; # Transform Player into Monitor #
+
+
+			    ; # Transform Player into Spartan #
+			    begin
+			        condition if current_object.team == defenders
+			            condition object_in_area current_player current_object
+                            temporary object oldBody current_player
+                            condition object_is_type oldBody "monitor"
+                                action object_detach oldBody
+                                temporary object spartan current_player.vehicle
+                                action object_detach current_player.vehicle
+				                action object_set_scale current_player.vehicle 100
+                                action player_set_unit current_player spartan
+				                action object_set_invincibility spartan false
+                                action delete_object oldBody
+                                action biped_give_weapon spartan "magnum" primary
+                end
+			    ; # Transform Player into Spartan #
+
+			end
+		end
+	end
+	; # Spectator Mode #
+
+
+;	# Basic Game Logic #
+
+
+
+
+
+;	# Handle Vehicles #
+	trigger player
+
+
+		;	# Get players current Vehicle #
+		temporary object vehicle none
+		action player_get_vehicle current_player vehicle
+		;	# Get players current Vehicle #
+
+
+
+		; # Cause Problems #
+        ;action for_each player
+		;    temporary object veh none
+		;    action player_get_vehicle current_player veh
+        ;    temporary number distance 0
+        ;    action object_get_distance vehicle veh distance
+
+		;		condition if distance >= 1
+        ;            condition if distance <= 6
+        ;                action object_bounce veh
+        ;                action object_bounce vehicle
+        ;end
+		; # Cause Problems #
+
+
+
+
+	    ; # Remove the Players Vehicle if they die or quit #
+	    ;action player_death_get_killing_player current_player killer
+	    ;
+	    ; if current_player.killer_type_is(guardians | suicide | kill | betrayal | quit)
+	    ; 	if current_player.vehicle != none
+	    ; 		vehicle = current_player.vehicle
+	    ; 		if vehicle.player1 == current_player or vehicle.player1 == none
+	    ; 			current_player.vehicle.delete()
+	    ; 			current_player.vehicle = none
+	    ; 			vehicle.delete()
+	    ; 			vehicle = none
+	    ; 		end
+	    ; 	end
+	    ; end
+	    ; # Remove the Players Vehicle if they die or quit #
+
+
+		action set current_player.onVehicle set_to 0
+
+
+		begin
+			temporary object biped current_player
+			condition not if biped == none
+	            condition not object_is_type biped "monitor"
+
+					;	# Check if Player is on vehicle #
+					begin
+						condition if vehicle != none
+							action set current_player.onVehicle set_to 1
+					end
+					;	# Check if Player is on vehicle #
+
+
+		            ; # Handle the Player not being on a Vehicle #
+		            begin
+						condition if current_player.onVehicle == 0
+
+			                ; # Vehicle Respawn Timer has hit 0 #
+			                begin
+								condition if raceStatus >= 2
+				                    condition timer_expired current_player.vehicleRespawnTimer
+				                        begin
+	                                        condition if current_player.vehicle != none
+	                                            action set vehicle = current_player.vehicle
+
+						                        condition if vehicle.player1 == current_player or
+						                        condition if vehicle.player1 == none
+								                    action delete_object current_player.vehicle
+				                                    action set current_player.vehicle = none
+			                                        action set vehicle = none
+			                            end
+				                        action timer_reset current_player.vehicleRespawnTimer
+				            end
+			                ; # Vehicle Respawn Timer has hit 0 #
+
+
+						    ; # If the Player doesn't have a vehicle, Put them in one #
+						    begin
+					            condition if raceStatus >= 2 or
+					            condition if frames < 650
+							        condition if current_player.vehicle == none
+							            begin
+									        condition if defaultVehicle == 0
+											    action create_object "mongoose" at current_player set vehicle label vehicle
+								        end
+							            begin
+									        condition if defaultVehicle == 1
+											    action create_object "warthog" at current_player set vehicle label vehicle
+								        end
+
+									    action set vehicle.player1 = current_player
+									    action set current_player.vehicle = vehicle
+									    action player_set_vehicle current_player current_player.vehicle
+									    action set current_player.onVehicle = 1
+							end
+						    ; # If the Player doesn't have a vehicle, Put them in one #
+
+
+						    ; # If the Player still doesn't have a vehicle, start the Vehicle respawn timer #
+				            action timer_set_rate current_player.vehicleRespawnTimer 1
+						    ; # If the Player still doesn't have a vehicle, start the Vehicle respawn timer #
+
+
+						    ; # Handle Abandoned Vehicles #
+						    action for_each vehicle
+							    condition if current_object.player1 == none
+
+								    ; # If the abandoned vehicle is near the Player, pair them #
+								    condition if current_player.vehicle == none
+		                                temporary number distance 0
+									    action object_get_distance current_object current_player distance
+
+									    condition if distance <= 100
+										    action set current_object.player1 = current_player
+										    action set current_player.vehicle = current_object
+								    ; # If the abandoned vehicle is near the Player, pair them #
+
+						    end
+						    ; # Handle Abandoned Vehicles #
+
+			        end
+				    ; # Handle the Player not being on a Vehicle #
+
+
+		            ; # Handle the Player being on a Vehicle #
+		            begin
+			            condition if current_player.onVehicle == 1
+
+		                    ; # Reset Vehicle Respawn Timer #
+				            action timer_reset current_player.vehicleRespawnTimer
+		                    ; # Reset Vehicle Respawn Timer #
+
+
+		                    ; # Player is on a new Vehicle #
+		                    begin
+		                        condition if current_player.vehicle != vehicle
+			                        action set current_player.vehicle = vehicle
+			                        temporary player oldPlayer vehicle.player1
+			                        action set oldPlayer.vehicle = none
+			                        action set vehicle.player1 = current_player
+		                    end
+		                    ; # Player is on a new Vehicle #
+
+
+		                    ; # Ensure Player is only associated with one Vehicle #
+						    action for_each vehicle
+			                    condition if current_object != vehicle
+			                        condition if current_object.player1 == current_player
+				                        action set current_object.player1 = none
+		                    end
+		                    ; # Ensure Player is only associated with one Vehicle #
+
+
+		                    ; # Update Vehicle Speed #
+		                    action set current_player.vehicleSpeedKPH = 0
+		                    begin
+                                temporary number health 0
+                                action object_get_health current_player health
+                                condition if health < 1
+						            temporary number vehicleSpeedKPH 0
+                                    action object_get_velocity current_player vehicleSpeedKPH
+
+                                    begin
+			                            condition if current_player.vehicleSpeedKPH < 0
+				                            action set current_player.vehicleSpeedKPH = 0
+			                        end
+			                        begin
+			                            condition if current_player.vehicleSpeedKPH > 200
+				                            action set current_player.vehicleSpeedKPH = 200
+			                        end
+		                    end
+		                    ; # Update Vehicle Speed #
+
+                    end
+                    ; # Handle the Player being on a Vehicle #
+
+
+	                ; # Set Player/Vehicle to Invincible if enabled in game options #
+	                begin
+		                condition if invincibility == 1
+	           			    action object_set_invincibility current_player true
+	           			    action object_set_invincibility current_player.vehicle true
+	                end
+	                ; # Set Player/Vehicle to Invincible if enabled in game options #
+
+
+                    ; # Delete all unclaimed abandoned Vehicles #
+					condition if raceStatus >= 2
+                        action for_each vehicle
+                            begin
+	                            condition if current_object.player1 == none
+								    action delete_object current_object
+	                        end
+	                        begin
+	                            condition if current_object.player1 != none
+		                            temporary player racer current_object.player1
+
+								    begin
+		                                condition if racer == none
+										    action delete_object current_object
+		                            end
+
+                                    temporary number distance 0
+							        action object_get_distance current_object racer distance
+								    begin
+		                                condition if distance >= 200
+										    action delete_object current_object
+		                            end
+	                        end
+                        end
+                    ; # Delete all unclaimed abandoned Vehicles #
+
+		end
+	end
+;	# Handle Vehicles #
+
+
+
+
+
+;	# Handle UI #
+
+	trigger player
+
+		;	# Display the players current lap time #
+		action hud_widget_set_text widget widgetText local_player.currentLapSeconds	local_player.currentLapMilliseconds
+		;	# Display the players current lap time #
+
+	end
+
+	trigger player
+		action hud_widget_set_visibility widget current_player false
+		temporary object biped current_player
+		condition not if biped == none
+            condition not object_is_type biped "monitor"
+				condition if raceStatus == 2
+					action hud_widget_set_visibility widget current_player true
+	end
+
+;	# Handle UI #
+
+
+
+
+
+;	# Handle Checkpoints #
+
+	;	# Make sure all players have valid checkpoints #
+	trigger player
+		condition if current_player.currentCheckpoint < firstCheckpoint.number1 or
+		condition if current_player.currentCheckpoint > finalCheckpoint.number1
+			action set current_player.currentCheckpoint set_to firstCheckpoint.number1
+	end
+	;	# Make sure all players have valid checkpoints #
+
+
+	;	# Set Checkpoint Visibility #
+	trigger player
+		condition if current_player.onVehicle == 1
+			condition if waypointVisibility >= 1
+				action for_each race_checkpoint
+					action navpoint_set_visible current_object player current_player 0
+					condition if current_object.number1 == current_player.currentCheckpoint
+						action navpoint_set_visible current_object player current_player 1
+				end
+	end
+	;	# Set Checkpoint Visibility #
+
+
+	;	# The Player has hit the checkpoint #
+	trigger player
+		condition if current_player.onVehicle == 1
+		    condition if startGate == 0 or
+		    condition if raceStatus >= 2
+		        condition if current_player.holeshotPosition == 0
+		            condition if current_player.onVehicle == 1
+			            action for_each race_holeshot
+	                        condition object_in_area current_player current_object
+		                        temporary number highestHSP 0
+		                        action for_each player
+			                        condition if current_player.holeshotPosition > highestHSP
+				                        action set highestHSP set_to current_player.holeshotPosition
+		                        end
+
+		                        begin
+		                                action set highestHSP add 1
+		                                action set current_player.holeshotPosition set_to highestHSP
+		                                condition if highestHSP > 1
+								            action hud_post_message player current_player none holeshotMessage2 current_player.holeshotPosition
+		                        end
+
+		                        condition if holeshotPlayer == none
+			                        action set holeshotPlayer set_to current_player
+						            condition if numberOfPlayers != 1
+							            action for_each player
+								            action hud_post_message player current_player none holeshotMessage holeshotPlayer
+							            end
+			            end
+	end
+
+
+	trigger player
+		condition if current_player.onVehicle == 1
+
+			;	# Get Player Timing #
+			temporary object timing current_player.timing
+			;	# Get Player Timing #
+
+			;	# Get Player Storage #
+			temporary object storage current_player.storage
+			;	# Get Player Storage #
+
+
+			;	# Handle Jokers #
+			begin
+                 condition if requiredJokers > 0
+                    action for_each joker
+
+	                    ;	# Set Waypoint Visibility #
+	                    begin
+		                    condition if waypointVisibility >= 1
+			                    action NavPointSetType current_object navpoint_regicide
+	                    end
+
+	                    begin
+		                    condition if timing.number3 == 1 or
+		                    condition if timing.number4 >= requiredJokers
+			                    action navpoint_set_visible current_object player current_player 0
+	                    end
+
+	                    begin
+		                    condition if raceStatus >= 2
+			                    condition if timing.number4 < requiredJokers
+				                    condition if timing.number3 == 0
+				                        begin
+					                        condition if waypointVisibility >= 1
+							                    action navpoint_set_visible current_object player current_player 1
+						                end
+				                        begin
+					                        condition if waypointVisibility >= 2
+						                        action navpoint_set_priority current_object high
+				                        end
+	                    end
+	                    ;	# Set Waypoint Visibility #
+
+	                    begin
+		                    condition if raceStatus >= 2
+			                    condition if timing.number4 < requiredJokers
+				                    condition if timing.number3 == 0
+		                                condition object_in_area current_player current_object
+			                                action set timing.number4 add 1
+			                                action set timing.number3 set_to 1
+                                            action set timing.number10 = 1 ; sector invalidated
+                                            action set storage.number10 = 1 ; lap invalidated
+			                                action hud_post_message player current_player none jokeredMessage timing.number4 requiredJokers
+	                    end
+                    end
+			end
+			;	# Handle Jokers #
+
+
+            ;	# Handle Missed Checkpoints #
+            begin
+                condition if allowMissedCheckpoints == 1
+			        action for_each race_checkpoint
+				        condition if current_object.number1 > current_player.currentCheckpoint
+					        condition object_in_area current_player current_object
+                                condition if current_object.number1 != finalCheckpoint.number1
+                                    action set timing.number10 = 1
+                                    action set storage.number10 = 1
+                                    temporary player playa current_player
+                                    begin
+	                                    condition if current_player.currentCheckpoint != 0 or
+	                                    condition if current_player.score != 0
+                                            action for_each player
+                                                action hud_post_message player current_player none missedACheckpointMessage playa
+                                            end
+                                    end
+                                    action set current_player.currentCheckpoint = current_object.number1
+                    end
+            end
+            ;	# Handle Missed Checkpoints #
+
+
+			action for_each race_checkpoint
+				condition if current_object.number1 == current_player.currentCheckpoint
+					condition object_in_area current_player current_object
+
+
+				        ; # Player should spawn at this checkpoint after hitting it #
+				        action set timing.object1 = current_object
+				        ; # Player should spawn at this checkpoint after hitting it #
+
+
+						;	# Handle Sector Times #
+						begin
+							condition if current_player.sectorTimeFrames != 0
+								temporary number bestOverallSector 0
+								temporary number bestPersonalSector 0
+
+								;	# Calculate Lap Time #
+								temporary number framesIn current_player.sectorTimeFrames
+								temporary number secondsOut framesIn
+								action set secondsOut divide 60
+								temporary number t secondsOut
+								action set t multiply 60
+								temporary number millisecondsOut framesIn
+								action set millisecondsOut subtract t
+								action set millisecondsOut multiply 1000
+								action set millisecondsOut divide 60
+								;	# Calculate Lap Time #
+
+
+								begin
+									condition if current_object.number5 == 1
+										begin
+											condition if timing.number10 == 0
+												begin
+													condition if timing.number7 == 0 or
+													condition if timing.number7 > current_player.sectorTimeFrames
+														action set timing.number7 set_to current_player.sectorTimeFrames
+														action set bestPersonalSector set_to 1
+												end
+												begin
+													condition if current_object.number7 == 0 or
+													condition if current_object.number7 > current_player.sectorTimeFrames
+														action set current_object.number7 set_to current_player.sectorTimeFrames
+														action set bestOverallSector set_to 1
+												end
+										end
+
+
+										;	# Send Sector Complete Notifications #
+										begin
+											condition if bestOverallSector == 1
+												action hud_post_message player current_player none overallBestSector1Message secondsOut millisecondsOut
+										end
+										begin
+											condition if bestOverallSector != 1
+												condition if bestPersonalSector == 1
+													action hud_post_message player current_player none personalBestSector1Message secondsOut millisecondsOut
+										end
+										begin
+											condition if bestOverallSector != 1
+												condition if bestPersonalSector != 1
+													action hud_post_message player current_player none sector1Message secondsOut millisecondsOut
+										end
+										;	# Send Sector Complete Notifications #
+
+										action set current_player.sectorTimeFrames set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
+										action set timing.number10 set_to 0
+
+
+								        ;   # Display Average Lap time #
+								        begin
+									        condition if current_player.score > 2
+			                                    temporary object vehicle current_player.vehicle
+			                                    action set vehicle.number1 set_to current_player.score
+			                                    action set vehicle.number1 subtract 1
+			                                    action set vehicle.number2 set_to timing.number6
+										        action set vehicle.number2 divide vehicle.number1
+										        action set vehicle.number2 add 1
+										        action set vehicle.number3 set_to vehicle.number2
+								                action set vehicle.number3 divide 60
+								                action set vehicle.number4 set_to vehicle.number3
+								                action set vehicle.number4 multiply 60
+								                action set vehicle.number5 set_to vehicle.number2
+								                action set vehicle.number5 subtract vehicle.number4
+								                action set vehicle.number5 multiply 1000
+								                action set vehicle.number5 divide 60
+										        action hud_post_message player current_player none averageLapMessage vehicle.number3 vehicle.number5
+								        end
+								        ;   # Display Average Lap time #
+								end
+
+
+								begin
+									condition if current_object.number5 == 2
+										begin
+											condition if timing.number10 == 0
+												begin
+													condition if timing.number8 == 0 or
+													condition if timing.number8 > current_player.sectorTimeFrames
+														action set timing.number8 set_to current_player.sectorTimeFrames
+														action set bestPersonalSector set_to 1
+												end
+												begin
+													condition if current_object.number7 == 0 or
+													condition if current_object.number7 > current_player.sectorTimeFrames
+														action set current_object.number7 set_to current_player.sectorTimeFrames
+														action set bestOverallSector set_to 1
+												end
+										end
+
+
+										;	# Send Sector Complete Notifications #
+										begin
+											condition if bestOverallSector == 1
+												action hud_post_message player current_player none overallBestSector2Message secondsOut millisecondsOut
+										end
+										begin
+											condition if bestOverallSector != 1
+												condition if bestPersonalSector == 1
+													action hud_post_message player current_player none personalBestSector2Message secondsOut millisecondsOut
+										end
+										begin
+											condition if bestOverallSector != 1
+												condition if bestPersonalSector != 1
+													action hud_post_message player current_player none sector2Message secondsOut millisecondsOut
+										end
+										;	# Send Sector Complete Notifications #
+
+										action set current_player.sectorTimeFrames set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
+										action set timing.number10 set_to 0
+								end
+
+
+								begin
+									condition if current_object.number5 == 3
+										begin
+											condition if timing.number10 == 0
+												begin
+													condition if timing.number9 == 0 or
+													condition if timing.number9 > current_player.sectorTimeFrames
+														action set timing.number9 set_to current_player.sectorTimeFrames
+														action set bestPersonalSector set_to 1
+												end
+												begin
+													condition if current_object.number7 == 0 or
+													condition if current_object.number7 > current_player.sectorTimeFrames
+														action set current_object.number7 set_to current_player.sectorTimeFrames
+														action set bestOverallSector set_to 1
+												end
+										end
+
+
+										;	# Send Sector Complete Notifications #
+										begin
+											condition if bestOverallSector == 1
+												action hud_post_message player current_player none overallBestSector3Message secondsOut millisecondsOut
+										end
+										begin
+											condition if bestOverallSector != 1
+												condition if bestPersonalSector == 1
+													action hud_post_message player current_player none personalBestSector3Message secondsOut millisecondsOut
+										end
+										begin
+											condition if bestOverallSector != 1
+												condition if bestPersonalSector != 1
+													action hud_post_message player current_player none sector3Message secondsOut millisecondsOut
+										end
+										;	# Send Sector Complete Notifications #
+
+										action set current_player.sectorTimeFrames set_to 0		; sectorStartFrame -- Set Frame number the user started the current sector on
+										action set timing.number10 set_to 0
+								end
+
+						end
+						;	# Handle Sector Times #
+
+
+                        ;   # Update Optimal Laptime #
+                        begin
+
+                            ;	# Calculate Lap Time #
+							temporary number framesIn timing.number7
+                            action set framesIn add timing.number8
+                            action set framesIn add timing.number9
+                            temporary number secondsOut framesIn
+                            action set secondsOut divide 60
+                            temporary number t secondsOut
+                            action set t multiply 60
+                            temporary number millisecondsOut framesIn
+                            action set millisecondsOut subtract t
+                            action set millisecondsOut multiply 1000
+                            action set millisecondsOut divide 60
+                            ;	# Calculate Lap Time #
+
+
+                            temporary number oldOptimalFrames timing.number2
+                            action set timing.number2 set_to framesIn
+
+
+                            begin
+                                condition if sectorCount >= 1
+                                    condition if timing.number7 == 0
+                                        action set timing.number2 set_to 0
+                            end
+                            begin
+                                condition if sectorCount >= 2
+                                    condition if timing.number7 == 0
+                                        action set timing.number2 set_to 0
+                            end
+                            begin
+                                condition if sectorCount >= 3
+                                    condition if timing.number7 == 0
+                                        action set timing.number2 set_to 0
+                            end
+
+
+                            condition if timing.number2 != 0
+                                condition if timing.number2 != oldOptimalFrames
+                                    action hud_post_message player current_player none optimalLapMessage secondsOut millisecondsOut
+
+
+                        end
+                        ;   # Update Optimal Laptime #
+
+
+						;	# Find next checkpoint #
+						temporary number nextCheckpointNumber finalCheckpoint.number1
+						action set nextCheckpointNumber add 1
+						action for_each race_checkpoint
+							condition if current_object.number1 > current_player.currentCheckpoint
+								condition if current_object.number1 < nextCheckpointNumber
+									action set nextCheckpointNumber set_to current_object.number1
+						end
+						;	# Find next checkpoint #
+
+
+						;	# Update Player Current Checkpoint #
+						action set current_player.currentCheckpoint set_to nextCheckpointNumber
+						;	# Update Player Current Checkpoint #
+
+
+						;	# Player has completed a lap #
+						condition if current_player.currentCheckpoint > finalCheckpoint.number1
+							condition if raceStatus == 2
+								temporary number bestPersonalLap	0
+								temporary number bestOverallLap		0
+
+
+								;   # Set Player first lap time #
+								begin
+								    condition if current_player.score == 0
+								        condition if storage.number1 == 0
+							                action set storage.number1 set_to frames
+							                action set storage.number2 set_to framesOverflow
+								end
+								;   # Set Player first lap time #
+
+
+								;   # Set Time of last completed lap #
+                                action set storage.number3 set_to frames
+                                action set storage.number4 set_to framesOverflow
+								;   # Set Time of last completed lap #
+
+
+								;	# Reset Player checkpoint counter #
+								action set current_player.currentCheckpoint set_to firstCheckpoint.number1
+								;	# Reset Player checkpoint counter #
+
+
+								;	# Increment Player Score #
+								action set_score add 1 player current_player
+								;	# Increment Player Score #
+
+
+								;   # Update Average Lap time #
+								begin
+									condition if current_player.score > 1
+										action set timing.number6 add current_player.lapFrames
+								end
+								;   # Update Average Lap time #
+
+
+								;	# Set Player Best Lap #
+								begin
+									condition if storage.number10 == 0
+									    condition if current_player.score > 1
+									        condition if timing.number1 == 0 or
+									        condition if current_player.lapFrames < timing.number1
+												    action set bestPersonalLap set_to 1
+												    action set timing.number1 set_to current_player.lapFrames
+												    action set timing.number1 subtract 1
+								end
+								;	# Set Player Best Lap #
+
+
+								;	# Set Fastest Laptime #
+								begin
+									condition if storage.number10 == 0
+									    condition if current_player.score > 1
+									        condition if bestLapFrames == 0 or
+									        condition if current_player.lapFrames < bestLapFrames
+											    action set bestOverallLap set_to 1
+											    action set bestLapFrames set_to current_player.lapFrames
+											    action set bestLapPlayer set_to current_player
+								end
+								;	# Set Fastest Laptime #
+
+
+								;	# Send Lap Complete Notifications #
+								begin
+									condition if bestOverallLap == 1
+										condition if current_player.score > 1
+											action hud_post_message player current_player none overallBestLapMessage current_player.currentLapSeconds current_player.currentLapMilliseconds
+								end
+								begin
+									condition if bestOverallLap != 1
+										condition if bestPersonalLap == 1
+											condition if current_player.score > 1
+												action hud_post_message player current_player none personalBestLapMessage current_player.currentLapSeconds current_player.currentLapMilliseconds
+								end
+								begin
+									condition if bestOverallLap != 1
+										condition if bestPersonalLap != 1
+											action hud_post_message player current_player none lapCompleteMessage	current_player.currentLapSeconds	current_player.currentLapMilliseconds
+								end
+								;action submit_incident lap_complete player current_player player none
+								;	# Send Lap Complete Notifications #
+
+
+	                            ;	# Get Player Definite Position #
+	                            temporary player racer current_player
+	                            temporary number position 1
+
+                                ;	# Find out how many players are ahead #
+                                action for_each player
+
+                                    begin
+                                        condition if current_player.score > racer.score
+	                                        action set position add 1
+                                    end
+
+
+                                    condition if current_player.score == racer.score
+
+                                        begin
+	                                        condition if current_player.currentCheckpoint > racer.currentCheckpoint
+		                                        action set position add 1
+                                        end
+
+                                        condition if current_player.currentCheckpoint == racer.currentCheckpoint
+	                                        condition if racer.sectorTimeFrames < current_player.sectorTimeFrames
+		                                        action set position add 1
+
+                                end
+                                ;	# Find out how many players are ahead #
+	                            ;	# Get Player Definite Position #
+
+
+								;   # Send Lap Led Medal #
+								begin
+									condition if position == 1
+										action AwardMedal player current_player triple_double
+								end
+								;   # Send Lap Led Medal #
+
+
+								;   # Send Finish Message #
+								begin
+									condition not if finalLap == 0
+										condition if current_player.score == finalLap
+											action hud_post_message player current_player none finishMessage	position
+								end
+								;   # Send Finish Message #
+
+								action set storage.number10 = 0 ; lap invalidated
+								action set timing.number3 set_to 0	; Reset joker flag
+								action set current_player.lapFrames set_to 1	; Reset lap frame count
+						;	# Player has completed a lap #
+
+
+						;	# Start the race when someone hits a checkpoint #
+						condition if raceStatus < 2
+							action set raceStatus set_to 2
+							action set current_player.lapFrames set_to 1
+							action set frames set_to 0
+						;	# Start the race when someone hits a checkpoint #
+
+			end
+	end
+	;	# The Player has hit the checkpoint #
+
+
+;	# Handle Checkpoints #
+
+
+
+
+	;	# Police Offtrack Speeding #
+	trigger player
+		condition if raceStatus >= 2
+			begin
+				condition if finalCheckpoint.number3 == 0
+					action for_each player
+                        temporary object vehicle current_player.vehicle
+                        temporary number isOffTrack 0
+           				temporary number orientation 0
+           				action object_get_orientation vehicle orientation
+
+						begin
+							condition if orientation == 1
+						         temporary object timing current_player.timing
+						         temporary object storage current_player.storage
+						         temporary number vehicleSpeedKPH 0
+                                 action object_get_velocity current_player vehicleSpeedKPH
+						         action for_each slow_zone
+							         begin
+								         condition if current_player.onVehicle == 1
+								             condition object_in_area current_player current_object
+									             action set isOffTrack = 1
+									             action set timing.number10 = 1 ; sector invalidated
+									             action set storage.number10 = 1 ; lap invalidated
+							         end
+						         end
+						         begin
+							         condition if isOffTrack == 1
+								         begin
+									         condition if vehicleSpeedKPH > 40 ; Speed Limit
+									             begin
+										             condition if vehicle.number6 >= 12 ;Max amount of warnings until penalty is applied
+											             action set storage.number7 += 300 ;timing.penalty
+											             action set vehicle.number6 = 0
+											             action hud_post_message player current_player none penaltyMessage 5
+									             end
+
+									             begin
+										             condition if vehicle.number6 < 12
+											             action set vehicle.number6 += 3
+											             action hud_post_message player current_player none slowDownMessage
+											             action play_sound player current_player respawn_tick
+									             end
+								         end
+						         end
+						end
+						begin
+			                begin
+			                    condition if vehicle.number6 > 0
+				                    action set vehicle.number6 -= 1
+			                end
+			                begin
+				                condition if vehicle.number6 <= 0
+					                action set vehicle.number6 = 0
+			                end
+						end
+						condition if current_player.onVehicle == 0
+							action set vehicle.number6 = 0
+					end
+			end
+	end
+
+	;	# Police Offtrack Speeding #
+
+
+
+	trigger player
+		begin
+			temporary object biped none
+			action set biped set_to current_player
+				condition if current_player.local_target equal_to none
+					condition not if biped equal_to none
+						condition not timer_expired current_player.delay
+							action object_detach current_player.vehicle
+							action create_object "monitor" at current_player set current_player.local_target label Target
+							action object_attach current_player.local_target current_player 8 0 5
+							action object_detach current_player.local_target
+							action timer_set_rate current_player.delay 100
+		end
+	end
+
+
+
+
+
+	trigger local
+
+
+		;	# Detect Client Player #
+		action for_each player
+			begin
+				condition timer_expired current_player.delay
+					action for_each Target
+						action delete_object current_object
+						action player_set_vehicle current_player current_player.vehicle
+					end
+			end
+			begin
+				action player_get_target_object current_player target
+				condition not if target equal_to none
+					action set client set_to current_player
+			end
+			begin
+				condition if client equal_to current_player
+
+
+	                ;	# Set Checkpoint Visibility #
+	                    begin
+		                    condition if client.onVehicle == 1
+			                    condition if waypointVisibility >= 3
+				                    action for_each race_checkpoint
+					                    action boundary_set_visible current_object no_one
+					                    condition if current_object.number1 == current_player.currentCheckpoint
+					                        action boundary_set_visible current_object everyone
+				                    end
+				        end
+	                ;	# Set Checkpoint Visibility #
+
+
+					;	# Hide Invisible Race Objects #
+						action for_each race_hide
+							action hide_object current_object true
+						end
+					;	# Hide Invisible Race Objects #
+
+
+					condition if raceStatus == 2
+
+						begin
+							condition if host == 0
+
+
+								;	# Set Current Local Lap time #
+								action set localCurrentLapSeconds set_to localLapFrames
+								action set localCurrentLapSeconds divide 60
+								temporary number t localCurrentLapSeconds
+								action set t multiply 60
+								action set localCurrentLapMilliseconds set_to localLapFrames
+								action set localCurrentLapMilliseconds subtract t
+								action set localCurrentLapMilliseconds multiply 1000
+								action set localCurrentLapMilliseconds divide 60
+								;	# Set Current Local Lap time #
+
+
+								;	# Display the players current lap time #
+								begin
+									condition if localCurrentLapMilliseconds >= 100
+										action hud_widget_set_text widget widgetText localCurrentLapSeconds	localCurrentLapMilliseconds
+								end
+								begin
+									condition if localCurrentLapMilliseconds < 100
+										condition if localCurrentLapMilliseconds >= 10
+											action hud_widget_set_text widget widgetText2 localCurrentLapSeconds	localCurrentLapMilliseconds
+								end
+								begin
+									condition if localCurrentLapMilliseconds < 10
+										action hud_widget_set_text widget widgetText3 localCurrentLapSeconds
+								end
+								;	# Display the players current lap time #
+
+
+								;	# Increment the player frame counters #
+								action set localLapFrames add 1
+								;	# Increment the player frame counters #
+
+
+								;	# Player has completed a lap #
+									condition if localLapFrames > 15
+										condition if client.onVehicle == 1
+							                action for_each race_checkpoint
+								                condition if current_object.number1 == client.currentCheckpoint
+									                condition if current_object.number1 == finalCheckpoint.number1
+										                condition object_in_area client current_object
+											                action set localLapFrames set_to 0
+								;	# Player has completed a lap #
+
+					end
+
+			end
+		end
+		;	# Detect Client Player #
+
+	end
