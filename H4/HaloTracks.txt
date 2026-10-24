@@ -10,7 +10,7 @@ include "strings/common_strings.txt"
 		engine_category_slayer				"Slayer"
 		title								"Race"
 		description							"Gentlemen, start your engines."
-		objective							"HaloTracks Race Gametype v1.1"
+		objective							"HaloTracks Race Gametype v1.2"
 		objective2							"Race length %n laps"
 		objective3							"Race length %n minutes"
 		objective4							"Race length %n minutes + %n laps"
@@ -76,7 +76,7 @@ include "strings/common_strings.txt"
 		penaltyMessage                      "You have earned yourself a %ns penalty bud"
 		slowDownMessage                     "Slow down or you will get a penalty"
 		missedACheckpointMessage            "This %p fucker missed a checkpoint"
-		debug								"%t"
+		debug								"%n"
 	end
 
 ;	# String Tables #
@@ -127,10 +127,6 @@ include "strings/common_strings.txt"
 
 	map_object race_gate
 		label "race_gate"
-	end
-
-	map_object cv_delete
-		label "cv_delete"
 	end
 
 	map_object vehicle
@@ -282,44 +278,44 @@ include "strings/common_strings.txt"
 ;	# Variables #
 
 	variables global
-		local	number	roundTime					0
-		local   number  bestLapFrames               0
-		local	number	frames						0
-		local   number  framesOverflow              0
-		local		number	host						0
-		local		number	localCurrentLapSeconds		0
-		local		number	localCurrentLapMilliseconds	0
-		local		number	localLapFrames				0
-		local	number	startGateFrame				0
-		networked	number	raceStatus					0
-		local	number	numberOfPlayers				0
-		local	number	checkpointCount				0
-		local	number	sectorCount					0
-		local	number	finalLap     				0
-		local	number	flag         				0
-		local	object	firstCheckpoint				none
-		networked	object	finalCheckpoint				none
-		local		object	target						none
-		local	player	holeshotPlayer				none
-		local	player	bestLapPlayer				none
-		local		player	client						none
+		local		number	roundTime						0
+		local   	number  bestLapFrames               	0
+		local		number	frames							0
+		local   	number  framesOverflow              	0
+		local		number	host							0
+		local		number	localCurrentLapSeconds			0
+		local		number	localCurrentLapMilliseconds		0
+		local		number	localLapFrames					0
+		local		number	startGateFrame					0
+		networked	number	raceStatus						0
+		local		number	numberOfPlayers					0
+		local		number	checkpointCount					0
+		local		number	sectorCount						0
+		local		number	finalLap     					0
+		local		number	flag         					0
+		local		object	firstCheckpoint					none
+		networked	object	finalCheckpoint					none
+		local		object	target							none
+		local		player	holeshotPlayer					none
+		local		player	bestLapPlayer					none
+		local		player	client							none
 	end
 
 
 	variables player
-		local	number	holeshotPosition    		0
-		local	number	lapFrames					0
-		local	number	vehicleSpeedKPH    			0
-		local	number	currentLapSeconds			0
-		local	number	currentLapMilliseconds		0
+		local		number	holeshotPosition    		0
+		local		number	lapFrames					0
+		local		number	vehicleSpeedKPH    			0
+		local		number	currentLapSeconds			0
+		local		number	currentLapMilliseconds		0
 		networked	number	onVehicle					0
 		networked	number	currentCheckpoint			-1
-		local	number	sectorTimeFrames			0
-		local	number	position					1
+		local		number	sectorTimeFrames			0
+		local		number	position					1
 		networked	object	vehicle						none
 		local		object	local_target				none
-		local	object	timing						none
-		local	object	storage						none
+		local		object	timing						none
+		local		object	storage						none
 		networked	timer	delay						2
 		networked	timer	vehicleRespawnTimer			respawnTime
 	end
@@ -327,17 +323,17 @@ include "strings/common_strings.txt"
 
 	variables object
 		networked	number	number1						0    ; Timing.bestLapFrames | Checkpoint.order | Storage.firstLapTimeFrames
-		local	number	number2              		0    ; Timing.optimalLapFrames | Storage.firstLapTimeFramesOverflow
-		local	number	number3     				0    ; Timing.jokeredThisLap | Storage.endTimeFrames
-		local	number	number4 					0    ; Timing.jokerCount | Storage.endTimeFramesOverflow
-		local	number	number5						0    ; Timing.sector | Storage.respawnTimer
-		local	number	number6         			0    ; Timing.averageLapFrames
-		local	number	number7             		0    ; Timing.bestSector1TimeFrames | Checkpoint.bestSectorTimeFrames | Storage.penalty
-		local	number	number8             		0    ; Timing.bestSector2TimeFrames
-		local	number	number9             		0    ; Timing.bestSector3TimeFrames
-		local	number	number10        			1    ; Timing.sectorInvalidated | Storage.lapInvalidated
-		local   player  player1                     none ; Vehicle.player0
-		local   object  object1                     none ; Timing.respawnObject
+		local		number	number2              		0    ; Timing.optimalLapFrames | Checkpoint.debounce1 | Storage.firstLapTimeFramesOverflow
+		local		number	number3     				0    ; Timing.jokeredThisLap | Checkpoint.debounce2 | Storage.endTimeFrames
+		local		number	number4 					0    ; Timing.jokerCount | Storage.endTimeFramesOverflow
+		local		number	number5						0    ; Timing.sector | Checkpoint.raceLapUsed | Storage.respawnTimer
+		local		number	number6         			0    ; Timing.averageLapFrames
+		local		number	number7             		0    ; Timing.bestSector1TimeFrames | Checkpoint.bestSectorTimeFrames | Storage.penalty
+		local		number	number8             		0    ; Timing.bestSector2TimeFrames
+		local		number	number9             		0    ; Timing.bestSector3TimeFrames
+		local		number	number10        			1    ; Timing.sectorInvalidated | Storage.lapInvalidated
+		local   	player  player1                     none ; Vehicle.player0
+		local   	object  object1                     none ; Timing.respawnObject
 	end
 
 ;	# Variables #
@@ -380,12 +376,17 @@ include "strings/common_strings.txt"
 
 		;	# Initialize Checkpoints
 			action for_each race_checkpoint
-
 				action set current_object.number1 set_to current_object.user_data
+				action set current_object.number5 set_to 0
 				action set current_object.team set_to neutral
 				action object_set_invincibility current_object true
 				action navpoint_set_visible current_object no_one
-
+			end
+			action for_each race_lap
+				action set current_object.number5 set_to 1
+				action set finalCheckpoint = current_object
+			end
+			action for_each race_checkpoint
 
 				;	# Set Waypoint Type #
 				begin
@@ -400,12 +401,12 @@ include "strings/common_strings.txt"
 				;	# Set Waypoint Type #
 
 
-
 				;	# Set finalCheckpoint #
 				begin
 					condition if finalCheckpoint == none or
 					condition if current_object.number1 > finalCheckpoint.number1
-						action set finalCheckpoint = current_object
+					    condition if finalCheckpoint.number5 == 0
+						    action set finalCheckpoint = current_object
 				end
 				;	# Set finalCheckpoint #
 
@@ -420,6 +421,58 @@ include "strings/common_strings.txt"
 
 			end
 		;	# Initialize Checkpoints
+
+
+		;	# Reorder Checkpoints #
+		begin
+		    action for_each race_checkpoint
+		        condition if current_object.number1 <= finalCheckpoint.number1
+			        action set current_object.number1 add 100
+	        end
+		    temporary number count 0
+		    action for_each race_checkpoint
+		        temporary number nextCheckpointOrder -1
+
+                ;	# Find Next Checkpoint #
+                begin
+		            action for_each race_checkpoint
+		                begin
+                            condition if nextCheckpointOrder < 0
+                                condition if current_object.number1 >= count
+	                                action set nextCheckpointOrder = current_object.number1
+                        end
+                        begin
+                            condition if current_object.number1 >= count
+                                condition if current_object.number1 < nextCheckpointOrder
+                                    action set nextCheckpointOrder = current_object.number1
+                        end
+                    end
+                end
+                ;	# Find Next Checkpoint #
+
+                ;	# Change the order value on all checkpoints with that value #
+		        action for_each race_checkpoint
+                    condition if nextCheckpointOrder >= 0
+                        condition if nextCheckpointOrder == current_object.number1
+                            action set current_object.number1 = count
+                end
+                ;	# Change the order value on all checkpoints with that value #
+
+                action set count add 1
+            end
+        end
+        ;    # Reorder Checkpoints #
+
+
+		;	# Set firstCheckpoint #
+			action for_each race_checkpoint
+				begin
+					condition if firstCheckpoint == none or
+					condition if current_object.number1 < firstCheckpoint.number1
+						action set firstCheckpoint = current_object
+				end
+			end
+		;	# Set firstCheckpoint #
 
 
 		;	# Count Distinct Checkpoints #
@@ -566,13 +619,6 @@ include "strings/common_strings.txt"
 		action set raceStatus set_to 1
 		action set host set_to 1
 		action SetMedalScoring false
-
-
-	    action for_each player
-            ;action set current_player.vehicleRespawnTimer set_to respawnTime
-            ;action timer_reset current_player.vehicleRespawnTimer
-	    end
-
 	end
 
 ;	# Initialize #
