@@ -11,7 +11,7 @@ include "strings/engine_category_strings.txt"
 	string_table english
 		title								"Race"
 		description							"Gentlemen, start your engines."
-		objective							"HaloTracks Race Gametype v0.1"
+		objective							"HaloTracks Race Gametype v0.2"
 		objective2							"Race length %n laps"
 		objective3							"Race length %n minutes"
 		objective4							"Race length %n minutes + %n laps"
@@ -29,7 +29,9 @@ include "strings/engine_category_strings.txt"
 		optionNameVehicle					"Vehicle"
 		optionDescriptionVehicle			"Determines what vehicle players will use in this race."
 		optionVehicleMongoose				"Mongoose"
+		optionVehicleGungoose				"Gungoose"
 		optionVehicleWarthog				"Warthog"
+		optionVehicleCivilianWarthog		"Civilian Warthog"
 		optionNameStartGate					"Start Gate"
 		optionDescriptionStartGate			"If enabled, objects with the label race_gate will disappear at the selected time."
 		optionNameAllowMissedCheckpoints	"Allow Missed Checkpoints"
@@ -150,10 +152,6 @@ include "strings/engine_category_strings.txt"
 		label "slow_zone"
 	end
 
-	map_object race_lap
-		label "race_lap"
-	end
-
 ;	# Object Labels #
 
 
@@ -222,8 +220,10 @@ include "strings/engine_category_strings.txt"
 		end
 
 		option	defaultVehicle	optionNameVehicle	optionDescriptionVehicle	0
-			0	optionVehicleMongoose	    ""
-			1	optionVehicleWarthog	    ""
+			0	optionVehicleMongoose	        ""
+			1	optionVehicleGungoose	        ""
+			2	optionVehicleWarthog	        ""
+			3	optionVehicleCivilianWarthog	""
 		end
 
 		option	startGate		optionNameStartGate	optionDescriptionStartGate	1
@@ -372,7 +372,6 @@ include "strings/engine_category_strings.txt"
 
 	trigger initialization
 
-
 		;	# Initialize Checkpoints
 			action for_each race_checkpoint
 				action set current_object.number1 set_to current_object.user_data
@@ -482,15 +481,15 @@ include "strings/engine_category_strings.txt"
 				condition if checkpointCount <= 3
 					action for_each race_checkpoint
 						begin
-							condition if current_object.number1 == 0
+							condition if current_object.number1 == 1
 								action set sector1 set_to current_object
 						end
 						begin
-							condition if current_object.number1 == 1
+							condition if current_object.number1 == 2
 								action set sector2 set_to current_object
 						end
 						begin
-							condition if current_object.number1 == 2
+							condition if current_object.number1 == 3
 								action set sector3 set_to current_object
 						end
 					end
@@ -1126,7 +1125,15 @@ include "strings/engine_category_strings.txt"
 								        end
 							            begin
 									        condition if defaultVehicle == 1
+											    action create_object "gungoose" at current_player set vehicle label vehicle
+								        end
+							            begin
+									        condition if defaultVehicle == 2
 											    action create_object "warthog" at current_player set vehicle label vehicle
+								        end
+							            begin
+									        condition if defaultVehicle == 3
+											    action create_object "h2a_warthog_civ" at current_player set vehicle label vehicle
 								        end
 
 									    action set vehicle.player1 = current_player
