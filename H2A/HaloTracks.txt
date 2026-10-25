@@ -325,7 +325,7 @@ include "strings/engine_category_strings.txt"
 		local		number	number2              		0    ; Timing.optimalLapFrames | Checkpoint.debounce1 | Storage.firstLapTimeFramesOverflow
 		local		number	number3     				0    ; Timing.jokeredThisLap | Checkpoint.debounce2 | Storage.endTimeFrames
 		local		number	number4 					0    ; Timing.jokerCount | Storage.endTimeFramesOverflow
-		local		number	number5						0    ; Timing.sector | Checkpoint.raceLapUsed | Storage.respawnTimer
+		local		number	number5						0    ; Timing.sector | Storage.respawnTimer
 		local		number	number6         			0    ; Timing.averageLapFrames
 		local		number	number7             		0    ; Timing.bestSector1TimeFrames | Checkpoint.bestSectorTimeFrames | Storage.penalty
 		local		number	number8             		0    ; Timing.bestSector2TimeFrames
