@@ -10,7 +10,7 @@ include "strings/common_strings.txt"
 		engine_category_slayer				"Slayer"
 		title								"Race"
 		description							"Gentlemen, start your engines."
-		objective							"HaloTracks Race Gametype v1.2"
+		objective							"HaloTracks Race Gametype v1.3"
 		objective2							"Race length %n laps"
 		objective3							"Race length %n minutes"
 		objective4							"Race length %n minutes + %n laps"
@@ -35,6 +35,8 @@ include "strings/common_strings.txt"
 		optionDescriptionAllowMissedCheckpoints    "If enabled, racers will be able to continue their lap without going back for a missed checkpoint."
 		optionNameRespawnTime               "Vehicle Respawn Time"
 		optionDescriptionRespawnTime        "If enabled, you will be placed on a vehicle after the allotted time"
+		optionNameHideObjects               "Hide Hidden Objects"
+		optionDescriptionHideObjects        "If enabled, hidden objects will stay hidden. This is used for testing maps with hidden objects."
 		optionStartGate1					"20 +/- 5"
 		optionStartGate2					"30 +/- 10"
 		optionStartGate3					"40 +/- 20"
@@ -174,7 +176,7 @@ include "strings/common_strings.txt"
 		override		round_count						1
 		override		round_time_limit				0
 		override		early_victory_win_count			0
-		override		indestructible_vehicles			1
+		override		indestructible_vehicles			0
 		override		grenades_on_map					0
 		override		vehicle_set						no_vehicles
 
@@ -224,7 +226,7 @@ include "strings/common_strings.txt"
 
 		option	defaultVehicle	optionNameVehicle	optionDescriptionVehicle	0
 			0	optionVehicleMongoose	    ""
-			1	optionVehicleWarthog	    ""
+			;1	optionVehicleWarthog	    ""
 		end
 
 		option	startGate		optionNameStartGate	optionDescriptionStartGate	1
@@ -259,12 +261,17 @@ include "strings/common_strings.txt"
 			1	option_enabled	""
 		end
 
-		option	respawnTime	optionNameRespawnTime	optionDescriptionRespawnTime	0
+		option	respawnTime	optionNameRespawnTime	optionDescriptionRespawnTime	7
 			-1	option_disabled	   ""
 			0	optionInstant	   ""
             3   optionThreeSeconds ""
             5   optionFiveSeconds  ""
             7   optionSevenSeconds ""
+		end
+
+		option	hide	optionNameHideObjects	optionDescriptionHideObjects	1
+			0	option_disabled	""
+			1	option_enabled	""
 		end
 
 	end
@@ -571,9 +578,12 @@ include "strings/common_strings.txt"
 
 
 		;	# Hide Invisible Race Objects #
-			action for_each race_hide
-				action hide_object current_object true
-			end
+		begin
+			condition if hide == 1
+			    action for_each race_hide
+				    action hide_object current_object true
+			    end
+		end
 		;	# Hide Invisible Race Objects #
 
 
@@ -728,7 +738,8 @@ include "strings/common_strings.txt"
 
 	;	# Hide Invisible Race Objects #
 		trigger race_hide
-			action hide_object current_object true
+			condition if hide == 1
+				action hide_object current_object true
 		end
 	;	# Hide Invisible Race Objects #
 
@@ -744,7 +755,7 @@ include "strings/common_strings.txt"
 			    action object_set_invincibility current_player.vehicle false
 		        action delete_object current_player.vehicle
 		end
-		action object_set_invincibility current_player.vehicle true
+		action object_adjust_health current_player.vehicle = 100
 
 		;condition if current_player.onVehicle == 0
 		;	temporary object weapon none
@@ -1041,6 +1052,8 @@ include "strings/common_strings.txt"
 ;	# Handle Vehicles #
 	trigger player
 
+        condition if raceStatus >= 2 or
+        condition if frames > 650
 
 		;	# Get players current Vehicle #
 		temporary object vehicle none
@@ -1125,7 +1138,7 @@ include "strings/common_strings.txt"
 						    ; # If the Player doesn't have a vehicle, Put them in one #
 						    begin
 					            condition if raceStatus >= 2 or
-					            condition if frames < 650
+					            condition if frames < 700
 							        condition if current_player.vehicle == none
 							            begin
 									        condition if defaultVehicle == 0
@@ -1921,7 +1934,6 @@ include "strings/common_strings.txt"
 				condition timer_expired current_player.delay
 					action for_each Target
 						action delete_object current_object
-						action player_set_vehicle current_player current_player.vehicle
 					end
 			end
 			begin
@@ -1947,9 +1959,12 @@ include "strings/common_strings.txt"
 
 
 					;	# Hide Invisible Race Objects #
-						action for_each race_hide
-							action hide_object current_object true
-						end
+                    begin
+                    	condition if hide == 1
+						    action for_each race_hide
+							    action hide_object current_object true
+						    end
+					end
 					;	# Hide Invisible Race Objects #
 
 
