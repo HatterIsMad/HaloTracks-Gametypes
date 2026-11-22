@@ -33,6 +33,8 @@ include "strings/common_strings.txt"
 		optionDescriptionAllowMissedCheckpoints    "If enabled, racers will be able to continue their lap without going back for a missed checkpoint."
 		optionNameRespawnTime               "Vehicle Respawn Time"
 		optionDescriptionRespawnTime        "If enabled, you will be placed on a vehicle after the allotted time"
+		optionNameHideObjects               "Hide Hidden Objects"
+		optionDescriptionHideObjects        "If enabled, hidden objects will stay hidden. This is used for testing maps with hidden objects."
 		optionStartGate1					"20 +/- 5"
 		optionStartGate2					"30 +/- 10"
 		optionStartGate3					"40 +/- 20"
@@ -159,7 +161,7 @@ include "strings/common_strings.txt"
 		override		round_count						1
 		override		round_time_limit				0
 		override		early_victory_win_count			0
-		override		indestructible_vehicles			1
+		override		indestructible_vehicles			0
 		override		grenades_on_map					0
 		override		vehicle_set						no_vehicles
 
@@ -237,12 +239,17 @@ include "strings/common_strings.txt"
 			1	option_enabled	""
 		end
 
-		option	respawnTime	optionNameRespawnTime	optionDescriptionRespawnTime	0
+		option	respawnTime	optionNameRespawnTime	optionDescriptionRespawnTime	7
 			-1	option_disabled	   ""
 			0	optionInstant	   ""
             3   optionThreeSeconds ""
             5   optionFiveSeconds  ""
             7   optionSevenSeconds ""
+		end
+
+		option	hide	optionNameHideObjects	optionDescriptionHideObjects	1
+			0	option_disabled	""
+			1	option_enabled	""
 		end
 
 	end
@@ -289,7 +296,7 @@ include "strings/common_strings.txt"
 		local		number	sectorTimeFrames			0
 		local		number	position					1
 		networked	object	vehicle						none
-		local		object	local_target				none
+		networked	object	draftObject 				none
 		local		object	timing						none
 		local		object	storage						none
 		networked	timer	delay						2
@@ -298,17 +305,20 @@ include "strings/common_strings.txt"
 
 
 	variables object
-		networked	number	number1						0    ; Timing.bestLapFrames | Checkpoint.order | Storage.firstLapTimeFrames
-		local		number	number2              		0    ; Timing.optimalLapFrames | Checkpoint.debounce1 | Storage.firstLapTimeFramesOverflow
-		local		number	number3     				0    ; Checkpoint.debounce2 | Storage.endTimeFrames
-		local		number	number4 					0    ; Storage.endTimeFramesOverflow
-		local		number	number5						0    ; Timing.sector | Storage.respawnTimer
-		local		number	number6         			0    ; Timing.averageLapFrames
-		local		number	number7             		0    ; Timing.bestSector1TimeFrames | Checkpoint.bestSectorTimeFrames
-		local		number	number8             		0    ; Timing.bestSector2TimeFrames
+		networked	number	number1						0    ; Timing.bestLapFrames | Checkpoint.order | Storage.firstLapTimeFrames | DraftObject.distance1
+		local		number	number2              		0    ; Timing.optimalLapFrames | Checkpoint.debounce1 | Storage.firstLapTimeFramesOverflow | DraftObject.growing1
+		local		number	number3     				0    ; Checkpoint.debounce2 | Storage.endTimeFrames | DraftObject.distance2
+		local		number	number4 					0    ; Storage.endTimeFramesOverflow | DraftObject.growing2
+		local		number	number5						0    ; Timing.sector | Storage.respawnTimer | DraftObject.distance3
+		local		number	number6         			0    ; Timing.averageLapFrames | DraftObject.growing3
+		local		number	number7             		0    ; Timing.bestSector1TimeFrames | Checkpoint.bestSectorTimeFrames | DraftObject.distance4
+		local		number	number8             		0    ; Timing.bestSector2TimeFrames | DraftObject.growing4
 		local		number	number9             		0    ; Timing.bestSector3TimeFrames
 		local		number	number10        			1    ; Timing.sectorInvalidated | Storage.lapInvalidated
-		local   	player  player1                     none ; Vehicle.player0
+		local   	player  player1                     none ; Vehicle.player1 | DraftObject.player1
+		local   	player  player2                     none ; DraftObject.player2
+		local   	player  player3                     none ; DraftObject.player3
+		local   	player  player4                     none ; DraftObject.player4
 		local   	object  object1                     none ; Timing.respawnObject
 	end
 
@@ -547,9 +557,12 @@ include "strings/common_strings.txt"
 
 
 		;	# Hide Invisible Race Objects #
-			action for_each race_hide
-				action hide_object current_object true
-			end
+		begin
+			condition if hide == 1
+			    action for_each race_hide
+				    action hide_object current_object true
+			    end
+		end
 		;	# Hide Invisible Race Objects #
 
 
@@ -704,7 +717,8 @@ include "strings/common_strings.txt"
 
 	;	# Hide Invisible Race Objects #
 		trigger race_hide
-			action hide_object current_object true
+			condition if hide == 1
+				action hide_object current_object true
 		end
 	;	# Hide Invisible Race Objects #
 
@@ -720,7 +734,7 @@ include "strings/common_strings.txt"
 			    action object_set_invincibility current_player.vehicle false
 		        action delete_object current_player.vehicle
 		end
-		action object_set_invincibility current_player.vehicle true
+		action object_adjust_health current_player.vehicle = 100
 
 		;condition if current_player.onVehicle == 0
 		;	temporary object weapon none
@@ -1009,11 +1023,18 @@ include "strings/common_strings.txt"
 ;	# Handle Vehicles #
 	trigger player
 
+        condition if raceStatus >= 2 or
+        condition if frames > 650
 
 		;	# Get players current Vehicle #
 		temporary object vehicle none
 		action player_get_vehicle current_player vehicle
 		;	# Get players current Vehicle #
+
+
+		;	# Get players draft object #
+		temporary object draftObject current_player.draftObject
+		;	# Get players draft object #
 
 
 
@@ -1093,7 +1114,7 @@ include "strings/common_strings.txt"
 						    ; # If the Player doesn't have a vehicle, Put them in one #
 						    begin
 					            condition if raceStatus >= 2 or
-					            condition if frames < 650
+					            condition if frames < 700
 							        condition if current_player.vehicle == none
 							            begin
 									        condition if defaultVehicle == 0
@@ -1187,8 +1208,40 @@ include "strings/common_strings.txt"
 		                    end
 		                    ; # Update Vehicle Speed #
 
+
+
+							; # Check for Collisions #
+							begin
+			                    temporary player oldPlayer current_player
+                                action for_each player
+                                    temporary object veh none
+                                    action player_get_vehicle current_player veh
+                                    temporary number distance 0
+                                    action object_get_distance vehicle veh distance
+
+									;begin
+                                    ;    condition if flagDistance >= 1
+                                    ;        condition if flagDistance <= 100
+                                    ;            condition if flagDistance <= vehicleDistance
+									;			    action hud_post_message player current_player none debug vehicleDistance
+									;			    action hud_post_message player current_player none debug flagDistance
+									;end
+                                end
+                            end
+							; # Check for Collisions #
+
+
                     end
                     ; # Handle the Player being on a Vehicle #
+
+
+	                ; # Ensure the draft object is created #
+					begin
+                        condition if current_player.draftObject equal_to none
+                            action create_object "flag" at finalCheckpoint set current_player.draftObject label race_hide
+                            action hide_object current_player.draftObject true
+	                end
+	                ; # Ensure the draft object is created #
 
 
 	                ; # Set Player/Vehicle to Invincible if enabled in game options #
@@ -1720,13 +1773,13 @@ include "strings/common_strings.txt"
 		begin
 			temporary object biped none
 			action set biped set_to current_player
-				condition if current_player.local_target equal_to none
+				condition if current_player.draftObject equal_to none
 					condition not if biped equal_to none
 						condition not timer_expired current_player.delay
 							action object_detach current_player.vehicle
-							action create_object "monitor" at current_player set current_player.local_target label Target
-							action object_attach current_player.local_target current_player 8 0 5
-							action object_detach current_player.local_target
+							action create_object "monitor" at current_player set current_player.draftObject label Target
+							action object_attach current_player.draftObject current_player 8 0 5
+							action object_detach current_player.draftObject
 							action timer_set_rate current_player.delay 100
 		end
 	end
@@ -1744,7 +1797,6 @@ include "strings/common_strings.txt"
 				condition timer_expired current_player.delay
 					action for_each Target
 						action delete_object current_object
-						action player_set_vehicle current_player current_player.vehicle
 					end
 			end
 			begin
@@ -1770,9 +1822,12 @@ include "strings/common_strings.txt"
 
 
 					;	# Hide Invisible Race Objects #
-						action for_each race_hide
-							action hide_object current_object true
-						end
+                    begin
+                    	condition if hide == 1
+						    action for_each race_hide
+							    action hide_object current_object true
+						    end
+					end
 					;	# Hide Invisible Race Objects #
 
 
