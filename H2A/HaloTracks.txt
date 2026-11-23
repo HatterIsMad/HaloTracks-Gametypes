@@ -573,9 +573,9 @@ include "strings/engine_category_strings.txt"
 		;	# Hide Invisible Race Objects #
 		begin
 			condition if hide == 1
-			action for_each race_hide
-				action hide_object current_object true
-			end
+			    action for_each race_hide
+				    action hide_object current_object true
+			    end
 		end
 		;	# Hide Invisible Race Objects #
 
