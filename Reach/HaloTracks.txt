@@ -65,6 +65,7 @@ alias	startGate						= script_option[6]
 alias	defaultVehicle					= script_option[7]
 alias	draft							= script_option[8]
 alias	scale							= script_option[9]
+alias	hide							= script_option[10]
 
 -- /* SCRIPT OPTIONS */
 
@@ -440,8 +441,10 @@ on init: do
 
 
 	-- # Hide Invisible Race Objects #
-	for each object with label "race_hide" do
-		current_object.set_hidden(true)
+	if hide == 1 then
+	    for each object with label "race_hide" do
+		    current_object.set_hidden(true)
+	    end
 	end
 	-- # Hide Invisible Race Objects #
 
@@ -546,7 +549,7 @@ end
 	for each player do
 		if raceStatus == 1 then
 			if frames == 30 then
-                game.show_message_to(current_player, none, "HaloTracks Race Gametype v2.2" )
+                game.show_message_to(current_player, none, "HaloTracks Race Gametype v2.3" )
 				send_incident(bomb_carrier_kill, current_player, no_player)
 				finalCheckpoint.finalLap = 0
 				finalCheckpoint.flag = 0
@@ -2481,9 +2484,11 @@ on local: do
 
 
 		--	# Hide Invisible Race Objects #
-		for each object with label "race_hide" do
-			current_object.set_hidden(true)
-		end
+	    if hide == 1 then
+		    for each object with label "race_hide" do
+			    current_object.set_hidden(true)
+		    end
+	    end
 		--	# Hide Invisible Race Objects #
 
 
@@ -2623,8 +2628,10 @@ on host migration: do
 
 
 		--	# Hide Invisible Race Objects #
-		for each object with label "race_hide" do
-			current_object.set_hidden(true)
+		if hide == 1 then
+		    for each object with label "race_hide" do
+			    current_object.set_hidden(true)
+		    end
 		end
 		--	# Hide Invisible Race Objects #
 
